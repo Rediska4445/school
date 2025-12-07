@@ -1,0 +1,106 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace school.Models
+{
+    /// <summary>
+    /// Таблица классов
+    /// </summary>
+    public class Class
+    {
+        public int ClassID { get; set; }
+
+        [Required] // @NotNull
+        [StringLength(10)]
+        public string ClassName { get; set; } = ""; // Getter/Setter
+    }
+
+    /// <summary>
+    /// Таблица предметов
+    /// </summary>
+    public class Subject
+    {
+        public int SubjectID { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string SubjectName { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Таблица пользователей
+    /// </summary>
+    public class User
+    {
+        public int UserID { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string FullName { get; set; } = "";
+
+        [Required]
+        [StringLength(20)]
+        public string Role { get; set; } = ""; // "Ученик" или "Учитель"
+
+        public int? ClassID { get; set; }  // Nullable int для учителей
+        public Class Class { get; set; }   // Без ? - C# 7.3
+    }
+
+    /// <summary>
+    /// Таблица домашних заданий
+    /// </summary>
+    public class Homework
+    {
+        public int HomeworkID { get; set; }
+
+        [Required]
+        public DateTime AssignmentDate { get; set; }
+
+        [Required]
+        public int ClassID { get; set; }
+        public Class Class { get; set; }
+
+        [Required]
+        public int SubjectID { get; set; }
+        public Subject Subject { get; set; }
+
+        [Required]
+        [StringLength(500)]
+        public string Description { get; set; } = "";
+
+        [Required]
+        public int TeacherID { get; set; }
+        public User Teacher { get; set; }
+    }
+
+    /// <summary>
+    /// Таблица оценок
+    /// </summary>
+    public class Grade
+    {
+        public int GradeID { get; set; }
+
+        [Required]
+        public DateTime GradeDate { get; set; }
+
+        [Required]
+        public int StudentID { get; set; }
+        public User Student { get; set; }
+
+        [Required]
+        public int SubjectID { get; set; }
+        public Subject Subject { get; set; }
+
+        [Required]
+        [Range(1, 5)]
+        public byte GradeValue { get; set; } // TINYINT 1-5
+
+        [Required]
+        public int TeacherID { get; set; }
+        public User Teacher { get; set; }
+    }
+}
