@@ -6,7 +6,7 @@ using school.Models;
 namespace school.Controllers
 {
     /// <summary>
-    /// [translate:Контроллер для работы с таблицей Users]
+    /// Контроллер для работы с таблицей Users (PermissionID)
     /// </summary>
     public class UserController
     {
@@ -21,7 +21,7 @@ namespace school.Controllers
         }
 
         /// <summary>
-        /// [translate:Удаление пользователя (проверяет FK зависимости)]
+        /// Удаление пользователя (проверяет FK зависимости)
         /// </summary>
         public bool DeleteUser(User user)
         {
@@ -47,7 +47,7 @@ namespace school.Controllers
 
                 if (homeworkCount > 0 || gradesCount > 0)
                     throw new InvalidOperationException(
-                        $"[translate:Нельзя удалить пользователя {user.FullName}. Есть ДЗ ({homeworkCount}) и оценки ({gradesCount})]");
+                        $"Нельзя удалить пользователя {user.FullName}. Есть ДЗ ({homeworkCount}) и оценки ({gradesCount})");
 
                 // Удаление
                 using (var cmd = new SqlCommand("DELETE FROM Users WHERE UserID = @UserID", conn))
@@ -60,16 +60,12 @@ namespace school.Controllers
         }
 
         /// <summary>
-        /// [translate:Вставка нового пользователя или обновление существующего]
+        /// Вставка нового пользователя или обновление существующего (PermissionID)
         /// </summary>
         public int InsertOrUpdateUser(User user)
         {
-            if (user == null || string.IsNullOrWhiteSpace(user.FullName) || string.IsNullOrWhiteSpace(user.Role))
-                throw new ArgumentException("[translate:Пользователь не может быть null или пустым]");
-
-            // Валидация Role
-            if (user.Role != "Ученик" && user.Role != "Учитель")
-                throw new ArgumentException("[translate:Role должен быть 'Ученик' или 'Учитель']");
+            if (user == null || string.IsNullOrWhiteSpace(user.FullName) || user.PermissionID <= 0)
+                throw new ArgumentException("Пользователь не может быть null или пустым");
 
             var validationContext = new ValidationContext(user);
             Validator.ValidateObject(user, validationContext, true);
@@ -87,36 +83,38 @@ namespace school.Controllers
                     SqlCommand cmd;
                     if (exists == 0)
                     {
-                        // НОВЫЙ пользователь
+                        // ✅ НОВЫЙ пользователь
                         cmd = new SqlCommand(@"
-                            INSERT INTO Users (FullName, Role, ClassID) 
+                            INSERT INTO Users (FullName, PermissionID, ClassID) 
                             OUTPUT INSERTED.UserID 
-                            VALUES (@FullName, @Role, @ClassID)", conn);
-                        cmd.Parameters.AddWithValue("@FullName", user.FullName);
-                        cmd.Parameters.AddWithValue("@Role", user.Role);
-                        cmd.Parameters.AddWithValue("@ClassID", (object)user.ClassID ?? DBNull.Value);
-                        int newId = (int)cmd.ExecuteScalar();
-                        user.UserID = newId;
-                        return newId;
+                            VALUES (@FullName, @PermissionID, @ClassID)", conn);
                     }
                     else
                     {
-                        // ОБНОВЛЕНИЕ
+                        // ✅ ОБНОВЛЕНИЕ
                         cmd = new SqlCommand(@"
                             UPDATE Users 
-                            SET FullName = @FullName, Role = @Role, ClassID = @ClassID 
-                            WHERE UserID = @UserID", conn);
-                        cmd.Parameters.AddWithValue("@FullName", user.FullName);
-                        cmd.Parameters.AddWithValue("@Role", user.Role);
-                        cmd.Parameters.AddWithValue("@ClassID", (object)user.ClassID ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@UserID", user.UserID);
-                        cmd.ExecuteNonQuery();
-                        return user.UserID;
+                            SET FullName = @FullName, PermissionID = @PermissionID, ClassID = @ClassID 
+                            WHERE UserID = @UserID
+                            SELECT @UserID", conn);
                     }
+
+                    cmd.Parameters.AddWithValue("@FullName", user.FullName);
+                    cmd.Parameters.AddWithValue("@PermissionID", user.PermissionID);
+                    cmd.Parameters.AddWithValue("@ClassID", (object)user.ClassID ?? DBNull.Value);
+                    if (exists > 0)
+                        cmd.Parameters.AddWithValue("@UserID", user.UserID);
+
+                    int userId = (int)cmd.ExecuteScalar();
+                    user.UserID = userId;
+                    return userId;
                 }
             }
         }
 
+        /// <summary>
+        /// Получение пользователя по ID с PermissionName
+        /// </summary>
         public User GetUserById(int userId)
         {
             if (userId <= 0) return null;
@@ -124,8 +122,11 @@ namespace school.Controllers
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand(
-                    "SELECT UserID, FullName, Role, ClassID FROM Users WHERE UserID = @UserID", conn))
+                using (var cmd = new SqlCommand(@"
+            SELECT u.UserID, u.FullName, u.PermissionID, p.PermissionName, u.ClassID 
+            FROM Users u 
+            LEFT JOIN Permissions p ON u.PermissionID = p.PermissionID 
+            WHERE u.UserID = @UserID", conn))
                 {
                     cmd.Parameters.AddWithValue("@UserID", userId);
                     using (var reader = cmd.ExecuteReader())
@@ -134,10 +135,13 @@ namespace school.Controllers
                         {
                             return new User
                             {
-                                UserID = reader.GetInt32(0),
-                                FullName = reader.GetString(1),
-                                Role = reader.GetString(2),
-                                ClassID = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)  // ✅ C# 7.3
+                                UserID = reader.GetInt32(0),           // ✅ UserID (индекс 0)
+                                FullName = reader.GetString(1),        // ✅ FullName (индекс 1)
+                                PermissionID = reader.GetInt32(2),     // ✅ PermissionID (индекс 2)
+                                PermissionName = reader.IsDBNull(3) ?  // ✅ PermissionName (индекс 3)
+                                    "Неизвестно" : reader.GetString(3),
+                                ClassID = reader.IsDBNull(4) ?         // ✅ ClassID (индекс 4)
+                                    (int?)null : reader.GetInt32(4)
                             };
                         }
                     }
@@ -147,7 +151,7 @@ namespace school.Controllers
         }
 
         /// <summary>
-        /// [translate:Получение пользователя по логину и паролю (проверка аутентификации)]
+        /// Получение пользователя по логину и паролю
         /// </summary>
         public User GetUserByLoginPassword(string login, string password)
         {
@@ -158,12 +162,13 @@ namespace school.Controllers
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-            SELECT UserID, FullName, Role, ClassID 
-            FROM Users 
-            WHERE FullName = @Login AND PasswordHash = @Password", conn))
+            SELECT u.UserID, u.FullName, u.PermissionID, p.PermissionName, u.ClassID 
+            FROM Users u 
+            LEFT JOIN Permissions p ON u.PermissionID = p.PermissionID 
+            WHERE u.FullName = @Login AND PasswordHash = @Password", conn))
                 {
                     cmd.Parameters.AddWithValue("@Login", login);
-                    cmd.Parameters.AddWithValue("@Password", password);  // Добавляем проверку пароля
+                    cmd.Parameters.AddWithValue("@Password", password);
 
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -171,16 +176,14 @@ namespace school.Controllers
                         {
                             User user = new User
                             {
-                                UserID = reader.GetInt32(0),
-                                FullName = reader.GetString(1),
-                                Role = reader.GetString(2)
+                                UserID = reader.GetInt32(0),           // ✅ Индекс 0
+                                FullName = reader.GetString(1),        // ✅ Индекс 1
+                                PermissionID = reader.GetInt32(2),     // ✅ Индекс 2
+                                PermissionName = reader.IsDBNull(3) ?  // ✅ Индекс 3
+                                    "Неизвестно" : reader.GetString(3)
                             };
 
-                            if (reader.IsDBNull(3))
-                                user.ClassID = null;
-                            else
-                                user.ClassID = reader.GetInt32(3);
-
+                            user.ClassID = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4);  // ✅ C# 7.3
                             return user;
                         }
                     }

@@ -20,8 +20,8 @@ namespace school
         {
             InitializeComponent();
 
-            txtLogin.Text = "Кузнецова Виктория";
-            txtPassword.Text = "pass9a1";
+            txtLogin.Text = "Иванов Иван Иванович";
+            txtPassword.Text = "hashed_pass1";
         }
 
         private void btnLogin_Click(object sender, EventArgs e)

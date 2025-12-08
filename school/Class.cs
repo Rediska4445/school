@@ -39,11 +39,13 @@ namespace school.Models
         public string FullName { get; set; } = "";
 
         [Required]
-        [StringLength(20)]
-        public string Role { get; set; } = ""; // "Ученик" или "Учитель"
+        public int PermissionID { get; set; }  // ✅ FK вместо Role
+
+        [StringLength(50)]
+        public string PermissionName { get; set; } = ""; // "Обычный учитель", "Ученик" и т.д.
 
         public int? ClassID { get; set; }  // Nullable int для учителей
-        public Class Class { get; set; }   // Без ? - C# 7.3
+        public Class Class { get; set; }   // Navigation property
     }
 
     /// <summary>

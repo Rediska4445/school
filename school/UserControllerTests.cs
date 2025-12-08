@@ -8,17 +8,6 @@ using NUnit.Framework.Legacy;
 
 namespace school.Tests.Integration
 {
-//| Тест                                       | Сценарий                      | FK проверка |
-//| ------------------------------------------ | ----------------------------  | ----------- |
-//| InsertOrUpdateUser_NewTeacher              | ✅ Создание учителя           |             |
-//| InsertOrUpdateUser_NewStudentWithClass     | ✅ Создание ученика с классом |             |
-//| InsertOrUpdateUser_UpdateExistingUser      | ✅ Обновление                 |             |
-//| GetUserById_ExistingId                     | ✅ Получение по ID            |             |
-//| DeleteUser_ExistingUserWithoutDependencies | ✅ Удаление без FK            |             |
-//| DeleteUser_WithHomeworkDependency          | ✅ Блокировка FK ДЗ           | ✅          |
-//| InsertOrUpdateUser_InvalidRole             | ✅ Валидация Role             |             |
-//| GetUserByLoginPassword_ExistingUser        | ✅ Авторизация                |             |
-
     [TestFixture]
     public class UserControllerTests
     {
@@ -31,6 +20,7 @@ namespace school.Tests.Integration
             _connectionString = Form1.CONNECTION_STRING;
             _controller = new UserController(_connectionString);
             CleanupTestData();
+            SetupPermissionsAndClasses(); // ✅ Создаем Permissions и Classes
         }
 
         [TearDown]
@@ -38,6 +28,32 @@ namespace school.Tests.Integration
         {
             CleanupTestData();
         }
+
+        private void SetupPermissionsAndClasses()
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                // ✅ Создаем Permissions (если нет)
+                using (var cmd = new SqlCommand(@"
+                    IF NOT EXISTS (SELECT 1 FROM Permissions WHERE PermissionID = 1)
+                    INSERT INTO Permissions (PermissionName) VALUES (N'Обычный учитель');
+                    
+                    IF NOT EXISTS (SELECT 1 FROM Permissions WHERE PermissionID = 5)
+                    INSERT INTO Permissions (PermissionName) VALUES (N'Ученик');", conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+
+                // ✅ Создаем класс
+                using (var cmd = new SqlCommand("INSERT INTO Classes (ClassName) OUTPUT INSERTED.ClassID VALUES (N'10А')", conn))
+                {
+                    _testClassId = (int)cmd.ExecuteScalar();
+                }
+            }
+        }
+
+        private int _testClassId;
 
         private void CleanupTestData()
         {
@@ -47,8 +63,7 @@ namespace school.Tests.Integration
                 using (var cmd = new SqlCommand("DELETE FROM Grades", conn)) cmd.ExecuteNonQuery();
                 using (var cmd = new SqlCommand("DELETE FROM Homework", conn)) cmd.ExecuteNonQuery();
                 using (var cmd = new SqlCommand("DELETE FROM Users", conn)) cmd.ExecuteNonQuery();
-                using (var cmd = new SqlCommand("DELETE FROM Subjects", conn)) cmd.ExecuteNonQuery();
-                using (var cmd = new SqlCommand("DELETE FROM Classes", conn)) cmd.ExecuteNonQuery();
+                // НЕ удаляем Permissions и Classes - используются в тестах
             }
         }
 
@@ -56,7 +71,11 @@ namespace school.Tests.Integration
         public void InsertOrUpdateUser_NewTeacher_ReturnsNewId()
         {
             // Arrange
-            var teacher = new User { FullName = "Иванов Иван Иванович", Role = "Учитель" };
+            var teacher = new User
+            {
+                FullName = "Иванов Иван Иванович",
+                PermissionID = 1  // ✅ Обычный учитель
+            };
 
             // Act
             int resultId = _controller.InsertOrUpdateUser(teacher);
@@ -68,56 +87,63 @@ namespace school.Tests.Integration
             var savedUser = _controller.GetUserById(resultId);
             Assert.That(savedUser, Is.Not.Null);
             Assert.That(savedUser.FullName, Is.EqualTo("Иванов Иван Иванович"));
-            Assert.That(savedUser.Role, Is.EqualTo("Учитель"));
+            Assert.That(savedUser.PermissionID, Is.EqualTo(1));
+            Assert.That(savedUser.PermissionName, Is.EqualTo("Обычный учитель"));
             Assert.That(savedUser.ClassID, Is.Null);
         }
 
         [Test]
         public void InsertOrUpdateUser_NewStudentWithClass_ReturnsNewId()
         {
-            // Arrange: Создаём класс
-            using (var conn = new SqlConnection(_connectionString))
+            // Arrange
+            var student = new User
             {
-                conn.Open();
-                using (var cmd = new SqlCommand("INSERT INTO Classes (ClassName) OUTPUT INSERTED.ClassID VALUES ('10А')", conn))
-                {
-                    int classId = (int)cmd.ExecuteScalar();
+                FullName = "Петров Петр",
+                PermissionID = 5,  // ✅ Ученик
+                ClassID = _testClassId
+            };
 
-                    // Act
-                    var student = new User { FullName = "Петров Петр", Role = "Ученик", ClassID = classId };
-                    int userId = _controller.InsertOrUpdateUser(student);
+            // Act
+            int userId = _controller.InsertOrUpdateUser(student);
 
-                    // Assert
-                    Assert.That(userId, Is.GreaterThan(0));
-                    var savedUser = _controller.GetUserById(userId);
-                    Assert.That(savedUser.ClassID, Is.EqualTo(classId));
-                }
-            }
+            // Assert
+            Assert.That(userId, Is.GreaterThan(0));
+            var savedUser = _controller.GetUserById(userId);
+            Assert.That(savedUser.PermissionID, Is.EqualTo(5));
+            Assert.That(savedUser.ClassID, Is.EqualTo(_testClassId));
         }
 
         [Test]
         public void InsertOrUpdateUser_UpdateExistingUser_UpdatesData()
         {
             // Arrange
-            var user = new User { FullName = "Сидоров Сидор", Role = "Ученик" };
+            var user = new User
+            {
+                FullName = "Сидоров Сидор",
+                PermissionID = 5  // Ученик
+            };
             int id = _controller.InsertOrUpdateUser(user);
 
             // Act
             user.FullName = "Сидоров Сидорович";
-            user.Role = "Учитель";
+            user.PermissionID = 1;  // ✅ Стал учителем
             _controller.InsertOrUpdateUser(user);
 
             // Assert
             var updatedUser = _controller.GetUserById(id);
             Assert.That(updatedUser.FullName, Is.EqualTo("Сидоров Сидорович"));
-            Assert.That(updatedUser.Role, Is.EqualTo("Учитель"));
+            Assert.That(updatedUser.PermissionID, Is.EqualTo(1));
         }
 
         [Test]
         public void GetUserById_ExistingId_ReturnsUser()
         {
             // Arrange
-            var testUser = new User { FullName = "Козлов Козлов", Role = "Учитель" };
+            var testUser = new User
+            {
+                FullName = "Козлов Козлов",
+                PermissionID = 1
+            };
             int id = _controller.InsertOrUpdateUser(testUser);
 
             // Act
@@ -127,6 +153,7 @@ namespace school.Tests.Integration
             Assert.That(foundUser, Is.Not.Null);
             Assert.That(foundUser.UserID, Is.EqualTo(id));
             Assert.That(foundUser.FullName, Is.EqualTo("Козлов Козлов"));
+            Assert.That(foundUser.PermissionID, Is.EqualTo(1));
         }
 
         [Test]
@@ -140,7 +167,11 @@ namespace school.Tests.Integration
         public void DeleteUser_ExistingUserWithoutDependencies_ReturnsTrue()
         {
             // Arrange
-            var testUser = new User { FullName = "Тестовый", Role = "Учитель" };
+            var testUser = new User
+            {
+                FullName = "Тестовый",
+                PermissionID = 1
+            };
             int id = _controller.InsertOrUpdateUser(testUser);
 
             // Act
@@ -155,21 +186,24 @@ namespace school.Tests.Integration
         [Test]
         public void DeleteUser_WithHomeworkDependency_ThrowsInvalidOperationException()
         {
-            // Arrange: Создаём пользователя + ДЗ
-            var testUser = new User { FullName = "Учитель с ДЗ", Role = "Учитель" };
+            // Arrange
+            var testUser = new User
+            {
+                FullName = "Учитель с ДЗ",
+                PermissionID = 1
+            };
             int userId = _controller.InsertOrUpdateUser(testUser);
 
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                int classId = (int)new SqlCommand("INSERT INTO Classes (ClassName) OUTPUT INSERTED.ClassID VALUES ('10А')", conn).ExecuteScalar();
-                int subjectId = (int)new SqlCommand("INSERT INTO Subjects (SubjectName) OUTPUT INSERTED.SubjectID VALUES ('Математика')", conn).ExecuteScalar();
+                int subjectId = (int)new SqlCommand("INSERT INTO Subjects (SubjectName) OUTPUT INSERTED.SubjectID VALUES (N'Математика')", conn).ExecuteScalar();
 
                 using (var cmd = new SqlCommand(@"
                     INSERT INTO Homework (AssignmentDate, ClassID, SubjectID, Description, TeacherID) 
-                    VALUES ('2025-01-01', @ClassID, @SubjectID, 'Тест ДЗ', @TeacherID)", conn))
+                    VALUES ('2025-01-01', @_testClassId, @SubjectID, 'Тест ДЗ', @TeacherID)", conn))
                 {
-                    cmd.Parameters.AddWithValue("@ClassID", classId);
+                    cmd.Parameters.AddWithValue("@_testClassId", _testClassId);
                     cmd.Parameters.AddWithValue("@SubjectID", subjectId);
                     cmd.Parameters.AddWithValue("@TeacherID", userId);
                     cmd.ExecuteNonQuery();
@@ -182,16 +216,16 @@ namespace school.Tests.Integration
         }
 
         [Test]
-        public void InsertOrUpdateUser_InvalidRole_ThrowsArgumentException()
+        public void InsertOrUpdateUser_InvalidPermissionID_ThrowsArgumentException()
         {
-            var invalidUser = new User { FullName = "Тест", Role = "Админ" };
+            var invalidUser = new User { FullName = "Тест", PermissionID = 999 }; // ❌ Неверный ID
             Assert.Throws<ArgumentException>(() => _controller.InsertOrUpdateUser(invalidUser));
         }
 
         [Test]
         public void InsertOrUpdateUser_EmptyFullName_ThrowsArgumentException()
         {
-            var invalidUser = new User { FullName = "", Role = "Учитель" };
+            var invalidUser = new User { FullName = "", PermissionID = 1 };
             Assert.Throws<ArgumentException>(() => _controller.InsertOrUpdateUser(invalidUser));
         }
 
@@ -199,7 +233,7 @@ namespace school.Tests.Integration
         public void GetUserByLoginPassword_ExistingUser_ReturnsUser()
         {
             // Arrange
-            var testUser = new User { FullName = "ЛогинТест", Role = "Учитель" };
+            var testUser = new User { FullName = "ЛогинТест", PermissionID = 1 };
             _controller.InsertOrUpdateUser(testUser);
 
             // Act
@@ -208,6 +242,7 @@ namespace school.Tests.Integration
             // Assert
             Assert.That(foundUser, Is.Not.Null);
             Assert.That(foundUser.FullName, Is.EqualTo("ЛогинТест"));
+            Assert.That(foundUser.PermissionID, Is.EqualTo(1));
         }
 
         [Test]

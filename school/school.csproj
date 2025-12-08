@@ -251,6 +251,8 @@
     <Compile Include="Shedule.cs" />
     <Compile Include="SubjectController.cs" />
     <Compile Include="SubjectControllerTests.cs" />
+    <Compile Include="TeacherController.cs" />
+    <Compile Include="TeacherControllerTests.cs" />
     <Compile Include="UserController.cs" />
     <Compile Include="UserControllerTests.cs" />
     <EmbeddedResource Include="Form1.resx">

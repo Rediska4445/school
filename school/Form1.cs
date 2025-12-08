@@ -1,6 +1,7 @@
 ﻿using school.Controllers;
 using school.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using static school.Controllers.HomeworkController;
@@ -18,7 +19,7 @@ namespace school
             InitializeComponent();
             _homeworkController = HomeworkController._homeworkController;
 
-            labelRole.Text = UserController.CurrentUser.Role + " - " + UserController.CurrentUser.FullName;
+            labelRole.Text = UserController.CurrentUser.PermissionID + " - " + UserController.CurrentUser.FullName;
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -125,7 +126,6 @@ namespace school
             sheduleGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
-
         private void LoadHomeworkGrid()
         {
             try
@@ -135,15 +135,30 @@ namespace school
                 DateTime startDate = dateTimePickerHomework.Value.AddDays(-7);
                 DateTime endDate = dateTimePickerHomework.Value;
 
-                var homeworkList = _homeworkController.GetHomeworkForClassPeriod((int)UserController.CurrentUser.ClassID, startDate, endDate);
+                List<Homework> homeworkList;
 
-                // Устанавливаем источник данных первым
+                if (UserController.CurrentUser.PermissionID > 1)
+                {
+                    // ✅ УЧИТЕЛЬ: только свои ДЗ по своим предметам из TeacherSubjects
+                    homeworkList = TeacherController._controller.GetTeacherHomework(
+                        startDate, endDate, UserController.CurrentUser
+                    );
+                }
+                else
+                {
+                    // ✅ УЧЕНИК: ДЗ своего класса (все предметы)
+                    homeworkList = _homeworkController.GetHomeworkForClassPeriod(
+                        (int)UserController.CurrentUser.ClassID, startDate, endDate);
+                }
+
                 dataGridViewHomework.DataSource = homeworkList;
-
-                // Затем настраиваем колонки
                 SetupHomeworkGrid();
 
-                labelHomeworkPeriod.Text = $"Домашние задания: {startDate:dd.MM} - {endDate:dd.MM} ({homeworkList.Count} шт.)";
+                string labelText = UserController.CurrentUser.PermissionID > 1
+                    ? $"Мои Д/З: {startDate:dd.MM} - {endDate:dd.MM}"
+                    : $"Домашние задания {UserController.CurrentUser.ClassID}: {startDate:dd.MM} - {endDate:dd.MM}";
+
+                labelHomeworkPeriod.Text = $"{labelText} ({homeworkList.Count} шт.)";
             }
             catch (Exception ex)
             {
@@ -153,9 +168,11 @@ namespace school
 
         private void SetupHomeworkGrid()
         {
-            if (dataGridViewHomework.DataSource == null) return;
+            if (dataGridViewHomework.DataSource == null) 
+                return;
 
-            dataGridViewHomework.AutoGenerateColumns = false;
+            //dataGridViewHomework.DataSource = null;
+
             dataGridViewHomework.Columns.Clear();
 
             dataGridViewHomework.Columns.Add(new DataGridViewTextBoxColumn
@@ -199,11 +216,13 @@ namespace school
                 DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.True } // ✅ Правильный синтаксис
             });
 
+            bool isTeacher = UserController.CurrentUser.PermissionID > 1;
+            dataGridViewHomework.ReadOnly = !isTeacher;
+            dataGridViewHomework.AllowUserToAddRows = isTeacher;
+            dataGridViewHomework.AllowUserToDeleteRows = isTeacher;
+
             dataGridViewHomework.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dataGridViewHomework.AllowUserToAddRows = false;
-            dataGridViewHomework.ReadOnly = true;
             dataGridViewHomework.RowHeadersVisible = false;
-            dataGridViewHomework.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
         private void LoadGradesGrid()
@@ -215,15 +234,29 @@ namespace school
                 DateTime startDate = dateTimePickerGrades.Value.AddDays(-7);
                 DateTime endDate = dateTimePickerGrades.Value;
 
-                var gradesList = GradesController._controller.GetGradesForStudentPeriod(
-                    UserController.CurrentUser.UserID,
-                    startDate,
-                    endDate);
+                List<Grade> gradesList;
+
+                if (UserController.CurrentUser.PermissionID > 1)
+                {
+                    // ✅ УЧИТЕЛЬ: только свои оценки по своим предметам из TeacherSubjects
+                    gradesList = TeacherController._controller.GetTeacherGrades(
+                        startDate, endDate, UserController.CurrentUser);
+                }
+                else
+                {
+                    // ✅ УЧЕНИК: свои оценки (все предметы, все учителя)
+                    gradesList = GradesController._controller.GetGradesForStudentPeriod(
+                        UserController.CurrentUser.UserID, startDate, endDate);
+                }
 
                 dataGridViewGrades.DataSource = gradesList;
                 SetupGradesGrid();
 
-                labelGradesPeriod.Text = $"Оценки: {startDate:dd.MM} - {endDate:dd.MM} ({gradesList.Count} шт.)";
+                string labelText = UserController.CurrentUser.PermissionID > 1
+                    ? $"Мои оценки: {startDate:dd.MM} - {endDate:dd.MM}"
+                    : $"Оценки: {startDate:dd.MM} - {endDate:dd.MM}";
+
+                labelGradesPeriod.Text = $"{labelText} ({gradesList.Count} шт.)";
             }
             catch (Exception ex)
             {
@@ -238,6 +271,7 @@ namespace school
             dataGridViewGrades.AutoGenerateColumns = false;
             dataGridViewGrades.Columns.Clear();
 
+            // ✅ Общие колонки
             dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Date",
@@ -249,17 +283,9 @@ namespace school
             dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Subject",
-                DataPropertyName = "SubjectNameDisplay",  // ✅ Правильное свойство
+                DataPropertyName = "SubjectNameDisplay",
                 HeaderText = "Предмет",
                 Width = 120
-            });
-
-            dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Teacher",
-                DataPropertyName = "TeacherNameDisplay",  // ✅ Правильное свойство
-                HeaderText = "Учитель",
-                Width = 150
             });
 
             dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
@@ -270,9 +296,36 @@ namespace school
                 Width = 70
             });
 
+            // ✅ РАЗВИЛКА ПО РОЛИ
+            if (UserController.CurrentUser.PermissionID > 1)
+            {
+                // УЧИТЕЛЬ: показывает УЧЕНИКА вместо Учителя
+                dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    Name = "Student",
+                    DataPropertyName = "StudentNameDisplay",
+                    HeaderText = "Ученик",
+                    Width = 150
+                });
+            }
+            else
+            {
+                // УЧЕНИК: показывает УЧИТЕЛЯ
+                dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    Name = "Teacher",
+                    DataPropertyName = "TeacherNameDisplay",
+                    HeaderText = "Учитель",
+                    Width = 150
+                });
+            }
+
+            labelRole.Text = !(UserController.CurrentUser.PermissionID > 1) + "";
+
+            // ✅ РЕДАКТИРОВАНИЕ ТОЛЬКО ДЛЯ УЧИТЕЛЯ
+            dataGridViewGrades.ReadOnly = !(UserController.CurrentUser.PermissionID > 1);
+            dataGridViewGrades.AllowUserToAddRows = UserController.CurrentUser.PermissionID > 1;
             dataGridViewGrades.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dataGridViewGrades.AllowUserToAddRows = false;
-            dataGridViewGrades.ReadOnly = true;
             dataGridViewGrades.RowHeadersVisible = false;
             dataGridViewGrades.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
