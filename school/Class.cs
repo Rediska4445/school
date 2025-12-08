@@ -108,4 +108,36 @@ namespace school.Models
         public string StudentNameDisplay => Student?.FullName ?? "";
     }
 
+    public class ScheduleItem
+    {
+        public int ScheduleID { get; set; }
+        public byte DayOfWeek { get; set; }
+        public byte LessonNumber { get; set; }
+        public TimeSpan? LessonTime { get; set; }
+        public int ClassID { get; set; }
+        public string ClassName { get; set; }
+        public int SubjectID { get; set; }
+        public string SubjectName { get; set; }
+        public int TeacherID { get; set; }
+        public string TeacherName { get; set; }
+
+        // ✅ Свойства для DataGridView (C# 7.3)
+        public string DayOfWeekDisplay => GetDayName(DayOfWeek);
+        public string LessonTimeDisplay => LessonTime?.ToString(@"hh\:mm") ?? "";
+
+        private static string GetDayName(byte dayOfWeek)
+        {
+            switch (dayOfWeek)
+            {
+                case 1: return "Понедельник";
+                case 2: return "Вторник";
+                case 3: return "Среда";
+                case 4: return "Четверг";
+                case 5: return "Пятница";
+                case 6: return "Суббота";
+                case 7: return "Воскресенье";
+                default: return "Неизвестно";
+            }
+        }
+    }
 }

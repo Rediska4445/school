@@ -39,8 +39,92 @@ namespace school
                 case 2: // Статистика
                     LoadStatisticsGrid();
                     break;
+                case 3: // Расписание - sheduleGridView
+                    LoadScheduleGrid();
+                    break;
             }
         }
+
+        /// <summary>
+        /// [translate:Загрузка расписания класса (полная неделя)]
+        /// </summary>
+        private void LoadScheduleGrid()
+        {
+            try
+            {
+                sheduleGridView.DataSource = null;
+
+                var scheduleList = SheduleController._controller.GetScheduleForClass(
+                    (int)UserController.CurrentUser.ClassID); // ✅ Без периода
+
+                sheduleGridView.DataSource = scheduleList;
+                SetupScheduleGrid();
+
+                sheduleLabel.Text = $"Расписание класса ({scheduleList.Count} уроков)"; // ✅ Без дат
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка загрузки расписания: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// [translate:Настройка колонок таблицы расписания]
+        /// </summary>
+        private void SetupScheduleGrid()
+        {
+            if (sheduleGridView.DataSource == null) return;
+
+            sheduleGridView.AutoGenerateColumns = false;
+            sheduleGridView.Columns.Clear();
+
+            sheduleGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Day",
+                DataPropertyName = "DayOfWeekDisplay",
+                HeaderText = "День",
+                Width = 80
+            });
+
+            sheduleGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Lesson",
+                DataPropertyName = "LessonNumber",
+                HeaderText = "Урок",
+                Width = 60
+            });
+
+            sheduleGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Time",
+                DataPropertyName = "LessonTimeDisplay",
+                HeaderText = "Время",
+                Width = 80
+            });
+
+            sheduleGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Subject",
+                DataPropertyName = "SubjectName",
+                HeaderText = "Предмет",
+                Width = 120
+            });
+
+            sheduleGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Teacher",
+                DataPropertyName = "TeacherName",
+                HeaderText = "Учитель",
+                Width = 150
+            });
+
+            sheduleGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            sheduleGridView.AllowUserToAddRows = false;
+            sheduleGridView.ReadOnly = true;
+            sheduleGridView.RowHeadersVisible = false;
+            sheduleGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        }
+
 
         private void LoadHomeworkGrid()
         {
@@ -219,6 +303,11 @@ namespace school
         private void dateTimePickerGrades_ValueChanged_1(object sender, EventArgs e)
         {
             LoadGradesGrid();
+        }
+
+        private void sheduleDateTimePicker_ValueChanged(object sender, EventArgs e)
+        {
+            LoadScheduleGrid();
         }
     }
 }

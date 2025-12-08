@@ -38,6 +38,7 @@ namespace school
             this.dataGridViewHomework = new System.Windows.Forms.DataGridView();
             this.tabGrades = new System.Windows.Forms.TabPage();
             this.panelGrades = new System.Windows.Forms.Panel();
+            this.labelGradesPeriod = new System.Windows.Forms.Label();
             this.dateTimePickerGrades = new System.Windows.Forms.DateTimePicker();
             this.dataGridViewGrades = new System.Windows.Forms.DataGridView();
             this.tabStatistics = new System.Windows.Forms.TabPage();
@@ -45,7 +46,10 @@ namespace school
             this.dateTimePickerStatistics = new System.Windows.Forms.DateTimePicker();
             this.dataGridViewStatistics = new System.Windows.Forms.DataGridView();
             this.tabShedule = new System.Windows.Forms.TabPage();
-            this.labelGradesPeriod = new System.Windows.Forms.Label();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.sheduleLabel = new System.Windows.Forms.Label();
+            this.sheduleDateTimePicker = new System.Windows.Forms.DateTimePicker();
+            this.sheduleGridView = new System.Windows.Forms.DataGridView();
             this.panelTop.SuspendLayout();
             this.panelMain.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -58,6 +62,9 @@ namespace school
             this.tabStatistics.SuspendLayout();
             this.panelStatistics.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStatistics)).BeginInit();
+            this.tabShedule.SuspendLayout();
+            this.panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.sheduleGridView)).BeginInit();
             this.SuspendLayout();
             // 
             // panelTop
@@ -195,6 +202,17 @@ namespace school
             this.panelGrades.Size = new System.Drawing.Size(636, 382);
             this.panelGrades.TabIndex = 0;
             // 
+            // labelGradesPeriod
+            // 
+            this.labelGradesPeriod.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelGradesPeriod.AutoSize = true;
+            this.labelGradesPeriod.Location = new System.Drawing.Point(286, 354);
+            this.labelGradesPeriod.Name = "labelGradesPeriod";
+            this.labelGradesPeriod.Size = new System.Drawing.Size(45, 19);
+            this.labelGradesPeriod.TabIndex = 2;
+            this.labelGradesPeriod.Text = "label1";
+            // 
             // dateTimePickerGrades
             // 
             this.dateTimePickerGrades.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -276,6 +294,7 @@ namespace school
             // 
             // tabShedule
             // 
+            this.tabShedule.Controls.Add(this.panel1);
             this.tabShedule.Location = new System.Drawing.Point(28, 4);
             this.tabShedule.Name = "tabShedule";
             this.tabShedule.Size = new System.Drawing.Size(654, 400);
@@ -283,16 +302,57 @@ namespace school
             this.tabShedule.Text = "Расписание";
             this.tabShedule.UseVisualStyleBackColor = true;
             // 
-            // labelGradesPeriod
+            // panel1
             // 
-            this.labelGradesPeriod.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.panel1.Controls.Add(this.sheduleLabel);
+            this.panel1.Controls.Add(this.sheduleDateTimePicker);
+            this.panel1.Controls.Add(this.sheduleGridView);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(0, 0);
+            this.panel1.Name = "panel1";
+            this.panel1.Padding = new System.Windows.Forms.Padding(9);
+            this.panel1.Size = new System.Drawing.Size(654, 400);
+            this.panel1.TabIndex = 1;
+            // 
+            // sheduleLabel
+            // 
+            this.sheduleLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelGradesPeriod.AutoSize = true;
-            this.labelGradesPeriod.Location = new System.Drawing.Point(286, 354);
-            this.labelGradesPeriod.Name = "labelGradesPeriod";
-            this.labelGradesPeriod.Size = new System.Drawing.Size(45, 19);
-            this.labelGradesPeriod.TabIndex = 2;
-            this.labelGradesPeriod.Text = "label1";
+            this.sheduleLabel.AutoSize = true;
+            this.sheduleLabel.Location = new System.Drawing.Point(286, 372);
+            this.sheduleLabel.Name = "sheduleLabel";
+            this.sheduleLabel.Size = new System.Drawing.Size(45, 19);
+            this.sheduleLabel.TabIndex = 2;
+            this.sheduleLabel.Text = "label1";
+            // 
+            // sheduleDateTimePicker
+            // 
+            this.sheduleDateTimePicker.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.sheduleDateTimePicker.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.sheduleDateTimePicker.Location = new System.Drawing.Point(12, 12);
+            this.sheduleDateTimePicker.Name = "sheduleDateTimePicker";
+            this.sheduleDateTimePicker.Size = new System.Drawing.Size(630, 25);
+            this.sheduleDateTimePicker.TabIndex = 0;
+            this.sheduleDateTimePicker.Value = new System.DateTime(2025, 12, 7, 14, 53, 7, 277);
+            this.sheduleDateTimePicker.ValueChanged += new System.EventHandler(this.sheduleDateTimePicker_ValueChanged);
+            // 
+            // sheduleGridView
+            // 
+            this.sheduleGridView.AllowUserToAddRows = false;
+            this.sheduleGridView.AllowUserToDeleteRows = false;
+            this.sheduleGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.sheduleGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.sheduleGridView.Location = new System.Drawing.Point(11, 43);
+            this.sheduleGridView.Name = "sheduleGridView";
+            this.sheduleGridView.ReadOnly = true;
+            this.sheduleGridView.RowHeadersVisible = false;
+            this.sheduleGridView.RowTemplate.Height = 25;
+            this.sheduleGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.sheduleGridView.Size = new System.Drawing.Size(631, 317);
+            this.sheduleGridView.TabIndex = 1;
             // 
             // Form1
             // 
@@ -318,6 +378,10 @@ namespace school
             this.tabStatistics.ResumeLayout(false);
             this.panelStatistics.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStatistics)).EndInit();
+            this.tabShedule.ResumeLayout(false);
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.sheduleGridView)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -334,6 +398,10 @@ namespace school
         private System.Windows.Forms.Label labelHomeworkPeriod;
         private System.Windows.Forms.TabPage tabShedule;
         private System.Windows.Forms.Label labelGradesPeriod;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Label sheduleLabel;
+        private System.Windows.Forms.DateTimePicker sheduleDateTimePicker;
+        private System.Windows.Forms.DataGridView sheduleGridView;
     }
 }
 
