@@ -4,6 +4,7 @@ using school.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ namespace school.Controllers
     /// </summary>
     public class ClassController
     {
+        public static ClassController _controller = new ClassController(Form1.CONNECTION_STRING);
+
         private readonly string _connectionString;
 
         public ClassController(string connectionString)
@@ -117,5 +120,36 @@ namespace school.Controllers
             return null;
         }
 
+        public Class GetClassByName(string className)
+        {
+            if (string.IsNullOrWhiteSpace(className))
+                return null;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT ClassID, ClassName FROM Classes WHERE ClassName = @ClassName", conn))
+                {
+                    cmd.Parameters.Add(new SqlParameter("@ClassName", SqlDbType.NVarChar, 10)
+                    {
+                        Value = className.Trim()
+                    });
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new Class
+                            {
+                                ClassID = reader.IsDBNull(0) ? 0 : reader.GetInt32(0),
+                                ClassName = reader.IsDBNull(1) ? "" : reader.GetString(1)
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
     }
 }

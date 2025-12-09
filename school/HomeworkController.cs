@@ -5,6 +5,7 @@ using school.Models;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace school.Controllers
 {
@@ -13,6 +14,14 @@ namespace school.Controllers
     /// </summary>
     public class HomeworkController
     {
+        public class HomeworkChange
+        {
+            public string Action { get; set; } // "EDIT", "ADD", "DELETE"
+            public Homework Homework { get; set; } = new Homework();
+        }
+
+        private List<HomeworkChange> pendingChanges = new List<HomeworkChange>();
+
         private readonly string _connectionString;
 
         public static HomeworkController _homeworkController = new HomeworkController(Form1.CONNECTION_STRING);
@@ -22,6 +31,60 @@ namespace school.Controllers
             _connectionString = connectionString ??
                 Form1.CONNECTION_STRING;
         }
+
+        /// <summary>
+        /// Добавляет изменение в очередь
+        /// </summary>
+        public void AddHomeworkChange(string action, Homework homework)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            pendingChanges.Add(new HomeworkChange
+            {
+                Action = action,
+                Homework = homework
+            });
+        }
+
+        /// <summary>
+        /// Выполняет все изменения из очереди и очищает её
+        /// </summary>
+        public int CommitHomeworkChanges()
+        {
+            if (pendingChanges.Count == 0) return 0;
+
+            int processed = 0;
+            try
+            {
+                foreach (var change in pendingChanges)
+                {
+                    switch (change.Action.ToUpper())
+                    {
+                        case "EDIT":
+                        case "ADD":
+                            InsertOrUpdateHomework(change.Homework);
+                            processed++;
+                            break;
+                        case "DELETE":
+                            if (DeleteHomework(change.Homework))
+                                processed++;
+                            break;
+                    }
+                }
+                pendingChanges.Clear();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Commit error: {ex.Message}");
+            }
+
+            return processed;
+        }
+
+        /// <summary>
+        /// Количество ожидающих изменений
+        /// </summary>
+        public int PendingChangesCount => pendingChanges.Count;
 
         /// <summary>
         /// [translate:Удаление домашнего задания]

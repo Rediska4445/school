@@ -12,14 +12,97 @@ namespace school
     {
         public static string CONNECTION_STRING = "Server=(localdb)\\MSSQLLocalDB;Database=SchoolSystemTest;Integrated Security=true;";
 
-        private readonly HomeworkController _homeworkController;
-
         public Form1()
         {
             InitializeComponent();
-            _homeworkController = HomeworkController._homeworkController;
 
-            labelRole.Text = UserController.CurrentUser.PermissionID + " - " + UserController.CurrentUser.FullName;
+            dataGridViewHomework.CellEndEdit += DataGridViewHomework_CellEndEdit;
+            dataGridViewHomework.UserDeletedRow += DataGridViewHomework_UserDeletedRow;
+
+            dataGridViewGrades.CellEndEdit += DataGridViewGrades_CellEndEdit;
+            dataGridViewGrades.UserDeletedRow += DataGridViewGrades_UserDeletedRow;
+
+            labelRole.Text = UserController.CurrentUser.PermissionName + " - " + UserController.CurrentUser.FullName;
+        }
+
+        private bool IsGradeRowComplete(DataGridViewRow row)
+        {
+            string date = row.Cells[1].Value?.ToString()?.Trim();      // colDate
+            string subject = row.Cells[2].Value?.ToString()?.Trim();   // colSubject
+            string grade = row.Cells[3].Value?.ToString()?.Trim();     // colGrade
+            string person = row.Cells[4].Value?.ToString()?.Trim();    // colPerson
+
+            // ✅ Все поля НЕ пустые
+            bool allFilled = !string.IsNullOrEmpty(date) &&
+                             !string.IsNullOrEmpty(subject) &&
+                             !string.IsNullOrEmpty(grade) &&
+                             !string.IsNullOrEmpty(person);
+
+            return allFilled;
+        }
+
+        // ✅ Редактирование оценки
+        private void DataGridViewGrades_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            var row = dataGridViewGrades.Rows[e.RowIndex];
+
+            // ✅ ПРОВЕРКА: все поля заполнены?
+            if (!IsGradeRowComplete(row))
+            {
+                return;
+            }
+
+            // ✅ ИНДЕКСЫ вместо имен (БЕЗОПАСНО!)
+            int gradeId = row.Cells.Count > 0 ? int.Parse(row.Cells[0].Value?.ToString() ?? "0") : 0;
+
+            var grade = new Grade
+            {
+                GradeID = gradeId,
+                GradeDate = DateTime.Parse(row.Cells[1].Value.ToString()), // colDate
+                SubjectID = SubjectController._controller.GetSubjectIdByName(row.Cells[2].Value.ToString()), // colSubject
+                GradeValue = byte.Parse(row.Cells[3].Value.ToString()), // colGrade
+                TeacherID = UserController.CurrentUser.UserID
+            };
+
+            // Для учителя - StudentID из colPerson (индекс 4)
+            if (UserController.CurrentUser.PermissionID > 1)
+            {
+                grade.StudentID = UserController._userController.GetStudentIdByName(row.Cells[4].Value.ToString());
+            }
+
+            // ✅ Проверка: ID найдены
+            if (grade.SubjectID == 0)
+            {
+                MessageBox.Show("❌ Предмет не найден в БД!");
+                return;
+            }
+            if (UserController.CurrentUser.PermissionID > 1 && grade.StudentID == 0)
+            {
+                MessageBox.Show("❌ Ученик не найден в БД!");
+                return;
+            }
+
+            string action = gradeId > 0 ? "EDIT" : "ADD";
+            GradesController._controller.AddGradeChange(action, grade);
+
+            MessageBox.Show($"✅ {action} оценка #{gradeId}");
+        }
+
+        // ✅ Удаление оценки
+        private void DataGridViewGrades_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            var row = e.Row;
+            int gradeId = int.Parse(row.Cells[0].Value?.ToString() ?? "0"); // Индекс 0 = GradeID
+
+            if (gradeId > 0)
+            {
+                var grade = new Grade { GradeID = gradeId };
+                GradesController._controller.AddGradeChange("DELETE", grade);
+            }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -29,26 +112,33 @@ namespace school
 
         private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
+            int previousTab = tabControl.SelectedIndex; // Текущая ДО смены
+
+            // ✅ СОХРАНИТЬ при уходе с ДОМАШКИ (0)
+            if (previousTab == 0)
+            {
+                int saved = _homeworkController.CommitHomeworkChanges();
+                if (saved > 0)
+                    MessageBox.Show($"✅ Сохранено {saved} ДЗ!");
+            }
+
+            // ✅ СОХРАНИТЬ при уходе с ОЦЕНОК (1)
+            if (previousTab == 1)
+            {
+                int saved = GradesController._controller.CommitGradeChanges();
+                if (saved > 0)
+                    MessageBox.Show($"✅ Сохранено {saved} оценок!");
+            }
+
             switch (tabControl.SelectedIndex)
             {
-                case 0: // Д/З
-                    LoadHomeworkGrid();
-                    break;
-                case 1: // Оценки
-                    LoadGradesGrid();
-                    break;
-                case 2: // Статистика
-                    LoadStatisticsGrid();
-                    break;
-                case 3: // Расписание - sheduleGridView
-                    LoadScheduleGrid();
-                    break;
+                case 0: LoadHomeworkGrid(); break;
+                case 1: LoadGradesGrid(); break;
+                case 2: LoadStatisticsGrid(); break;
+                case 3: LoadScheduleGrid(); break;
             }
         }
 
-        /// <summary>
-        /// [translate:Загрузка расписания класса (полная неделя)]
-        /// </summary>
         private void LoadScheduleGrid()
         {
             try
@@ -69,9 +159,6 @@ namespace school
             }
         }
 
-        /// <summary>
-        /// [translate:Настройка колонок таблицы расписания]
-        /// </summary>
         private void SetupScheduleGrid()
         {
             if (sheduleGridView.DataSource == null) return;
@@ -126,101 +213,137 @@ namespace school
             sheduleGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
+        private bool IsHomeworkRowComplete(DataGridViewRow row)
+        {
+            string date = row.Cells["colDate"].Value?.ToString()?.Trim();
+            string cls = row.Cells["colClass"].Value?.ToString()?.Trim();
+            string subject = row.Cells["colSubject"].Value?.ToString()?.Trim();
+            string desc = row.Cells["colDescription"].Value?.ToString()?.Trim();
+
+            // ✅ Все поля НЕ пустые И числовые поля корректны
+            return !string.IsNullOrEmpty(date) &&
+                   !string.IsNullOrEmpty(cls) &&
+                   !string.IsNullOrEmpty(subject) &&
+                   !string.IsNullOrEmpty(desc);
+        }
+
+        private void DataGridViewHomework_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            var row = dataGridViewHomework.Rows[e.RowIndex];
+
+            // ✅ ПРОВЕРКА: все поля заполнены?
+            if (IsHomeworkRowComplete(row))
+            {
+                // ✅ ПОЛУЧАЕМ ID через методы контроллера
+                var classObj = ClassController._controller.GetClassByName(row.Cells["colClass"].Value.ToString());
+                var subjectObj = SubjectController._controller.GetSubjectByName(row.Cells["colSubject"].Value.ToString());
+
+                var homework = new Homework
+                {
+                    AssignmentDate = DateTime.Parse(row.Cells["colDate"].Value.ToString()),
+                    ClassID = classObj?.ClassID ?? 0,                           // ✅ ID из объекта!
+                    SubjectID = subjectObj?.SubjectID ?? 0,                      // ✅ ID из объекта!
+                    Description = row.Cells["colDescription"].Value.ToString(),
+                    TeacherID = UserController.CurrentUser.UserID
+                };
+
+                // ✅ Проверка: предмет и класс найдены
+                if (homework.ClassID == 0 || homework.SubjectID == 0)
+                {
+                    MessageBox.Show("❌ Класс или предмет не найден в БД!");
+                    return;
+                }
+
+                _homeworkController.AddHomeworkChange("EDIT", homework);
+                MessageBox.Show("✅ Добавлено в очередь");
+            }
+        }
+
+        private void DataGridViewHomework_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            var row = e.Row;
+
+            // ✅ ИНДЕКС 0 = colHomeworkID (даже если колонка не создана!)
+            if (row.Cells.Count > 0 && row.Cells[0].Value != null)
+            {
+                int homeworkId = int.Parse(row.Cells[0].Value.ToString());
+                if (homeworkId > 0)
+                {
+                    var homework = new Homework { HomeworkID = homeworkId };
+                    _homeworkController.AddHomeworkChange("DELETE", homework);
+
+                    MessageBox.Show($"✅ Удаление ДЗ #{homeworkId} в очереди");
+                }
+            }
+        }
+
         private void LoadHomeworkGrid()
         {
             try
             {
-                dataGridViewHomework.DataSource = null;
-
                 DateTime startDate = dateTimePickerHomework.Value.AddDays(-7);
                 DateTime endDate = dateTimePickerHomework.Value;
 
                 List<Homework> homeworkList;
-
                 if (UserController.CurrentUser.PermissionID > 1)
-                {
-                    // ✅ УЧИТЕЛЬ: только свои ДЗ по своим предметам из TeacherSubjects
-                    homeworkList = TeacherController._controller.GetTeacherHomework(
-                        startDate, endDate, UserController.CurrentUser
-                    );
-                }
+                    homeworkList = TeacherController._controller.GetTeacherHomework(startDate, endDate, UserController.CurrentUser);
                 else
-                {
-                    // ✅ УЧЕНИК: ДЗ своего класса (все предметы)
-                    homeworkList = _homeworkController.GetHomeworkForClassPeriod(
-                        (int)UserController.CurrentUser.ClassID, startDate, endDate);
-                }
+                    homeworkList = _homeworkController.GetHomeworkForClassPeriod((int)UserController.CurrentUser.ClassID, startDate, endDate);
 
-                dataGridViewHomework.DataSource = homeworkList;
+                // ✅ 1. ПОЛНАЯ ОЧИСТКА
+                dataGridViewHomework.DataSource = null;
+                dataGridViewHomework.Columns.Clear();
+                dataGridViewHomework.Rows.Clear();
+
+                // ✅ 2. СНАЧАЛА СОЗДАЕМ СТОЛБЦЫ
                 SetupHomeworkGrid();
 
-                string labelText = UserController.CurrentUser.PermissionID > 1
-                    ? $"Мои Д/З: {startDate:dd.MM} - {endDate:dd.MM}"
-                    : $"Домашние задания {UserController.CurrentUser.ClassID}: {startDate:dd.MM} - {endDate:dd.MM}";
+                // ✅ 3. ПОТОМ добавляем СТРОКИ
+                foreach (var hw in homeworkList)
+                {
+                    dataGridViewHomework.Rows.Add(
+                        hw.HomeworkID,
+                        hw.AssignmentDate.ToShortDateString(),
+                        hw.ClassNameDisplay ?? hw.ClassID.ToString(),
+                        hw.SubjectNameDisplay ?? hw.SubjectID.ToString(),
+                        hw.TeacherNameDisplay ?? hw.TeacherID.ToString(),
+                        hw.Description ?? ""
+                    );
+                }
 
-                labelHomeworkPeriod.Text = $"{labelText} ({homeworkList.Count} шт.)";
+                labelHomeworkPeriod.Text = $"{(UserController.CurrentUser.PermissionID > 1 ? "Мои Д/З" : "ДЗ класса")}: {homeworkList.Count} шт.";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки ДЗ: {ex.Message}");
+                MessageBox.Show($"Ошибка: {ex.Message}");
             }
         }
 
         private void SetupHomeworkGrid()
         {
-            if (dataGridViewHomework.DataSource == null) 
-                return;
-
-            //dataGridViewHomework.DataSource = null;
-
             dataGridViewHomework.Columns.Clear();
 
-            dataGridViewHomework.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Date",
-                DataPropertyName = "AssignmentDate",
-                HeaderText = "Дата",
-                Width = 80
-            });
-
-            dataGridViewHomework.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Class",
-                DataPropertyName = "ClassNameDisplay",
-                HeaderText = "Класс",
-                Width = 60
-            });
-
-            dataGridViewHomework.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Subject",
-                DataPropertyName = "SubjectNameDisplay",
-                HeaderText = "Предмет",
-                Width = 100
-            });
-
-            dataGridViewHomework.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Teacher",
-                DataPropertyName = "TeacherNameDisplay",
-                HeaderText = "Учитель",
-                Width = 150
-            });
-
-            dataGridViewHomework.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Description",
-                DataPropertyName = "Description",
-                HeaderText = "Задание",
-                Width = 300,
-                DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.True } // ✅ Правильный синтаксис
-            });
-
             bool isTeacher = UserController.CurrentUser.PermissionID > 1;
+
+            // ✅ 0. СКРЫТАЯ колонка ID (ПЕРВАЯ!)
+            dataGridViewHomework.Columns.Add("colHomeworkID", "ID");
+            dataGridViewHomework.Columns["colHomeworkID"].Visible = false;  // ✅ СКРЫТЬ!
+
+            // ✅ 1-5. Видимые колонки
+            dataGridViewHomework.Columns.Add("colDate", "Дата");
+            dataGridViewHomework.Columns.Add("colClass", "Класс");
+            dataGridViewHomework.Columns.Add("colSubject", "Предмет");
+            dataGridViewHomework.Columns.Add("colTeacher", "Учитель");
+            dataGridViewHomework.Columns.Add("colDescription", "Задание");
+
             dataGridViewHomework.ReadOnly = !isTeacher;
             dataGridViewHomework.AllowUserToAddRows = isTeacher;
             dataGridViewHomework.AllowUserToDeleteRows = isTeacher;
-
+            dataGridViewHomework.EditMode = DataGridViewEditMode.EditOnKeystroke;
             dataGridViewHomework.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridViewHomework.RowHeadersVisible = false;
         }
@@ -230,27 +353,38 @@ namespace school
             try
             {
                 dataGridViewGrades.DataSource = null;
+                dataGridViewGrades.Columns.Clear();
+                dataGridViewGrades.Rows.Clear();
 
                 DateTime startDate = dateTimePickerGrades.Value.AddDays(-7);
                 DateTime endDate = dateTimePickerGrades.Value;
 
                 List<Grade> gradesList;
-
                 if (UserController.CurrentUser.PermissionID > 1)
                 {
-                    // ✅ УЧИТЕЛЬ: только свои оценки по своим предметам из TeacherSubjects
-                    gradesList = TeacherController._controller.GetTeacherGrades(
-                        startDate, endDate, UserController.CurrentUser);
+                    gradesList = TeacherController._controller.GetTeacherGrades(startDate, endDate, UserController.CurrentUser);
                 }
                 else
                 {
-                    // ✅ УЧЕНИК: свои оценки (все предметы, все учителя)
-                    gradesList = GradesController._controller.GetGradesForStudentPeriod(
-                        UserController.CurrentUser.UserID, startDate, endDate);
+                    gradesList = GradesController._controller.GetGradesForStudentPeriod(UserController.CurrentUser.UserID, startDate, endDate);
                 }
 
-                dataGridViewGrades.DataSource = gradesList;
+                // ✅ СНАЧАЛА СОЗДАЕМ КОЛОНКИ
                 SetupGradesGrid();
+
+                // ✅ ПОТОМ заполняем РУЧНОЙ строки
+                foreach (var grade in gradesList)
+                {
+                    dataGridViewGrades.Rows.Add(
+                        grade.GradeID,                                    // 0. СКРЫТЫЙ ID
+                        grade.GradeDate.ToShortDateString(),              // 1. Дата
+                        grade.SubjectNameDisplay ?? "",                   // 2. Предмет
+                        grade.GradeValue,                                 // 3. Оценка
+                        UserController.CurrentUser.PermissionID > 1 ?     // 4. Ученик/Учитель
+                            grade.StudentNameDisplay ?? "" :
+                            grade.TeacherNameDisplay ?? ""
+                    );
+                }
 
                 string labelText = UserController.CurrentUser.PermissionID > 1
                     ? $"Мои оценки: {startDate:dd.MM} - {endDate:dd.MM}"
@@ -266,68 +400,37 @@ namespace school
 
         private void SetupGradesGrid()
         {
-            if (dataGridViewGrades.DataSource == null) return;
-
-            dataGridViewGrades.AutoGenerateColumns = false;
             dataGridViewGrades.Columns.Clear();
+            bool isTeacher = UserController.CurrentUser.PermissionID > 1;
 
-            // ✅ Общие колонки
-            dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Date",
-                DataPropertyName = "GradeDate",
-                HeaderText = "Дата",
-                Width = 80
-            });
+            // ✅ 0. СКРЫТАЯ колонка GradeID
+            dataGridViewGrades.Columns.Add("colGradeID", "ID");
+            dataGridViewGrades.Columns["colGradeID"].Visible = false;
 
-            dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Subject",
-                DataPropertyName = "SubjectNameDisplay",
-                HeaderText = "Предмет",
-                Width = 120
-            });
+            // ✅ 1. Дата
+            dataGridViewGrades.Columns.Add("colDate", "Дата");
 
-            dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Grade",
-                DataPropertyName = "GradeValue",
-                HeaderText = "Оценка",
-                Width = 70
-            });
+            // ✅ 2. Предмет
+            dataGridViewGrades.Columns.Add("colSubject", "Предмет");
 
-            // ✅ РАЗВИЛКА ПО РОЛИ
-            if (UserController.CurrentUser.PermissionID > 1)
-            {
-                // УЧИТЕЛЬ: показывает УЧЕНИКА вместо Учителя
-                dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
-                {
-                    Name = "Student",
-                    DataPropertyName = "StudentNameDisplay",
-                    HeaderText = "Ученик",
-                    Width = 150
-                });
-            }
-            else
-            {
-                // УЧЕНИК: показывает УЧИТЕЛЯ
-                dataGridViewGrades.Columns.Add(new DataGridViewTextBoxColumn
-                {
-                    Name = "Teacher",
-                    DataPropertyName = "TeacherNameDisplay",
-                    HeaderText = "Учитель",
-                    Width = 150
-                });
-            }
+            // ✅ 3. Оценка (число 1-5)
+            var colGrade = new DataGridViewTextBoxColumn();
+            colGrade.Name = "colGrade";
+            colGrade.HeaderText = "Оценка";
+            colGrade.Width = 70;
+            dataGridViewGrades.Columns.Add(colGrade);
 
-            labelRole.Text = !(UserController.CurrentUser.PermissionID > 1) + "";
+            // ✅ 4. Ученик (учитель) / Учитель (ученик)
+            string personHeader = isTeacher ? "Ученик" : "Учитель";
+            dataGridViewGrades.Columns.Add("colPerson", personHeader);
 
-            // ✅ РЕДАКТИРОВАНИЕ ТОЛЬКО ДЛЯ УЧИТЕЛЯ
-            dataGridViewGrades.ReadOnly = !(UserController.CurrentUser.PermissionID > 1);
-            dataGridViewGrades.AllowUserToAddRows = UserController.CurrentUser.PermissionID > 1;
+            // ✅ НАСТРОЙКИ редактирования
+            dataGridViewGrades.ReadOnly = !isTeacher;
+            dataGridViewGrades.AllowUserToAddRows = isTeacher;
+            dataGridViewGrades.AllowUserToDeleteRows = isTeacher;
+            dataGridViewGrades.EditMode = DataGridViewEditMode.EditOnKeystroke;
             dataGridViewGrades.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridViewGrades.RowHeadersVisible = false;
-            dataGridViewGrades.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
         private void LoadStatisticsGrid()

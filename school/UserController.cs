@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using System.ComponentModel.DataAnnotations;
 using school.Models;
+using System.Data;
 
 namespace school.Controllers
 {
@@ -148,6 +149,30 @@ namespace school.Controllers
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Возвращает StudentID по полному имени (ученики PermissionID = 1)
+        /// </summary>
+        public int GetStudentIdByName(string studentName)
+        {
+            if (string.IsNullOrWhiteSpace(studentName)) return 0;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT UserID FROM Users WHERE FullName = @FullName AND PermissionID = 1", conn))
+                {
+                    cmd.Parameters.Add(new SqlParameter("@FullName", SqlDbType.NVarChar, 100)
+                    {
+                        Value = studentName.Trim()
+                    });
+
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
         }
 
         /// <summary>

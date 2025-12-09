@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,68 @@ namespace school
         private readonly string _connectionString;
 
         public static GradesController _controller = new GradesController(Form1.CONNECTION_STRING);
+
+        // ✅ КОЛЛЕКЦИЯ ИЗМЕНЕНИЙ ОЦЕНОК
+        public class GradeChange
+        {
+            public string Action { get; set; } // "EDIT", "ADD", "DELETE"
+            public Grade Grade { get; set; } = new Grade();
+        }
+
+        private List<GradeChange> pendingChanges = new List<GradeChange>();
+
+        /// <summary>
+        /// Добавляет изменение оценки в очередь
+        /// </summary>
+        public void AddGradeChange(string action, Grade grade)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            pendingChanges.Add(new GradeChange
+            {
+                Action = action,
+                Grade = grade
+            });
+        }
+
+        /// <summary>
+        /// Выполняет все изменения оценок и очищает очередь
+        /// </summary>
+        public int CommitGradeChanges()
+        {
+            if (pendingChanges.Count == 0) return 0;
+
+            int processed = 0;
+            try
+            {
+                foreach (var change in pendingChanges)
+                {
+                    switch (change.Action.ToUpper())
+                    {
+                        case "EDIT":
+                        case "ADD":
+                            InsertOrUpdateGrade(change.Grade);
+                            processed++;
+                            break;
+                        case "DELETE":
+                            DeleteGrade(change.Grade);
+                            processed++;
+                            break;
+                    }
+                }
+                pendingChanges.Clear();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Commit grades error: {ex.Message}");
+            }
+            return processed;
+        }
+
+        /// <summary>
+        /// Количество ожидающих изменений оценок
+        /// </summary>
+        public int PendingChangesCount => pendingChanges.Count;
 
         public GradesController(string connectionString)
         {
@@ -229,8 +292,6 @@ namespace school
             }
             return grades;
         }
-
-
 
         public List<Grade> GetGradesForPeriod(DateTime startDate, DateTime endDate)
         {

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.Data.SqlClient;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 
 namespace school
 {
@@ -10,6 +11,8 @@ namespace school
     /// </summary>
     public class SubjectController
     {
+        public static SubjectController _controller = new SubjectController(Form1.CONNECTION_STRING);   
+
         private readonly string _connectionString;
 
         public SubjectController(string connectionString)
@@ -155,6 +158,69 @@ namespace school
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Возвращает Subject по названию (или null если не найден)
+        /// </summary>
+        public Subject GetSubjectByName(string subjectName)
+        {
+            if (string.IsNullOrWhiteSpace(subjectName))
+                return null;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(
+                    "SELECT SubjectID, SubjectName FROM Subjects WHERE SubjectName = @SubjectName", conn))
+                {
+                    cmd.Parameters.Add(new SqlParameter("@SubjectName", SqlDbType.NVarChar, 50)
+                    {
+                        Value = subjectName.Trim()
+                    });
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            int idOrdinal = reader.GetOrdinal("SubjectID");
+                            int nameOrdinal = reader.GetOrdinal("SubjectName");
+
+                            return new Subject
+                            {
+                                SubjectID = reader.IsDBNull(idOrdinal) ? 0 : reader.GetInt32(idOrdinal),
+                                SubjectName = reader.IsDBNull(nameOrdinal) ? "" : reader.GetString(nameOrdinal)
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Возвращает SubjectID по названию предмета
+        /// </summary>
+        public int GetSubjectIdByName(string subjectName)
+        {
+            if (string.IsNullOrWhiteSpace(subjectName)) return 0;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT SubjectID FROM Subjects WHERE SubjectName = @SubjectName", conn))
+                {
+                    cmd.Parameters.Add(new SqlParameter("@SubjectName", SqlDbType.NVarChar, 50)
+                    {
+                        Value = subjectName.Trim()
+                    });
+
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
         }
     }
 }
