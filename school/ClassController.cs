@@ -151,5 +151,40 @@ namespace school.Controllers
             }
             return null;
         }
+
+        /// <summary>
+        /// Возвращает список всех классов из БД
+        /// </summary>
+        public List<Class> GetAllClasses()
+        {
+            var classes = new List<Class>();
+
+            SqlConnection connection = null;
+            SqlDataReader reader = null;
+            try
+            {
+                connection = new SqlConnection(_connectionString);
+                connection.Open();
+
+                SqlCommand cmd = new SqlCommand("SELECT ClassID, ClassName FROM Classes ORDER BY ClassID", connection);
+
+                reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    classes.Add(new Class
+                    {
+                        ClassID = reader.GetInt32(reader.GetOrdinal("ClassID")),
+                        ClassName = reader.GetString(reader.GetOrdinal("ClassName"))
+                    });
+                }
+            }
+            finally
+            {
+                reader?.Dispose();
+                connection?.Dispose();
+            }
+
+            return classes;
+        }
     }
 }

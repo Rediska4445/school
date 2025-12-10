@@ -44,7 +44,6 @@ namespace school
             this.tabStatistics = new System.Windows.Forms.TabPage();
             this.panelStatistics = new System.Windows.Forms.Panel();
             this.dateTimePickerStatistics = new System.Windows.Forms.DateTimePicker();
-            this.dataGridViewStatistics = new System.Windows.Forms.DataGridView();
             this.tabShedule = new System.Windows.Forms.TabPage();
             this.panel1 = new System.Windows.Forms.Panel();
             this.sheduleLabel = new System.Windows.Forms.Label();
@@ -61,7 +60,6 @@ namespace school
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewGrades)).BeginInit();
             this.tabStatistics.SuspendLayout();
             this.panelStatistics.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStatistics)).BeginInit();
             this.tabShedule.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.sheduleGridView)).BeginInit();
@@ -74,7 +72,7 @@ namespace school
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelTop.Location = new System.Drawing.Point(0, 0);
             this.panelTop.Name = "panelTop";
-            this.panelTop.Size = new System.Drawing.Size(686, 52);
+            this.panelTop.Size = new System.Drawing.Size(804, 52);
             this.panelTop.TabIndex = 0;
             // 
             // labelRole
@@ -84,7 +82,7 @@ namespace school
             this.labelRole.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
             this.labelRole.Location = new System.Drawing.Point(12, 13);
             this.labelRole.Name = "labelRole";
-            this.labelRole.Size = new System.Drawing.Size(661, 26);
+            this.labelRole.Size = new System.Drawing.Size(779, 26);
             this.labelRole.TabIndex = 0;
             this.labelRole.Text = "УЧИТЕЛЬ";
             this.labelRole.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -95,7 +93,7 @@ namespace school
             this.panelMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelMain.Location = new System.Drawing.Point(0, 52);
             this.panelMain.Name = "panelMain";
-            this.panelMain.Size = new System.Drawing.Size(686, 408);
+            this.panelMain.Size = new System.Drawing.Size(804, 495);
             this.panelMain.TabIndex = 1;
             // 
             // tabControl
@@ -112,7 +110,7 @@ namespace school
             this.tabControl.Name = "tabControl";
             this.tabControl.Padding = new System.Drawing.Point(20, 3);
             this.tabControl.SelectedIndex = 0;
-            this.tabControl.Size = new System.Drawing.Size(686, 408);
+            this.tabControl.Size = new System.Drawing.Size(804, 495);
             this.tabControl.TabIndex = 0;
             this.tabControl.SelectedIndexChanged += new System.EventHandler(this.tabControl_SelectedIndexChanged);
             // 
@@ -256,7 +254,6 @@ namespace school
             // panelStatistics
             // 
             this.panelStatistics.Controls.Add(this.dateTimePickerStatistics);
-            this.panelStatistics.Controls.Add(this.dataGridViewStatistics);
             this.panelStatistics.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelStatistics.Location = new System.Drawing.Point(9, 9);
             this.panelStatistics.Name = "panelStatistics";
@@ -275,29 +272,12 @@ namespace school
             this.dateTimePickerStatistics.TabIndex = 0;
             this.dateTimePickerStatistics.Value = new System.DateTime(2025, 12, 7, 14, 53, 7, 286);
             // 
-            // dataGridViewStatistics
-            // 
-            this.dataGridViewStatistics.AllowUserToAddRows = false;
-            this.dataGridViewStatistics.AllowUserToDeleteRows = false;
-            this.dataGridViewStatistics.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.dataGridViewStatistics.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewStatistics.Location = new System.Drawing.Point(11, 43);
-            this.dataGridViewStatistics.Name = "dataGridViewStatistics";
-            this.dataGridViewStatistics.ReadOnly = true;
-            this.dataGridViewStatistics.RowHeadersVisible = false;
-            this.dataGridViewStatistics.RowTemplate.Height = 25;
-            this.dataGridViewStatistics.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewStatistics.Size = new System.Drawing.Size(613, 327);
-            this.dataGridViewStatistics.TabIndex = 1;
-            // 
             // tabShedule
             // 
             this.tabShedule.Controls.Add(this.panel1);
             this.tabShedule.Location = new System.Drawing.Point(28, 4);
             this.tabShedule.Name = "tabShedule";
-            this.tabShedule.Size = new System.Drawing.Size(654, 400);
+            this.tabShedule.Size = new System.Drawing.Size(772, 487);
             this.tabShedule.TabIndex = 3;
             this.tabShedule.Text = "Расписание";
             this.tabShedule.UseVisualStyleBackColor = true;
@@ -311,7 +291,7 @@ namespace school
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
             this.panel1.Padding = new System.Windows.Forms.Padding(9);
-            this.panel1.Size = new System.Drawing.Size(654, 400);
+            this.panel1.Size = new System.Drawing.Size(772, 487);
             this.panel1.TabIndex = 1;
             // 
             // sheduleLabel
@@ -319,7 +299,7 @@ namespace school
             this.sheduleLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.sheduleLabel.AutoSize = true;
-            this.sheduleLabel.Location = new System.Drawing.Point(286, 372);
+            this.sheduleLabel.Location = new System.Drawing.Point(371, 459);
             this.sheduleLabel.Name = "sheduleLabel";
             this.sheduleLabel.Size = new System.Drawing.Size(45, 19);
             this.sheduleLabel.TabIndex = 2;
@@ -332,33 +312,30 @@ namespace school
             this.sheduleDateTimePicker.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.sheduleDateTimePicker.Location = new System.Drawing.Point(12, 12);
             this.sheduleDateTimePicker.Name = "sheduleDateTimePicker";
-            this.sheduleDateTimePicker.Size = new System.Drawing.Size(630, 25);
+            this.sheduleDateTimePicker.Size = new System.Drawing.Size(748, 25);
             this.sheduleDateTimePicker.TabIndex = 0;
             this.sheduleDateTimePicker.Value = new System.DateTime(2025, 12, 7, 14, 53, 7, 277);
             this.sheduleDateTimePicker.ValueChanged += new System.EventHandler(this.sheduleDateTimePicker_ValueChanged);
             // 
             // sheduleGridView
             // 
-            this.sheduleGridView.AllowUserToAddRows = false;
-            this.sheduleGridView.AllowUserToDeleteRows = false;
             this.sheduleGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.sheduleGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.sheduleGridView.Location = new System.Drawing.Point(11, 43);
+            this.sheduleGridView.Location = new System.Drawing.Point(12, 43);
             this.sheduleGridView.Name = "sheduleGridView";
-            this.sheduleGridView.ReadOnly = true;
             this.sheduleGridView.RowHeadersVisible = false;
             this.sheduleGridView.RowTemplate.Height = 25;
-            this.sheduleGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.sheduleGridView.Size = new System.Drawing.Size(631, 317);
-            this.sheduleGridView.TabIndex = 1;
+            this.sheduleGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
+            this.sheduleGridView.Size = new System.Drawing.Size(748, 407);
+            this.sheduleGridView.TabIndex = 3;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(686, 460);
+            this.ClientSize = new System.Drawing.Size(804, 547);
             this.Controls.Add(this.panelMain);
             this.Controls.Add(this.panelTop);
             this.Name = "Form1";
@@ -377,7 +354,6 @@ namespace school
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewGrades)).EndInit();
             this.tabStatistics.ResumeLayout(false);
             this.panelStatistics.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStatistics)).EndInit();
             this.tabShedule.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
@@ -391,17 +367,17 @@ namespace school
         private System.Windows.Forms.TabControl tabControl;
         private System.Windows.Forms.TabPage tabHomework, tabGrades, tabStatistics;
         private System.Windows.Forms.DateTimePicker dateTimePickerHomework, dateTimePickerGrades, dateTimePickerStatistics;
-        private System.Windows.Forms.DataGridView dataGridViewHomework, dataGridViewGrades, dataGridViewStatistics;
+        private System.Windows.Forms.DataGridView dataGridViewHomework, dataGridViewGrades;
 
         #endregion
 
+        private System.Windows.Forms.DataGridView sheduleGridView;
         private System.Windows.Forms.Label labelHomeworkPeriod;
         private System.Windows.Forms.TabPage tabShedule;
         private System.Windows.Forms.Label labelGradesPeriod;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label sheduleLabel;
         private System.Windows.Forms.DateTimePicker sheduleDateTimePicker;
-        private System.Windows.Forms.DataGridView sheduleGridView;
     }
 }
 

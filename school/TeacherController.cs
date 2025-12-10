@@ -200,5 +200,98 @@ namespace school
                 }
             }
         }
+
+        /// <summary>
+        /// Возвращает User по полному имени с указанными ролями (PermissionID)
+        /// </summary>
+        /// <param name="teacherName">Полное имя пользователя</param>
+        /// <param name="permissionIds">Массив разрешённых PermissionID (например, new int[] {2, 3})</param>
+        public User GetUserByNameAndPermissions(string teacherName, int[] permissionIds)
+        {
+            if (string.IsNullOrWhiteSpace(teacherName) || permissionIds == null || permissionIds.Length == 0)
+                return null;
+
+            SqlConnection connection = null;
+            SqlDataReader reader = null;
+            try
+            {
+                connection = new SqlConnection(_connectionString);
+                connection.Open();
+
+                // ✅ ДИНАМИЧЕСКИ формируем условие IN (@id1, @id2, ...)
+                string permissionCondition = string.Join(",", permissionIds.Select((id, index) => $"@p{index}"));
+                string sql = $@"
+            SELECT 
+                u.UserID, 
+                u.FullName, 
+                u.PermissionID, 
+                u.ClassID, 
+                p.PermissionName
+            FROM Users u
+            JOIN Permissions p ON u.PermissionID = p.PermissionID
+            WHERE u.FullName = @FullName 
+              AND u.PermissionID IN ({permissionCondition})";
+
+                SqlCommand cmd = new SqlCommand(sql, connection);
+                cmd.Parameters.AddWithValue("@FullName", teacherName.Trim());
+
+                // ✅ Добавляем параметры для каждой роли
+                for (int i = 0; i < permissionIds.Length; i++)
+                {
+                    cmd.Parameters.AddWithValue($"@p{i}", permissionIds[i]);
+                }
+
+                reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    int ordUserId = reader.GetOrdinal("UserID");
+                    int ordFullName = reader.GetOrdinal("FullName");
+                    int ordPermissionId = reader.GetOrdinal("PermissionID");
+                    int ordPermissionName = reader.GetOrdinal("PermissionName");
+                    int ordClassId = reader.GetOrdinal("ClassID");
+
+                    return new User
+                    {
+                        UserID = reader.GetInt32(ordUserId),
+                        FullName = reader.GetString(ordFullName),
+                        PermissionID = reader.GetInt32(ordPermissionId),
+                        PermissionName = reader.GetString(ordPermissionName),
+                        ClassID = reader.IsDBNull(ordClassId) ? null : (int?)reader.GetInt32(ordClassId)
+                    };
+                }
+
+                return null;
+            }
+            finally
+            {
+                reader?.Dispose();
+                connection?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Только учителя (PermissionID = 2)
+        /// </summary>
+        public User GetTeacherByName(string teacherName)
+        {
+            return GetUserByNameAndPermissions(teacherName, new int[] { 2 });
+        }
+
+        /// <summary>
+        /// Учителя + Директор (PermissionID = 2, 3)
+        /// </summary>
+        public User GetTeacherOrDirectorByName(string teacherName)
+        {
+            return GetUserByNameAndPermissions(teacherName, new int[] { 2, 3 });
+        }
+
+        /// <summary>
+        /// ID учителя по имени (совместимость)
+        /// </summary>
+        public int GetTeacherIdByName(string teacherName)
+        {
+            var teacher = GetTeacherByName(teacherName);
+            return teacher?.UserID ?? 0;
+        }
     }
 }

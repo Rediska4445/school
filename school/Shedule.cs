@@ -144,5 +144,96 @@ namespace school
             }
             return scheduleList;
         }
+
+        /// <summary>
+        /// Вставляет или обновляет урок в расписании (по DayOfWeek + LessonNumber + ClassID)
+        /// </summary>
+        /// <param name="schedule">Данные урока</param>
+        /// <returns>ID вставленной/обновленной записи</returns>
+        public int InsertOrUpdateSchedulePart(ScheduleItem schedule)
+        {
+            SqlConnection connection = null;
+            try
+            {
+                connection = new SqlConnection(Form1.CONNECTION_STRING);
+                connection.Open();
+
+                // ✅ Проверяем существование по ключу (DayOfWeek + LessonNumber + ClassID)
+                SqlCommand checkCmd = new SqlCommand(@"
+            SELECT ScheduleID FROM Schedule 
+            WHERE DayOfWeek = @DayOfWeek AND LessonNumber = @LessonNumber AND ClassID = @ClassID", connection);
+
+                checkCmd.Parameters.AddWithValue("@DayOfWeek", schedule.DayOfWeek);
+                checkCmd.Parameters.AddWithValue("@LessonNumber", schedule.LessonNumber);
+                checkCmd.Parameters.AddWithValue("@ClassID", schedule.ClassID);
+
+                object existingId = checkCmd.ExecuteScalar();
+
+                if (existingId != null)
+                {
+                    // ✅ ОБНОВИТЬ существующий
+                    SqlCommand updateCmd = new SqlCommand(@"
+                UPDATE Schedule SET 
+                    SubjectID = @SubjectID, 
+                    TeacherID = @TeacherID,
+                    LessonTime = @LessonTime
+                WHERE ScheduleID = @ScheduleID", connection);
+
+                    updateCmd.Parameters.AddWithValue("@SubjectID", schedule.SubjectID);
+                    updateCmd.Parameters.AddWithValue("@TeacherID", schedule.TeacherID);
+                    updateCmd.Parameters.AddWithValue("@LessonTime",
+                        schedule.LessonTime.HasValue ? (object)schedule.LessonTime.Value : DBNull.Value);
+                    updateCmd.Parameters.AddWithValue("@ScheduleID", (int)existingId);
+
+                    updateCmd.ExecuteNonQuery();
+                    return (int)existingId;
+                }
+                else
+                {
+                    // ✅ НОВАЯ СТРОКА: ScheduleID — identity, генерируется БД
+                    SqlCommand insertCmd = new SqlCommand(@"
+                INSERT INTO Schedule (DayOfWeek, LessonNumber, ClassID, SubjectID, TeacherID, LessonTime)
+                OUTPUT INSERTED.ScheduleID
+                VALUES (@DayOfWeek, @LessonNumber, @ClassID, @SubjectID, @TeacherID, @LessonTime)", connection);
+
+                    insertCmd.Parameters.AddWithValue("@DayOfWeek", schedule.DayOfWeek);
+                    insertCmd.Parameters.AddWithValue("@LessonNumber", schedule.LessonNumber);
+                    insertCmd.Parameters.AddWithValue("@ClassID", schedule.ClassID);
+                    insertCmd.Parameters.AddWithValue("@SubjectID", schedule.SubjectID);
+                    insertCmd.Parameters.AddWithValue("@TeacherID", schedule.TeacherID);
+                    insertCmd.Parameters.AddWithValue("@LessonTime",
+                        schedule.LessonTime.HasValue ? (object)schedule.LessonTime.Value : DBNull.Value);
+
+                    int newScheduleId = (int)insertCmd.ExecuteScalar();
+                    return newScheduleId; // ✅ Возвращаем ID из identity
+                }
+            }
+            finally
+            {
+                connection?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Удаляет урок расписания по ScheduleID
+        /// </summary>
+        public void DeleteSchedulePartById(int scheduleId)
+        {
+            SqlConnection connection = null;
+            try
+            {
+                connection = new SqlConnection(Form1.CONNECTION_STRING);
+                connection.Open();
+
+                SqlCommand cmd = new SqlCommand("DELETE FROM Schedule WHERE ScheduleID = @ScheduleID", connection);
+                cmd.Parameters.AddWithValue("@ScheduleID", scheduleId);
+
+                int deletedRows = cmd.ExecuteNonQuery();
+            }
+            finally
+            {
+                connection?.Dispose();
+            }
+        }
     }
 }

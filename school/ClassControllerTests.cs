@@ -1,9 +1,10 @@
 ﻿using NUnit.Framework;
 using school.Controllers;
 using school.Models;
-using System.ComponentModel.DataAnnotations;
+
 using Microsoft.Data.SqlClient;
 using System;
+using System.Collections.Generic;
 
 namespace school.Tests.Integration
 {

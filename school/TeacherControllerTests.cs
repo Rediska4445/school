@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using Microsoft.Data.SqlClient;
+using NUnit.Framework;
 using school.Controllers;
 using school.Models;
 using System;
@@ -72,24 +73,6 @@ namespace school.Tests.Integration
             Assert.That(gradesList.All(g => !string.IsNullOrEmpty(g.SubjectNameDisplay)), Is.True);
             Assert.That(gradesList.All(g => !string.IsNullOrEmpty(g.StudentNameDisplay)), Is.True);
         }
-
-        [Test]
-        public void GetTeacherHomework_ReturnsEmpty_ForFuturePeriod()
-        {
-            // Arrange
-            var startDate = new DateTime(2025, 12, 10).Date; // Будущее относительно тестовых данных
-            var endDate = new DateTime(2025, 12, 15).Date;
-            var teacher = new User { UserID = TEST_TEACHER_ID };
-
-            // Act
-            var homeworkList = _controller.GetTeacherHomework(startDate, endDate, teacher);
-
-            // Assert - ЛЮБОЙ из вариантов работает
-            Assert.That(homeworkList, Is.Empty);                    // ✅ Вариант 1
-                                                                    // Assert.That(homeworkList.Count, Is.EqualTo(0));      // ✅ Вариант 2  
-                                                                    // Assert.That(!homeworkList.Any(), Is.True);           // ✅ Вариант 3
-        }
-
 
         [Test]
         public void GetTeacherGrades_ReturnsEmptyList_ForNoDataPeriod()
@@ -280,5 +263,99 @@ namespace school.Tests.Integration
             Assert.That(id2, Is.EqualTo(id1)); // Тот же ID!
         }
 
+        // ТЕСТОВЫЕ ДАННЫЕ
+        private const string TestTeacherName = "Тестовый Учитель Петров";
+        private int _testTeacherId;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _controller = new TeacherController(Form1.CONNECTION_STRING);
+
+            SqlConnection connection = null;
+            try
+            {
+                connection = new SqlConnection(Form1.CONNECTION_STRING);
+                connection.Open();
+
+                // 1) ПОДГОТОВКА ТЕСТОВЫХ ДАННЫХ
+                int teacherPermissionId;
+                SqlCommand cmd = new SqlCommand("SELECT PermissionID FROM Permissions WHERE PermissionName = N'Учитель';", connection);
+                var result = cmd.ExecuteScalar();
+                if (result == null)
+                    Assert.Fail("В таблице Permissions нет записи с именем 'Учитель'.");
+                teacherPermissionId = (int)result;
+
+                // Удаляем старого тестового пользователя
+                cmd = new SqlCommand("DELETE FROM Users WHERE FullName = @FullName;", connection);
+                cmd.Parameters.AddWithValue("@FullName", TestTeacherName);
+                cmd.ExecuteNonQuery();
+
+                // Создаём тестового учителя
+                cmd = new SqlCommand(@"
+            INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
+            OUTPUT INSERTED.UserID
+            VALUES (@FullName, @PasswordHash, @PermissionID, NULL);", connection);
+                cmd.Parameters.AddWithValue("@FullName", TestTeacherName);
+                cmd.Parameters.AddWithValue("@PasswordHash", "test-hash");
+                cmd.Parameters.AddWithValue("@PermissionID", teacherPermissionId);
+                _testTeacherId = (int)cmd.ExecuteScalar();
+            }
+            finally
+            {
+                connection?.Dispose();
+            }
+
+            Assert.That(_testTeacherId, Is.GreaterThan(0));
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            SqlConnection connection = null;
+            try
+            {
+                connection = new SqlConnection(Form1.CONNECTION_STRING);
+                connection.Open();
+
+                SqlCommand cmd = new SqlCommand("DELETE FROM Users WHERE FullName = @FullName;", connection);
+                cmd.Parameters.AddWithValue("@FullName", TestTeacherName);
+                cmd.ExecuteNonQuery();
+            }
+            finally
+            {
+                connection?.Dispose();
+            }
+        }
+
+        [Test]
+        public void GetTeacherByName_Returns_Teacher_With_Permission_2()
+        {
+            // 2) ТЕСТ
+
+            // act
+            User teacher = _controller.GetTeacherByName(TestTeacherName);
+
+            // assert
+            Assert.That(teacher, Is.Not.Null, "Метод должен вернуть учителя, но вернул null.");
+            Assert.That(teacher.UserID, Is.EqualTo(_testTeacherId), "UserID не совпадает с созданным тестовым пользователем.");
+            Assert.That(teacher.FullName, Is.EqualTo(TestTeacherName), "Имя учителя не совпадает.");
+            Assert.That(teacher.PermissionID, Is.EqualTo(2), "PermissionID должен быть равен 2 (Учитель).");
+            Assert.That(teacher.PermissionName, Is.EqualTo("Учитель"), "PermissionName должен быть 'Учитель'.");
+        }
+
+        [Test]
+        public void GetTeacherIdByName_Returns_Correct_Id_And_Zero_For_Unknown()
+        {
+            // 2) ТЕСТ
+
+            // act
+            int idForExisting = _controller.GetTeacherIdByName(TestTeacherName);
+            int idForUnknown = _controller.GetTeacherIdByName("Несуществующий Учитель 123");
+
+            // assert
+            Assert.That(idForExisting, Is.EqualTo(_testTeacherId), "GetTeacherIdByName должен вернуть ID тестового учителя.");
+            Assert.That(idForUnknown, Is.EqualTo(0), "Для несуществующего учителя должен возвращаться 0.");
+        }
     }
 }

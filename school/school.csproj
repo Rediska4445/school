@@ -227,9 +227,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Calendar.cs" />
     <Compile Include="Class.cs" />
     <Compile Include="ClassController.cs" />
     <Compile Include="ClassControllerTests.cs" />
+    <Compile Include="ComboBoxItem.cs" />
+    <Compile Include="FileLogger .cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -249,6 +252,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shedule.cs" />
+    <Compile Include="SheduleControllerTest.cs" />
     <Compile Include="SubjectController.cs" />
     <Compile Include="SubjectControllerTests.cs" />
     <Compile Include="TeacherController.cs" />
