@@ -49,6 +49,8 @@ namespace school
             this.sheduleLabel = new System.Windows.Forms.Label();
             this.sheduleDateTimePicker = new System.Windows.Forms.DateTimePicker();
             this.sheduleGridView = new System.Windows.Forms.DataGridView();
+            this.sheduleTabControl = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
             this.panelTop.SuspendLayout();
             this.panelMain.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -63,6 +65,8 @@ namespace school
             this.tabShedule.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.sheduleGridView)).BeginInit();
+            this.sheduleTabControl.SuspendLayout();
+            this.tabPage1.SuspendLayout();
             this.SuspendLayout();
             // 
             // panelTop
@@ -284,9 +288,9 @@ namespace school
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.sheduleTabControl);
             this.panel1.Controls.Add(this.sheduleLabel);
             this.panel1.Controls.Add(this.sheduleDateTimePicker);
-            this.panel1.Controls.Add(this.sheduleGridView);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
@@ -323,13 +327,36 @@ namespace school
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.sheduleGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.sheduleGridView.Location = new System.Drawing.Point(12, 43);
+            this.sheduleGridView.Location = new System.Drawing.Point(6, 6);
             this.sheduleGridView.Name = "sheduleGridView";
             this.sheduleGridView.RowHeadersVisible = false;
             this.sheduleGridView.RowTemplate.Height = 25;
             this.sheduleGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.sheduleGridView.Size = new System.Drawing.Size(748, 407);
+            this.sheduleGridView.Size = new System.Drawing.Size(728, 371);
             this.sheduleGridView.TabIndex = 3;
+            // 
+            // sheduleTabControl
+            // 
+            this.sheduleTabControl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.sheduleTabControl.Controls.Add(this.tabPage1);
+            this.sheduleTabControl.Location = new System.Drawing.Point(12, 43);
+            this.sheduleTabControl.Name = "sheduleTabControl";
+            this.sheduleTabControl.SelectedIndex = 0;
+            this.sheduleTabControl.Size = new System.Drawing.Size(748, 413);
+            this.sheduleTabControl.TabIndex = 4;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Controls.Add(this.sheduleGridView);
+            this.tabPage1.Location = new System.Drawing.Point(4, 26);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(740, 383);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "Класс";
+            this.tabPage1.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -358,6 +385,8 @@ namespace school
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.sheduleGridView)).EndInit();
+            this.sheduleTabControl.ResumeLayout(false);
+            this.tabPage1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -378,6 +407,8 @@ namespace school
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label sheduleLabel;
         private System.Windows.Forms.DateTimePicker sheduleDateTimePicker;
+        private System.Windows.Forms.TabControl sheduleTabControl;
+        private System.Windows.Forms.TabPage tabPage1;
     }
 }
 

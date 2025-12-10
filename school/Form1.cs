@@ -3,10 +3,8 @@ using school.Models;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using Microsoft.Extensions.Logging;
 using System.Windows.Forms;
 using static school.Controllers.HomeworkController;
-using Microsoft.Testing.Platform.Logging;
 
 namespace school
 {
@@ -24,6 +22,7 @@ namespace school
         // Хуйня для подключения к БД
         public static string CONNECTION_STRING = "Server=(localdb)\\MSSQLLocalDB;Database=SchoolSystemTest;Integrated Security=true;";
 
+        // Конструктор формы
         public Form1()
         {
             InitializeComponent();
@@ -44,6 +43,9 @@ namespace school
             labelRole.Text = UserController.CurrentUser.PermissionName + " - " + UserController.CurrentUser.FullName;
         }
 
+        // Проверка на пустые ячейки в строке таблицы оценок.
+        // Нужен для того, чтобы добавить строку в список изменений в контроллере.
+        // Без метода, при каждой заполненной ячейке будут добавляться полу пустые строки.
         private bool IsGradeRowComplete(DataGridViewRow row)
         {
             string date = row.Cells[1].Value?.ToString()?.Trim();      // colDate
@@ -51,7 +53,6 @@ namespace school
             string grade = row.Cells[3].Value?.ToString()?.Trim();     // colGrade
             string person = row.Cells[4].Value?.ToString()?.Trim();    // colPerson
 
-            // ✅ Все поля НЕ пустые
             bool allFilled = !string.IsNullOrEmpty(date) &&
                              !string.IsNullOrEmpty(subject) &&
                              !string.IsNullOrEmpty(grade) &&
@@ -60,6 +61,8 @@ namespace school
             return allFilled;
         }
 
+        // Слушатель изменения оценок.
+        // Нужен для добавления ячеек на изменение (вставку) - отправку в БД.
         private void DataGridViewGrades_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
             if (UserController.CurrentUser.PermissionID <= 1) return;
@@ -108,6 +111,8 @@ namespace school
             MessageBox.Show($"✅ {action} оценка #{gradeId}");
         }
 
+        // Слушатель удаления оценок.
+        // Нужен для добавления ячеек на изменение (удаление) - отправку в БД.
         private void DataGridViewGrades_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
         {
             if (UserController.CurrentUser.PermissionID <= 1) return;
@@ -122,87 +127,215 @@ namespace school
             }
         }
 
+        // Слушатель закрытия формы.
+        // Нужен, так как если не будет закрыта главная форма (которая блять скрыта), то процесс не завершится.
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Application.Exit();
         }
 
+        // Метод смены вкладок.
+        // Он также сохраняет изменения, при смене вкладки.
         private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
+            // Предыдущая хуйня
+            // Может сохранить только если предыдущая хуйня не текущая (здесь - расписание)
             int previousTab = tabControl.SelectedIndex;
 
-            if (previousTab == 3 && UserController.CurrentUser.PermissionID == 3 && _scheduleChanged)
+            // Сохранение расписания
+            if (previousTab != 3 && UserController.CurrentUser.PermissionID >= 3 && _scheduleChanged)
             {
                 SaveScheduleGridChanges();
             }
 
-            if (previousTab == 0)
+            // Сохранение домашки
+            if (previousTab != 0)
             {
                 int saved = _homeworkController.CommitHomeworkChanges();
                 if (saved > 0)
                     MessageBox.Show($"✅ Сохранено {saved} ДЗ!");
             }
 
-            if (previousTab == 1)
+            // Сохранение оценок
+            if (previousTab != 1)
             {
                 int saved = GradesController._controller.CommitGradeChanges();
                 if (saved > 0)
                     MessageBox.Show($"✅ Сохранено {saved} оценок!");
             }
 
+            // Загрузка таблиц
             switch (tabControl.SelectedIndex)
             {
+                // Домашка
                 case 0: LoadHomeworkGrid(); break;
+
+                // Оценки
                 case 1: LoadGradesGrid(); break;
+
+                // Статистика
                 case 2: LoadStatisticsGrid(); break;
+
+                // Расписание
                 case 3: LoadScheduleGrid(); break;
             }
         }
 
+        // Загрузка расписания с БД.
+        // Вызывается при переключении на вкладку "Расписание".
+        // Вызывается при смене класса в списке (доступно только при директоре).
         private void LoadScheduleGrid()
         {
+            // Если директор и прочая лабуда для проверки
             if (UserController.CurrentUser.PermissionID >= 3 &&
                 comboBoxScheduleClass != null &&
                 comboBoxScheduleClass.SelectedItem is ComboBoxItem selectedItem)
             {
+
+                // Вызвать загрузку с тем классом что выбран в списке
                 LoadScheduleGrid(selectedItem.ClassID);
             }
             else
             {
+                // Вызвать если не директор, а лох.
+                // Учителя также имеют класс - которым они руководствуются.
+                // Если учитель не имеет класс. руководства, ему нахуй расписание класса не нужно
+                // (будет расписание для конкретного учителя).
                 LoadScheduleGrid((int)(UserController.CurrentUser.ClassID ?? 1));
+
+                if(UserController.CurrentUser.PermissionID == 2)
+                {
+                    AddPersonalScheduleTab();
+                }
             }
         }
 
+        private void AddPersonalScheduleTab()
+        {
+            // Проверяем, есть ли уже вкладка "Личный"
+            TabPage personalTab = null;
+            foreach (TabPage tab in sheduleTabControl.TabPages)
+            {
+                if (tab.Text == "Личный")
+                {
+                    personalTab = tab;
+                    break;
+                }
+            }
+
+            // Если вкладка не существует - создаём
+            if (personalTab == null)
+            {
+                personalTab = new TabPage("Личный");
+
+                // ✅ Создаём DataGridView для личного расписания
+                DataGridView personalGrid = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    Name = "personalScheduleGrid",
+                    ReadOnly = true,
+                    AllowUserToAddRows = false,
+                    AllowUserToDeleteRows = false,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    RowHeadersVisible = false
+                };
+
+                // Настраиваем колонки как в основном гриде
+                SetupScheduleGridColumns(personalGrid);
+
+                // Загружаем личное расписание
+                LoadPersonalSchedule(personalGrid);
+
+                personalTab.Controls.Add(personalGrid);
+                sheduleTabControl.TabPages.Add(personalTab);
+            }
+        }
+
+        private void SetupScheduleGridColumns(DataGridView grid)
+        {
+            grid.Columns.Clear();
+            grid.Columns.Add("colScheduleID", "ID");
+            grid.Columns["colScheduleID"].Visible = false;
+            grid.Columns.Add("colDay", "День");
+            grid.Columns.Add("colLesson", "Урок");
+            grid.Columns.Add("colTime", "Время");
+            grid.Columns.Add("colSubject", "Предмет");
+            grid.Columns.Add("colTeacher", "Учитель");
+        }
+
+        private void LoadPersonalSchedule(DataGridView grid)
+        {
+            try
+            {
+                var teacherSchedule = SheduleController._controller.GetScheduleForTeacher(UserController.CurrentUser.UserID);
+
+                grid.Rows.Clear();
+                foreach (var item in teacherSchedule)
+                {
+                    grid.Rows.Add(
+                        item.ScheduleID,
+                        item.DayOfWeekDisplay,
+                        item.LessonNumber,
+                        item.LessonTimeDisplay,
+                        item.SubjectName,
+                        item.TeacherName
+                    );
+                }
+
+                sheduleLabel.Text = $"Личное расписание: {teacherSchedule.Count} уроков";
+            }
+            catch (Exception ex)
+            {
+                grid.Rows.Clear();
+                grid.Rows.Add(0, "", "", "", "Ошибка загрузки", ex.Message);
+                sheduleLabel.Text = "Ошибка загрузки личного расписания";
+            }
+        }
+
+        // Загрузка расписания конкретного класса.
         private void LoadScheduleGrid(int classId)
         {
             try
             {
+                // Отвязка данных, иначе нельзя будет редактировать
                 sheduleGridView.DataSource = null;
+
+                // Очистка от предущего мусора
                 sheduleGridView.Columns.Clear();
                 sheduleGridView.Rows.Clear();
 
+                // Если список для директора ещё не появился
                 if(comboBoxScheduleClass == null)
                 {
+
+                    // Загрузить список с классами для расписания
                     InitializeScheduleClassCombo();
                 }
 
+                // Текущее расписание которое есть в БД.
                 var scheduleList = SheduleController._controller.GetScheduleForClass(classId);
 
+                // Подготовить таблицу для расписания (внешний вид).
                 SetupScheduleGrid();
 
+                // Ручное заполнение таблицы.
                 foreach (var schedule in scheduleList)
                 {
                     sheduleGridView.Rows.Add(
-                        schedule.ScheduleID,
-                        GetDayName(schedule.DayOfWeek),
-                        schedule.LessonNumber,
-                        schedule.LessonTimeDisplay ?? "",
-                        schedule.SubjectName,
-                        schedule.TeacherName
+                        schedule.ScheduleID, // Идентификатор расписания
+                        schedule.DayOfWeekDisplay, // День недели
+                        schedule.LessonNumber, // Номер урока
+                        schedule.LessonTimeDisplay ?? "", // Время начала
+                        schedule.SubjectName, // Предмет
+                        schedule.TeacherName // Учитель
                     );
                 }
 
+                // Текст для класса расписания - под таблицей
                 sheduleLabel.Text = $"Расписание класса {GetClassName(classId)} ({scheduleList.Count} уроков)";
+
+                // Смена состояния флага для сохранения расписания
                 _scheduleChanged = false;
             }
             catch (Exception ex)
@@ -211,6 +344,7 @@ namespace school
             }
         }
 
+        // Подготовка (визуально) таблицы расписания.
         private void SetupScheduleGrid()
         {
             sheduleGridView.Columns.Clear();
@@ -224,7 +358,7 @@ namespace school
             sheduleGridView.Columns.Add("colSubject", "Предмет");
             sheduleGridView.Columns.Add("colTeacher", "Учитель");
 
-            sheduleGridView.ReadOnly = !isDirector;
+            sheduleGridView.ReadOnly = !isDirector; 
             sheduleGridView.AllowUserToAddRows = isDirector;
             sheduleGridView.AllowUserToDeleteRows = isDirector;
             sheduleGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -233,6 +367,7 @@ namespace school
             sheduleGridView.RowHeadersVisible = false;
         }
 
+        // Получить текущий класс из выпадающего списка.
         private int GetCurrentClassId()
         {
             try
@@ -280,17 +415,13 @@ namespace school
             }
         }
 
+        // Название класса
         private string GetClassName(int classId)
         {
             return classId == 1 ? "5А" : $"Класс {classId}";
         }
 
-        private string GetDayName(byte dayOfWeek)
-        {
-            string[] days = { "", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
-            return days[dayOfWeek];
-        }
-
+        // Парсинг для недели
         private byte GetDayNumber(string dayName)
         {
             var days = new Dictionary<string, byte>
@@ -307,6 +438,7 @@ namespace school
             return days.TryGetValue(dayName, out byte num) ? num : (byte)1;
         }
 
+        // Инициализация выпадающего списка с классами для расписания.
         private void InitializeScheduleClassCombo()
         {
             bool isDirector = UserController.CurrentUser.PermissionID == 3;
@@ -349,6 +481,7 @@ namespace school
             }
         }
 
+        // Слушатель выпадающего списка с классами для директора
         private void ComboBoxScheduleClass_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBoxScheduleClass.SelectedItem is ComboBoxItem selectedItem)
@@ -357,6 +490,7 @@ namespace school
             }
         }
 
+        // Сохранение расписания (в БД)
         private void SaveScheduleGridChanges()
         {
             FileLogger.logger.Info(
@@ -551,6 +685,8 @@ namespace school
             }
         }
 
+        // Слушатель изменений (вставка) в расписании.
+        // Меняет только флаг.
         private void DataGridViewSchedule_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
             if (UserController.CurrentUser.PermissionID != 3) return; 
@@ -558,6 +694,8 @@ namespace school
             _scheduleChanged = true; 
         }
 
+        // Слушатель изменений (удаление) в расписании.
+        // Меняет только флаг.
         private void DataGridViewSchedule_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
         {
             FileLogger.logger.Info("DataGridViewSchedule_UserDeletedRow ВЫЗВАН!"); // ← ДОБАВЬ
@@ -579,6 +717,8 @@ namespace school
             }
         }
 
+        // Проверка на пустые ячейки в строке таблицы домашнего задания.
+        // Нужен по той же причине что и с оценками.
         private bool IsHomeworkRowComplete(DataGridViewRow row)
         {
             string date = row.Cells["colDate"].Value?.ToString()?.Trim();
@@ -586,13 +726,13 @@ namespace school
             string subject = row.Cells["colSubject"].Value?.ToString()?.Trim();
             string desc = row.Cells["colDescription"].Value?.ToString()?.Trim();
 
-            // ✅ Все поля НЕ пустые И числовые поля корректны
             return !string.IsNullOrEmpty(date) &&
                    !string.IsNullOrEmpty(cls) &&
                    !string.IsNullOrEmpty(subject) &&
                    !string.IsNullOrEmpty(desc);
         }
 
+        // Слушатель изменений (вставка) ячеек таблицы с домашкой
         private void DataGridViewHomework_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
             if (UserController.CurrentUser.PermissionID <= 1) return;
@@ -627,6 +767,7 @@ namespace school
             }
         }
 
+        // Слушатель изменений (удаление) ячеек таблицы с домашкой
         private void DataGridViewHomework_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
         {
             if (UserController.CurrentUser.PermissionID < 2) return;
@@ -646,6 +787,7 @@ namespace school
             }
         }
 
+        // Загрузка (из БД) таблицы домашнего задания.
         private void LoadHomeworkGrid()
         {
             try
@@ -659,15 +801,12 @@ namespace school
                 else
                     homeworkList = _homeworkController.GetHomeworkForClassPeriod((int)UserController.CurrentUser.ClassID, startDate, endDate);
 
-                // ✅ 1. ПОЛНАЯ ОЧИСТКА
                 dataGridViewHomework.DataSource = null;
                 dataGridViewHomework.Columns.Clear();
                 dataGridViewHomework.Rows.Clear();
 
-                // ✅ 2. СНАЧАЛА СОЗДАЕМ СТОЛБЦЫ
                 SetupHomeworkGrid();
 
-                // ✅ 3. ПОТОМ добавляем СТРОКИ
                 foreach (var hw in homeworkList)
                 {
                     dataGridViewHomework.Rows.Add(
@@ -688,6 +827,7 @@ namespace school
             }
         }
 
+        // Подготовка таблицы для домашнего задания
         private void SetupHomeworkGrid()
         {
             dataGridViewHomework.Columns.Clear();
@@ -718,6 +858,7 @@ namespace school
             dataGridViewHomework.RowHeadersVisible = false;
         }
 
+        // Загрузка оценок из БД
         private void LoadGradesGrid()
         {
             try
@@ -768,6 +909,7 @@ namespace school
             }
         }
 
+        // Подготовка таблицы для оценок
         private void SetupGradesGrid()
         {
             dataGridViewGrades.Columns.Clear();
@@ -807,6 +949,7 @@ namespace school
             dataGridViewGrades.RowHeadersVisible = false;
         }
 
+        // Подготовка статистики
         private void LoadStatisticsGrid()
         {
             // TODO: Statistics

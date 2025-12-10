@@ -39,7 +39,7 @@ namespace school.Models
         public string FullName { get; set; } = "";
 
         [Required]
-        public int PermissionID { get; set; }  // ✅ FK вместо Role
+        public int PermissionID { get; set; }
 
         [StringLength(50)]
         public string PermissionName { get; set; } = ""; // "Обычный учитель", "Ученик" и т.д.

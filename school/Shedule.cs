@@ -215,6 +215,116 @@ namespace school
         }
 
         /// <summary>
+        /// Возвращает расписание для конкретного учителя/директора.
+        /// Директор (PermissionID = 3) видит ВСЁ расписание.
+        /// Учитель видит только свои уроки.
+        /// </summary>
+        /// <param name="teacherId">ID учителя/директора из Users.UserID</param>
+        /// <returns>Список ScheduleItem с полными данными</returns>
+        public List<ScheduleItem> GetScheduleForTeacher(int teacherId)
+        {
+            var result = new List<ScheduleItem>();
+
+            using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                connection.Open();
+
+                // 1. Получаем PermissionID пользователя (учитель=2, директор=3)
+                int permissionId = 0;
+                using (var cmdPerm = new SqlCommand(
+                    "SELECT PermissionID FROM Users WHERE UserID = @UserID", connection))
+                {
+                    cmdPerm.Parameters.AddWithValue("@UserID", teacherId);
+                    var permObj = cmdPerm.ExecuteScalar();
+                    permissionId = permObj == DBNull.Value || permObj == null ? 0 : Convert.ToInt32(permObj);
+                }
+
+                string sql;
+                SqlCommand cmd;
+
+                if (permissionId == 3) // Директор видит ВСЁ
+                {
+                    sql = @"
+                SELECT 
+                    s.ScheduleID, s.DayOfWeek, s.LessonNumber, s.ClassID, s.SubjectID, s.TeacherID, s.LessonTime,
+                    c.ClassName,
+                    sub.SubjectName,
+                    u.FullName AS TeacherName
+                FROM Schedule s
+                INNER JOIN Classes c ON s.ClassID = c.ClassID
+                INNER JOIN Subjects sub ON s.SubjectID = sub.SubjectID
+                INNER JOIN Users u ON s.TeacherID = u.UserID
+                ORDER BY c.ClassName, s.DayOfWeek, s.LessonNumber";
+
+                    cmd = new SqlCommand(sql, connection);
+                }
+                else // Учитель видит только свои уроки
+                {
+                    sql = @"
+                SELECT 
+                    s.ScheduleID, s.DayOfWeek, s.LessonNumber, s.ClassID, s.SubjectID, s.TeacherID, s.LessonTime,
+                    c.ClassName,
+                    sub.SubjectName,
+                    u.FullName AS TeacherName
+                FROM Schedule s
+                INNER JOIN Classes c ON s.ClassID = c.ClassID
+                INNER JOIN Subjects sub ON s.SubjectID = sub.SubjectID
+                INNER JOIN Users u ON s.TeacherID = u.UserID
+                WHERE s.TeacherID = @TeacherID
+                ORDER BY s.DayOfWeek, s.LessonNumber, c.ClassName";
+
+                    cmd = new SqlCommand(sql, connection);
+                    cmd.Parameters.AddWithValue("@TeacherID", teacherId);
+                }
+
+                using (cmd)
+                using (var reader = cmd.ExecuteReader())
+                {
+                    // Получаем ordinals один раз для производительности и безопасности
+                    int ordScheduleID = reader.GetOrdinal("ScheduleID");
+                    int ordDayOfWeek = reader.GetOrdinal("DayOfWeek");
+                    int ordLessonNumber = reader.GetOrdinal("LessonNumber");
+                    int ordClassID = reader.GetOrdinal("ClassID");
+                    int ordClassName = reader.GetOrdinal("ClassName");
+                    int ordSubjectID = reader.GetOrdinal("SubjectID");
+                    int ordSubjectName = reader.GetOrdinal("SubjectName");
+                    int ordTeacherID = reader.GetOrdinal("TeacherID");
+                    int ordTeacherName = reader.GetOrdinal("TeacherName");
+                    int ordLessonTime = reader.GetOrdinal("LessonTime");
+
+                    while (reader.Read())
+                    {
+                        try
+                        {
+                            var item = new ScheduleItem
+                            {
+                                ScheduleID = reader.IsDBNull(ordScheduleID) ? 0 : reader.GetInt32(ordScheduleID),
+                                DayOfWeek = reader.IsDBNull(ordDayOfWeek) ? (byte)1 : reader.GetByte(ordDayOfWeek),
+                                LessonNumber = reader.IsDBNull(ordLessonNumber) ? (byte)1 : reader.GetByte(ordLessonNumber),
+                                LessonTime = reader.IsDBNull(ordLessonTime) ? (TimeSpan?)null : reader.GetTimeSpan(ordLessonTime),
+                                ClassID = reader.IsDBNull(ordClassID) ? 0 : reader.GetInt32(ordClassID),
+                                ClassName = reader.IsDBNull(ordClassName) ? "" : reader.GetString(ordClassName),
+                                SubjectID = reader.IsDBNull(ordSubjectID) ? 0 : reader.GetInt32(ordSubjectID),
+                                SubjectName = reader.IsDBNull(ordSubjectName) ? "" : reader.GetString(ordSubjectName),
+                                TeacherID = reader.IsDBNull(ordTeacherID) ? 0 : reader.GetInt32(ordTeacherID),
+                                TeacherName = reader.IsDBNull(ordTeacherName) ? "" : reader.GetString(ordTeacherName)
+                            };
+
+                            result.Add(item);
+                        }
+                        catch (Exception exRow)
+                        {
+                            // Логирование ошибки чтения строки, но не прерываем весь цикл
+                            FileLogger.logger.Error("GetScheduleForTeacher: ошибка парсинга записи расписания", exRow);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Удаляет урок расписания по ScheduleID
         /// </summary>
         public void DeleteSchedulePartById(int scheduleId)
