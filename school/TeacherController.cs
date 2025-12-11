@@ -1,4 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
+using RedSqlConnector;
+using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
@@ -275,6 +277,16 @@ namespace school
         public User GetTeacherByName(string teacherName)
         {
             return GetUserByNameAndPermissions(teacherName, new int[] { 2 });
+        }
+
+        public List<User> GetAllTeachers()
+        {
+            return UserController._userController.GetAllOfPredicate("u.PermissionID >= 2");
+        }
+
+        public List<User> GetAllStudents()
+        {
+            return UserController._userController.GetAllOfPredicate("u.PermissionID <= 1");
         }
 
         /// <summary>

@@ -16,6 +16,19 @@ namespace school
     {
         public static bool IsLoggedIn { get; private set; }
 
+        // Существующие записи для тестов
+//        7	Борисова Дарья  hashed_pass8 Ученик	5А
+//      8	Васильев Максим hashed_pass9 Ученик	5Б
+//      9	Григорьева Елена    hashed_pass10 Ученик	6А
+//      10	Дмитриев Сергей hashed_pass11 Ученик	7А
+//      11	Егорова Катя    hashed_pass12 Ученик	7Б
+//      6	Кузнецова Виктория  pass9a1 Ученик	5А
+//      4	Козлова Мария Ивановна hashed_pass4    Учитель	6Б
+//      2	Петрова Анна Сергеевна hashed_pass2    Учитель	5Б
+//      3	Сидоров Петр Петрович hashed_pass3    Учитель	6А
+//      5	Смирнова Ольга Васильевна hashed_pass5    Учитель	7А
+//      1	Иванов Иван Иванович hashed_pass1    Директор	5А
+
         public LoginForm()
         {
             InitializeComponent();
@@ -29,16 +42,14 @@ namespace school
             string login = txtLogin.Text.Trim();
             string password = txtPassword.Text;
 
-            // ✅ Валидация ввода
             if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
             {
-                MessageBox.Show("[translate:Введите логин и пароль!]", "[translate:Ошибка]",
+                MessageBox.Show("Введите логин и пароль!", "Ошибка",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtLogin.Focus();
                 return;
             }
 
-            // ✅ Аутентификация через UserController
             Cursor = Cursors.WaitCursor;
             try
             {
@@ -46,22 +57,19 @@ namespace school
 
                 if (user != null)
                 {
-                    // ✅ УСПЕШНЫЙ ВХОД
                     UserController.CurrentUser = user;
                     IsLoggedIn = true;
 
-                    MessageBox.Show($"[translate:Добро пожаловать, {user.FullName}!]",
-                        "[translate:Успешный вход]", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"Добро пожаловать, {user.FullName}!",
+                        "Успешный вход", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                    // ✅ Открываем главную форму
                     Form1 mainForm = new Form1();
                     mainForm.Show();
                     this.Hide();
                 }
                 else
                 {
-                    // ❌ НЕВЕРНЫЕ ДАННЫЕ
-                    MessageBox.Show("[translate:Неверный логин или пароль!]", "[translate:Ошибка входа]",
+                    MessageBox.Show("Неверный логин или пароль!", "Ошибка входа",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     txtPassword.Clear();
                     txtLogin.SelectAll();
@@ -70,9 +78,8 @@ namespace school
             }
             catch (Exception ex)
             {
-                // ❌ ОШИБКА БД
-                MessageBox.Show($"[translate:Ошибка подключения к базе данных: {ex.Message}]",
-                    "[translate:Ошибка]", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Ошибка подключения к базе данных: {ex.Message}",
+                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -89,8 +96,8 @@ namespace school
         {
             if (e.CloseReason == CloseReason.UserClosing && !IsLoggedIn)
             {
-                DialogResult result = MessageBox.Show("[translate:Выйти из приложения?]",
-                    "[translate:Подтверждение]", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult result = MessageBox.Show("Выйти из приложения?",
+                    "Подтверждение", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (result == DialogResult.No)
                 {
@@ -106,7 +113,7 @@ namespace school
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            txtLogin.Focus(); // ✅ Фокус на логин при запуске
+            txtLogin.Focus();
         }
     }
 }

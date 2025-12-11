@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,74 @@ namespace school
 {
     public class SheduleController
     {
+        // ✅ КОЛЛЕКЦИЯ ИЗМЕНЕНИЙ РАСПИСАНИЯ
+        public class ScheduleChange
+        {
+            public string Action { get; set; } // "EDIT", "ADD", "DELETE"
+            public ScheduleItem Schedule { get; set; } = new ScheduleItem();
+        }
+
         public static SheduleController _controller = new SheduleController();
+
+        // ✅ КОЛЛЕКЦИЯ ИЗМЕНЕНИЙ РАСПИСАНИЯ
+        private List<ScheduleChange> pendingChanges = new List<ScheduleChange>();
+
+        /// <summary>
+        /// Добавляет изменение расписания в очередь
+        /// </summary>
+        public void AddScheduleChange(string action, ScheduleItem schedule)
+        {
+            if (UserController.CurrentUser.PermissionID < 3) return; // Только директор
+
+            pendingChanges.Add(new ScheduleChange
+            {
+                Action = action,
+                Schedule = schedule
+            });
+        }
+
+        /// <summary>
+        /// Выполняет все изменения расписания и очищает очередь
+        /// </summary>
+        public int CommitScheduleChanges()
+        {
+            if (pendingChanges.Count == 0) return 0;
+
+            int processed = 0;
+            try
+            {
+                foreach (var change in pendingChanges)
+                {
+                    switch (change.Action.ToUpper())
+                    {
+                        case "EDIT":
+                        case "ADD":
+                            int resultId = InsertOrUpdateSchedulePart(change.Schedule);
+                            change.Schedule.ScheduleID = resultId;
+                            processed++;
+                            break;
+                        case "DELETE":
+                            if (change.Schedule.ScheduleID > 0)
+                            {
+                                DeleteSchedulePartById(change.Schedule.ScheduleID);
+                                processed++;
+                            }
+                            break;
+                    }
+                }
+                pendingChanges.Clear();
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"Commit schedule changes error: {ex.Message}", ex);
+            }
+            return processed;
+        }
+
+        /// <summary>
+        /// Количество ожидающих изменений расписания
+        /// </summary>
+        public int PendingChangesCount => pendingChanges.Count;
 
         /// <summary>
         /// [translate:Получение полного расписания класса (вся неделя)]
@@ -171,7 +239,6 @@ namespace school
 
                 if (existingId != null)
                 {
-                    // ✅ ОБНОВИТЬ существующий
                     SqlCommand updateCmd = new SqlCommand(@"
                 UPDATE Schedule SET 
                     SubjectID = @SubjectID, 
@@ -190,7 +257,6 @@ namespace school
                 }
                 else
                 {
-                    // ✅ НОВАЯ СТРОКА: ScheduleID — identity, генерируется БД
                     SqlCommand insertCmd = new SqlCommand(@"
                 INSERT INTO Schedule (DayOfWeek, LessonNumber, ClassID, SubjectID, TeacherID, LessonTime)
                 OUTPUT INSERTED.ScheduleID

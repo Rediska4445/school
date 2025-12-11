@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using System.ComponentModel.DataAnnotations;
 using school.Models;
 using System.Data;
+using System.Collections.Generic;
 
 namespace school.Controllers
 {
@@ -57,6 +58,64 @@ namespace school.Controllers
                     int rowsAffected = cmd.ExecuteNonQuery();
                     return rowsAffected > 0;
                 }
+            }
+        }
+
+        public List<User> GetAllOfPredicate(string whereCondition)
+        {
+            var users = new List<User>();
+
+            try
+            {
+                string sql = $@"
+            SELECT 
+                u.UserID, 
+                u.FullName, 
+                u.PermissionID, 
+                p.PermissionName, 
+                u.ClassID,
+                c.ClassName  -- ✅ Добавлено название класса
+            FROM Users u
+            INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
+            LEFT JOIN Classes c ON u.ClassID = c.ClassID  -- ✅ LEFT JOIN для классов
+            WHERE {whereCondition}
+            ORDER BY u.FullName";
+
+                using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int? classId = reader.IsDBNull(4) ? (int?)null : reader.GetInt32(4);
+                            string className = reader.IsDBNull(5) ? null : reader.GetString(5);  // ✅ Индекс 5 = ClassName
+
+                            var user = new User
+                            {
+                                UserID = reader.GetInt32(0),
+                                FullName = reader.GetString(1),
+                                PermissionID = reader.GetInt32(2),
+                                PermissionName = reader.GetString(3),
+                                ClassID = classId,
+                                Class = className != null ? new Class
+                                {
+                                    ClassID = classId ?? 0,
+                                    ClassName = className
+                                } : null 
+                            };
+
+                            users.Add(user);
+                        }
+                    }
+                }
+
+                return users;
+            }
+            catch (Exception ex)
+            {
+                return new List<User>();
             }
         }
 

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 
 namespace school
 {
-
     public class GradesController
     {
         private readonly string _connectionString;

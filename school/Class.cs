@@ -142,4 +142,20 @@ namespace school.Models
             }
         }
     }
+
+    public class Event
+    {
+        public int EventID { get; set; }
+
+        [Required]
+        [StringLength(200)]
+        public string EventName { get; set; } = "";
+
+        [Required]
+        public DateTime EventTime { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string Location { get; set; } = "";
+    }
 }
