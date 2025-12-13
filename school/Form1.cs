@@ -51,18 +51,49 @@ namespace school
         {
             if (UserController.CurrentUser.PermissionID == 1) // Только ученик
             {
+                // Статистика 
+                // У ученика прав мало, обязанностей дохуя, поэтому удалить вкладку с статистикой класса
                 tabControlStatistic.TabPages.RemoveByKey("tabPageClass");
-
                 tabControlStatistic.SelectedTab = tabControlStatistic.TabPages["tabPersonalStats"];
 
-                SetupPersonalStatisticsGrid();
+                // Визуальная подготовка статистика
+                SetupStatisticsGrid(dataGridViewPersonalStatistics);
+
+                // Удалить отчеты нахуй
+                tabControl.TabPages.RemoveByKey("tabPageReports");
+            }
+            // Учитель может смотреть статистику своего класса.
+            // Директор может менять класс с помощью comboBox.
+            else if (UserController.CurrentUser.PermissionID >= 2)
+            {
+                tabControlStatistic.TabPages.RemoveByKey("tabPagePersonal");
+
+                dataGridViewClassStatistics.SelectionChanged += dataGridViewClassStatistics_SelectionChanged;
+
+                SetupStatisticsGrid(dataGridViewClassStatistics);
+
+                if (UserController.CurrentUser.PermissionID >= 3)
+                {
+                    InitializeScheduleClassCombo();
+                }
             }
         }
 
-        private void SetupPersonalStatisticsGrid()
-        {
-            var grid = dataGridViewPersonalStatistics;
 
+        // Слушатель выпадающего списка с классами для директора
+        private void ComboBoxStatisticsClass_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabControl.SelectedIndex != 3)
+                return;
+
+            if (directorComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                LoadStatisticsGrid();
+            }
+        }
+
+        private void SetupStatisticsGrid(DataGridView grid)
+        {
             grid.Columns.Clear();
             grid.Rows.Clear();
 
@@ -80,6 +111,130 @@ namespace school
             grid.Columns["colValue"].FillWeight = 40;
 
             FileLogger.logger.Info("✅ Таблица статистики Ключ|Значение подготовлена");
+        }
+
+        private void LoadStatisticsGrid()
+        {
+            if(UserController.CurrentUser.PermissionID == 1)
+            {
+                try
+                {
+                    DateTime startDate = dateTimePickerPersonalStatisticsBefore.Value;
+                    DateTime endDate = dateTimePickerPersonalStatisticsAfter.Value;
+
+                    FileLogger.logger.Info($"Загрузка статистики для {UserController.CurrentUser.FullName}: {startDate:dd.MM} - {endDate:dd.MM}");
+
+                    var stats = StatisticsController._controller.GetStudentStatistics(
+                        UserController.CurrentUser);
+
+                    dataGridViewPersonalStatistics.Rows.Clear();
+                    foreach (var kvp in stats)
+                    {
+                        dataGridViewPersonalStatistics.Rows.Add(kvp.Key, kvp.Value);
+                    }
+
+                    labelStatisticsSummary.Text = $"Статистика за {startDate:dd.MM.yyyy} - {endDate:dd.MM.yyyy} ({stats.Count} показателей)";
+
+                    FileLogger.logger.Info($"✅ Загружено {stats.Count} показателей статистики");
+                }
+                catch (Exception ex)
+                {
+                    FileLogger.logger.Error($"Ошибка загрузки статистики: {ex.Message}");
+                    dataGridViewPersonalStatistics.Rows.Clear();
+                    dataGridViewPersonalStatistics.Rows.Add("Ошибка", ex.Message);
+                    labelStatisticsSummary.Text = "Ошибка загрузки статистики";
+                }
+            }
+            else if (UserController.CurrentUser.PermissionID >= 2) // Учитель
+            {
+                LoadStatisticsGrid(UserController.CurrentUser.Class);
+
+                if (UserController.CurrentUser.PermissionID >= 3)
+                {
+                    Class clzz = new Class();
+                    clzz.ClassID = ((ComboBoxItem) directorComboBox.SelectedItem).ClassID;
+
+                    LoadStatisticsGrid(clzz);
+                }
+            }
+        }
+
+        private void LoadStatisticsGrid(Class classId)
+        {
+            dataGridViewClassStatistics.Rows.Clear();
+            dataGridViewClassStatistics1.Rows.Clear();
+            dataGridViewStatisticsClass2.Rows.Clear();
+
+            var students = TeacherController._controller.GetStudentsByClass(classId);
+
+            foreach (User student in students)
+            {
+                int rowIndex = dataGridViewClassStatistics.Rows.Add();
+                var row = dataGridViewClassStatistics.Rows[rowIndex];
+
+                row.Cells["colKey"].Value = student.UserID;
+                row.Cells["colValue"].Value = student.FullName;
+
+                dataGridViewClassStatistics.Rows[rowIndex].Tag = student;
+            }
+
+            var stats = StatisticsController._controller.GetClassStatisticsFull(classId);
+
+            dataGridViewStatisticsClass2.Rows.Clear();
+            dataGridViewStatisticsClass2.Columns.Clear();
+
+            dataGridViewStatisticsClass2.Columns.Add("StatKey", "Предмет");
+            dataGridViewStatisticsClass2.Columns.Add("StudentsCount", "Учеников в классе");
+            dataGridViewStatisticsClass2.Columns.Add("AverageGrade", "Средний");
+            dataGridViewStatisticsClass2.Columns.Add("TotalGrades", "Оценок");
+            dataGridViewStatisticsClass2.Columns.Add("MinGrade", "Мин");
+            dataGridViewStatisticsClass2.Columns.Add("MaxGrade", "Макс");
+
+            foreach (var kvp in stats)
+            {
+                dataGridViewStatisticsClass2.Rows.Add(
+                    kvp.Key,
+                    kvp.Value[0],
+                    kvp.Value[1],
+                    kvp.Value[2],
+                    kvp.Value[3],
+                    kvp.Value[4]
+                );
+            }
+        }
+
+        private void dataGridViewClassStatistics_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dataGridViewClassStatistics.SelectedRows.Count == 0) return;
+
+            DataGridViewRow selectedRow = dataGridViewClassStatistics.SelectedRows[0];
+            User selectedStudent = (User) selectedRow.Tag; 
+
+            if (selectedStudent == null)
+                return;
+
+            FileLogger.logger.Info($"Выбран ученик: {selectedStudent.FullName} (ID: {selectedStudent.UserID})");
+
+            var statistics = StatisticsController._controller.GetStudentStatistics(selectedStudent);
+
+            FillStatisticsGrid(statistics);
+        }
+
+        private void FillStatisticsGrid(Dictionary<string, string> statistics)
+        {
+            dataGridViewClassStatistics1.Rows.Clear();
+
+            // Создаем колонки если нет
+            if (dataGridViewClassStatistics1.Columns.Count == 0)
+            {
+                dataGridViewClassStatistics1.Columns.Add("Key", "Показатель");
+                dataGridViewClassStatistics1.Columns.Add("Value", "Значение");
+            }
+
+            foreach (var stat in statistics)
+            {
+                dataGridViewClassStatistics1.Rows.Add(stat.Key, stat.Value);
+            }
         }
 
         // Проверка на пустые ячейки в строке таблицы оценок.
@@ -480,16 +635,10 @@ namespace school
             return days.TryGetValue(dayName, out byte num) ? num : (byte)1;
         }
 
-        // Инициализация выпадающего списка с классами для расписания.
+        // Инициализация выпадающего списка с классами.
         private void InitializeScheduleClassCombo()
         {
-            bool isDirector = UserController.CurrentUser.PermissionID == 3;
-
-            if (directorComboBox != null)
-            {
-                directorComboBox.Dispose();
-                directorComboBox = null;
-            }
+            bool isDirector = UserController.CurrentUser.PermissionID >= 3;
 
             if (isDirector)
             {
@@ -510,16 +659,25 @@ namespace school
                 }
 
                 if (directorComboBox.Items.Count > 0)
-                    directorComboBox.SelectedIndex = 0;
+                    directorComboBox.SelectedIndex = (int) (UserController.CurrentUser.ClassID == null ? 0 : UserController.CurrentUser.ClassID);
 
                 directorComboBox.SelectedIndexChanged += ComboBoxScheduleClass_SelectedIndexChanged;
+                directorComboBox.SelectedIndexChanged += ComboBoxStatisticsClass_SelectedIndexChanged;
+
                 this.Controls.Add(directorComboBox);
                 directorComboBox.BringToFront();
-                sheduleGridView.Top = 45;
             }
-            else
+        }
+
+        private void InitializeSubjectsCombo()
+        {
+            var classes = ClassController._controller.GetAllClasses();
+            comboBoxSubjects.Items.Clear();
+
+            foreach (var cls in classes)
             {
-                sheduleGridView.Top = 10;
+                var item = new ComboBoxItem { Text = cls.ClassName, ClassID = cls.ClassID };
+                comboBoxSubjects.Items.Add(item);
             }
         }
 
@@ -570,7 +728,6 @@ namespace school
                     return;
                 }
 
-                // Парсим текущую строку грида
                 int scheduleId = int.TryParse(row.Cells[0].Value?.ToString() ?? "0", out int id) ? id : 0;
                 byte dayOfWeek = GetDayNumber(dayText);
                 byte lessonNumber = byte.TryParse(lessonText, out byte ln) ? ln : (byte)1;
@@ -587,7 +744,6 @@ namespace school
                 int classId = GetCurrentClassId();
                 FileLogger.logger.Debug($"🔢 Парсинг: ID={scheduleId}, День={dayOfWeek}, Урок={lessonNumber}, Класс={classId}, Время={lessonTime}");
 
-                // Получаем ID предмета и учителя
                 int subjectId = SubjectController._controller.GetSubjectIdByName(subjectName);
                 var teacher = TeacherController._controller.GetTeacherOrDirectorByName(teacherName);
                 int teacherId = teacher?.UserID ?? 0;
@@ -601,7 +757,6 @@ namespace school
                     return;
                 }
 
-                // ✅ Создаём объект для контроллера
                 var schedule = new ScheduleItem
                 {
                     ScheduleID = scheduleId,
@@ -615,7 +770,6 @@ namespace school
 
                 FileLogger.logger.Info($"➕ ScheduleItem готов: {schedule.ScheduleID} | {schedule.DayOfWeek} | {schedule.LessonNumber} | {schedule.SubjectID}/{schedule.TeacherID}");
 
-                // ✅ Добавляем в очередь контроллера ТОЛЬКО при полной строке
                 string action = scheduleId > 0 ? "EDIT" : "ADD";
 
                 FileLogger.logger.Info($"📤 ДО AddScheduleChange: PendingCount={SheduleController._controller.PendingChangesCount}");
@@ -631,7 +785,6 @@ namespace school
                 MessageBox.Show($"❌ Ошибка обработки строки: {ex.Message}");
             }
         }
-
 
         // Слушатель изменений (удаление) в расписании.
         // Меняет только флаг.
@@ -883,22 +1036,10 @@ namespace school
             dataGridViewGrades.RowHeadersVisible = false;
         }
 
-        // Подготовка статистики
-        private void LoadStatisticsGrid()
-        {
-            // TODO: Statistics
-        }
-
         private void dateTimePickerHomework_ValueChanged(object sender, EventArgs e)
         {
             if (tabControl.SelectedIndex == 0)
                 LoadHomeworkGrid();
-        }
-
-        private void dateTimePickerStatistics_ValueChanged(object sender, EventArgs e)
-        {
-            if (tabControl.SelectedIndex == 2)
-                LoadStatisticsGrid();
         }
 
         private void dateTimePickerHomework_ValueChanged_1(object sender, EventArgs e)

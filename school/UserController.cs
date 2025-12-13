@@ -246,9 +246,11 @@ namespace school.Controllers
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-            SELECT u.UserID, u.FullName, u.PermissionID, p.PermissionName, u.ClassID 
+            SELECT u.UserID, u.FullName, u.PermissionID, p.PermissionName, u.ClassID,
+                   c.ClassID AS Class_ClassID, c.ClassName  -- ✅ ДОБАВЛЯЕМ КЛАСС
             FROM Users u 
-            LEFT JOIN Permissions p ON u.PermissionID = p.PermissionID 
+            LEFT JOIN Permissions p ON u.PermissionID = p.PermissionID
+            LEFT JOIN Classes c ON u.ClassID = c.ClassID  -- ✅ JOIN с классами
             WHERE u.FullName = @Login AND PasswordHash = @Password", conn))
                 {
                     cmd.Parameters.AddWithValue("@Login", login);
@@ -260,14 +262,23 @@ namespace school.Controllers
                         {
                             User user = new User
                             {
-                                UserID = reader.GetInt32(0),           // ✅ Индекс 0
-                                FullName = reader.GetString(1),        // ✅ Индекс 1
-                                PermissionID = reader.GetInt32(2),     // ✅ Индекс 2
-                                PermissionName = reader.IsDBNull(3) ?  // ✅ Индекс 3
-                                    "Неизвестно" : reader.GetString(3)
+                                UserID = reader.GetInt32(0),
+                                FullName = reader.GetString(1),
+                                PermissionID = reader.GetInt32(2),
+                                PermissionName = reader.IsDBNull(3) ? "Неизвестно" : reader.GetString(3)
                             };
 
-                            user.ClassID = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4);  // ✅ C# 7.3
+                            user.ClassID = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4);
+
+                            if (!reader.IsDBNull(5) && !reader.IsDBNull(6))
+                            {
+                                user.Class = new Class
+                                {
+                                    ClassID = reader.GetInt32(5),  // Class_ClassID
+                                    ClassName = reader.GetString(6)
+                                };
+                            }
+
                             return user;
                         }
                     }

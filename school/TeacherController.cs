@@ -21,6 +21,93 @@ namespace school
             _connectionString = connectionString;
         }
 
+        public List<User> GetStudentsByClass(Class classObj)
+        {
+            FileLogger.logger.Info("=== GetStudentsByClass НАЧАЛО ===");
+
+            // ✅ Проверки (без изменений)
+            FileLogger.logger.Info($"ClassID: {classObj?.ClassID ?? 0}");
+
+            if (classObj == null)
+            {
+                FileLogger.logger.Error("classObj = NULL!");
+                return new List<User>();
+            }
+
+            if (classObj?.ClassID == 0)
+            {
+                FileLogger.logger.Error("ClassID = 0 или null!");
+                return new List<User>();
+            }
+
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                FileLogger.logger.Error("ConnectionString пустой!");
+                return new List<User>();
+            }
+
+            var students = new List<User>();
+
+            try
+            {
+                FileLogger.logger.Info("Открываем соединение...");
+                var connection = new SqlConnection(_connectionString);
+                var command = new SqlCommand(@"
+            SELECT 
+                u.UserID, u.FullName, u.PermissionID, u.ClassID, p.PermissionName,
+                c.ClassID AS Class_ClassID, c.ClassName  -- ✅ ПОЛНЫЙ КЛАСС
+            FROM Users u
+            INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
+            INNER JOIN Classes c ON u.ClassID = c.ClassID
+            WHERE u.ClassID = @ClassID
+              AND p.PermissionName = N'Ученик'
+            ORDER BY u.FullName", connection);
+
+                command.Parameters.AddWithValue("@ClassID", classObj.ClassID);
+
+                connection.Open();
+                FileLogger.logger.Info("Соединение открыто. Читаем данные...");
+
+                var reader = command.ExecuteReader();
+                int rowCount = 0;
+
+                while (reader.Read())
+                {
+                    rowCount++;
+                    FileLogger.logger.Debug($"Строка {rowCount}: {reader.GetString(1)} (ID:{reader.GetInt32(0)})");
+
+                    var student = new User
+                    {
+                        UserID = reader.GetInt32(0),
+                        FullName = reader.GetString(1),
+                        PermissionID = reader.GetInt32(2),
+                        ClassID = reader.GetInt32(3),
+                        PermissionName = reader.GetString(4),
+
+                        // ✅ ПОЛНЫЙ CLASS объект
+                        Class = new Class
+                        {
+                            ClassID = reader.GetInt32(5),     // Class_ClassID
+                            ClassName = reader.GetString(6)   // ClassName
+                        }
+                    };
+                    students.Add(student);
+                }
+
+                FileLogger.logger.Info($"Найдено учеников: {students.Count}");
+                reader.Close();
+                connection.Close();
+                FileLogger.logger.Info("=== GetStudentsByClass КОНЕЦ ===");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"ИСКЛЮЧЕНИЕ: {ex.Message}");
+                FileLogger.logger.Error($"StackTrace: {ex.StackTrace}");
+            }
+
+            return students;
+        }
+
         /// <summary>
         /// Получает ВСЕ домашние задания, заданные учителем за период
         /// </summary>

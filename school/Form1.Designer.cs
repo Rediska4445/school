@@ -62,10 +62,9 @@ namespace school
             this.panelStatistics = new System.Windows.Forms.Panel();
             this.tabControlStatistic = new System.Windows.Forms.TabControl();
             this.tabPagePersonal = new System.Windows.Forms.TabPage();
-            this.label1 = new System.Windows.Forms.Label();
+            this.labelStatisticsSummary = new System.Windows.Forms.Label();
             this.dataGridViewPersonalStatistics = new System.Windows.Forms.DataGridView();
             this.tabPageClass = new System.Windows.Forms.TabPage();
-            this.dataGridViewClassStatistics1 = new System.Windows.Forms.DataGridView();
             this.dataGridViewClassStatistics = new System.Windows.Forms.DataGridView();
             this.tabPageEvents = new System.Windows.Forms.TabPage();
             this.dataGridViewEvents = new System.Windows.Forms.DataGridView();
@@ -79,6 +78,11 @@ namespace school
             this.dataGridViewStudents = new System.Windows.Forms.DataGridView();
             this.tabPageAttendance = new System.Windows.Forms.TabPage();
             this.tabPageReports = new System.Windows.Forms.TabPage();
+            this.dateTimePickerPersonalStatisticsAfter = new System.Windows.Forms.DateTimePicker();
+            this.dateTimePickerPersonalStatisticsBefore = new System.Windows.Forms.DateTimePicker();
+            this.dataGridViewClassStatistics1 = new System.Windows.Forms.DataGridView();
+            this.dataGridViewStatisticsClass2 = new System.Windows.Forms.DataGridView();
+            this.comboBoxSubjects = new System.Windows.Forms.ComboBox();
             this.panelTop.SuspendLayout();
             this.panelMain.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -109,7 +113,6 @@ namespace school
             this.tabPagePersonal.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewPersonalStatistics)).BeginInit();
             this.tabPageClass.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewClassStatistics1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewClassStatistics)).BeginInit();
             this.tabPageEvents.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewEvents)).BeginInit();
@@ -121,6 +124,8 @@ namespace school
             this.tabControl3.SuspendLayout();
             this.tabPage9.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStudents)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewClassStatistics1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStatisticsClass2)).BeginInit();
             this.SuspendLayout();
             // 
             // panelTop
@@ -130,7 +135,7 @@ namespace school
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelTop.Location = new System.Drawing.Point(0, 0);
             this.panelTop.Name = "panelTop";
-            this.panelTop.Size = new System.Drawing.Size(1189, 52);
+            this.panelTop.Size = new System.Drawing.Size(1205, 52);
             this.panelTop.TabIndex = 0;
             // 
             // labelRole
@@ -140,7 +145,7 @@ namespace school
             this.labelRole.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
             this.labelRole.Location = new System.Drawing.Point(12, 9);
             this.labelRole.Name = "labelRole";
-            this.labelRole.Size = new System.Drawing.Size(1164, 30);
+            this.labelRole.Size = new System.Drawing.Size(1180, 30);
             this.labelRole.TabIndex = 0;
             this.labelRole.Text = "Образование";
             this.labelRole.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -151,7 +156,7 @@ namespace school
             this.panelMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelMain.Location = new System.Drawing.Point(0, 52);
             this.panelMain.Name = "panelMain";
-            this.panelMain.Size = new System.Drawing.Size(1189, 828);
+            this.panelMain.Size = new System.Drawing.Size(1205, 828);
             this.panelMain.TabIndex = 1;
             // 
             // tabControl
@@ -174,7 +179,7 @@ namespace school
             this.tabControl.Name = "tabControl";
             this.tabControl.Padding = new System.Drawing.Point(20, 3);
             this.tabControl.SelectedIndex = 0;
-            this.tabControl.Size = new System.Drawing.Size(1189, 828);
+            this.tabControl.Size = new System.Drawing.Size(1205, 828);
             this.tabControl.TabIndex = 0;
             this.tabControl.SelectedIndexChanged += new System.EventHandler(this.tabControl_SelectedIndexChanged);
             // 
@@ -519,7 +524,7 @@ namespace school
             this.tabStatistics.Location = new System.Drawing.Point(52, 4);
             this.tabStatistics.Name = "tabStatistics";
             this.tabStatistics.Padding = new System.Windows.Forms.Padding(9);
-            this.tabStatistics.Size = new System.Drawing.Size(1133, 820);
+            this.tabStatistics.Size = new System.Drawing.Size(1149, 820);
             this.tabStatistics.TabIndex = 2;
             this.tabStatistics.Text = "Статистика";
             this.tabStatistics.UseVisualStyleBackColor = true;
@@ -531,7 +536,7 @@ namespace school
             this.panelStatistics.Location = new System.Drawing.Point(9, 9);
             this.panelStatistics.Name = "panelStatistics";
             this.panelStatistics.Padding = new System.Windows.Forms.Padding(9);
-            this.panelStatistics.Size = new System.Drawing.Size(1115, 802);
+            this.panelStatistics.Size = new System.Drawing.Size(1131, 802);
             this.panelStatistics.TabIndex = 0;
             // 
             // tabControlStatistic
@@ -544,30 +549,32 @@ namespace school
             this.tabControlStatistic.Location = new System.Drawing.Point(7, 3);
             this.tabControlStatistic.Name = "tabControlStatistic";
             this.tabControlStatistic.SelectedIndex = 0;
-            this.tabControlStatistic.Size = new System.Drawing.Size(1100, 796);
+            this.tabControlStatistic.Size = new System.Drawing.Size(1116, 796);
             this.tabControlStatistic.TabIndex = 4;
             // 
             // tabPagePersonal
             // 
-            this.tabPagePersonal.Controls.Add(this.label1);
+            this.tabPagePersonal.Controls.Add(this.dateTimePickerPersonalStatisticsBefore);
+            this.tabPagePersonal.Controls.Add(this.dateTimePickerPersonalStatisticsAfter);
+            this.tabPagePersonal.Controls.Add(this.labelStatisticsSummary);
             this.tabPagePersonal.Controls.Add(this.dataGridViewPersonalStatistics);
             this.tabPagePersonal.Location = new System.Drawing.Point(4, 26);
             this.tabPagePersonal.Name = "tabPagePersonal";
             this.tabPagePersonal.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPagePersonal.Size = new System.Drawing.Size(1092, 766);
+            this.tabPagePersonal.Size = new System.Drawing.Size(1108, 766);
             this.tabPagePersonal.TabIndex = 0;
             this.tabPagePersonal.Text = "Личное";
             this.tabPagePersonal.UseVisualStyleBackColor = true;
             // 
-            // label1
+            // labelStatisticsSummary
             // 
-            this.label1.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(526, 744);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(45, 19);
-            this.label1.TabIndex = 2;
-            this.label1.Text = "label1";
+            this.labelStatisticsSummary.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.labelStatisticsSummary.AutoSize = true;
+            this.labelStatisticsSummary.Location = new System.Drawing.Point(538, 730);
+            this.labelStatisticsSummary.Name = "labelStatisticsSummary";
+            this.labelStatisticsSummary.Size = new System.Drawing.Size(45, 19);
+            this.labelStatisticsSummary.TabIndex = 2;
+            this.labelStatisticsSummary.Text = "label1";
             // 
             // dataGridViewPersonalStatistics
             // 
@@ -577,58 +584,40 @@ namespace school
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewPersonalStatistics.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewPersonalStatistics.Location = new System.Drawing.Point(6, 6);
+            this.dataGridViewPersonalStatistics.Location = new System.Drawing.Point(6, 39);
             this.dataGridViewPersonalStatistics.Name = "dataGridViewPersonalStatistics";
             this.dataGridViewPersonalStatistics.ReadOnly = true;
             this.dataGridViewPersonalStatistics.RowHeadersVisible = false;
             this.dataGridViewPersonalStatistics.RowTemplate.Height = 25;
             this.dataGridViewPersonalStatistics.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewPersonalStatistics.Size = new System.Drawing.Size(1080, 735);
+            this.dataGridViewPersonalStatistics.Size = new System.Drawing.Size(1096, 688);
             this.dataGridViewPersonalStatistics.TabIndex = 1;
             // 
             // tabPageClass
             // 
+            this.tabPageClass.Controls.Add(this.dataGridViewStatisticsClass2);
             this.tabPageClass.Controls.Add(this.dataGridViewClassStatistics1);
             this.tabPageClass.Controls.Add(this.dataGridViewClassStatistics);
             this.tabPageClass.Location = new System.Drawing.Point(4, 26);
             this.tabPageClass.Name = "tabPageClass";
-            this.tabPageClass.Size = new System.Drawing.Size(1092, 766);
+            this.tabPageClass.Size = new System.Drawing.Size(1108, 766);
             this.tabPageClass.TabIndex = 2;
             this.tabPageClass.Text = "Класс";
             this.tabPageClass.UseVisualStyleBackColor = true;
-            // 
-            // dataGridViewClassStatistics1
-            // 
-            this.dataGridViewClassStatistics1.AllowUserToAddRows = false;
-            this.dataGridViewClassStatistics1.AllowUserToDeleteRows = false;
-            this.dataGridViewClassStatistics1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.dataGridViewClassStatistics1.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewClassStatistics1.Location = new System.Drawing.Point(5, 404);
-            this.dataGridViewClassStatistics1.Name = "dataGridViewClassStatistics1";
-            this.dataGridViewClassStatistics1.ReadOnly = true;
-            this.dataGridViewClassStatistics1.RowHeadersVisible = false;
-            this.dataGridViewClassStatistics1.RowTemplate.Height = 25;
-            this.dataGridViewClassStatistics1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewClassStatistics1.Size = new System.Drawing.Size(1084, 361);
-            this.dataGridViewClassStatistics1.TabIndex = 3;
             // 
             // dataGridViewClassStatistics
             // 
             this.dataGridViewClassStatistics.AllowUserToAddRows = false;
             this.dataGridViewClassStatistics.AllowUserToDeleteRows = false;
-            this.dataGridViewClassStatistics.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dataGridViewClassStatistics.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.dataGridViewClassStatistics.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewClassStatistics.Location = new System.Drawing.Point(5, 3);
+            this.dataGridViewClassStatistics.Location = new System.Drawing.Point(3, 3);
             this.dataGridViewClassStatistics.Name = "dataGridViewClassStatistics";
             this.dataGridViewClassStatistics.ReadOnly = true;
             this.dataGridViewClassStatistics.RowHeadersVisible = false;
             this.dataGridViewClassStatistics.RowTemplate.Height = 25;
             this.dataGridViewClassStatistics.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewClassStatistics.Size = new System.Drawing.Size(1084, 399);
+            this.dataGridViewClassStatistics.Size = new System.Drawing.Size(547, 395);
             this.dataGridViewClassStatistics.TabIndex = 2;
             // 
             // tabPageEvents
@@ -637,7 +626,7 @@ namespace school
             this.tabPageEvents.Location = new System.Drawing.Point(52, 4);
             this.tabPageEvents.Name = "tabPageEvents";
             this.tabPageEvents.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageEvents.Size = new System.Drawing.Size(1133, 820);
+            this.tabPageEvents.Size = new System.Drawing.Size(1132, 820);
             this.tabPageEvents.TabIndex = 4;
             this.tabPageEvents.Text = "Мероприятия";
             this.tabPageEvents.UseVisualStyleBackColor = true;
@@ -656,16 +645,17 @@ namespace school
             this.dataGridViewEvents.RowHeadersVisible = false;
             this.dataGridViewEvents.RowTemplate.Height = 25;
             this.dataGridViewEvents.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewEvents.Size = new System.Drawing.Size(1142, 806);
+            this.dataGridViewEvents.Size = new System.Drawing.Size(1117, 806);
             this.dataGridViewEvents.TabIndex = 2;
             // 
             // tabPageSubjects
             // 
+            this.tabPageSubjects.Controls.Add(this.comboBoxSubjects);
             this.tabPageSubjects.Controls.Add(this.dataGridViewSubjects);
             this.tabPageSubjects.Location = new System.Drawing.Point(52, 4);
             this.tabPageSubjects.Name = "tabPageSubjects";
             this.tabPageSubjects.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageSubjects.Size = new System.Drawing.Size(1133, 820);
+            this.tabPageSubjects.Size = new System.Drawing.Size(1149, 820);
             this.tabPageSubjects.TabIndex = 5;
             this.tabPageSubjects.Text = "Предметы";
             this.tabPageSubjects.UseVisualStyleBackColor = true;
@@ -678,13 +668,13 @@ namespace school
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewSubjects.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewSubjects.Location = new System.Drawing.Point(3, 3);
+            this.dataGridViewSubjects.Location = new System.Drawing.Point(6, 32);
             this.dataGridViewSubjects.Name = "dataGridViewSubjects";
             this.dataGridViewSubjects.ReadOnly = true;
             this.dataGridViewSubjects.RowHeadersVisible = false;
             this.dataGridViewSubjects.RowTemplate.Height = 25;
             this.dataGridViewSubjects.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewSubjects.Size = new System.Drawing.Size(1146, 809);
+            this.dataGridViewSubjects.Size = new System.Drawing.Size(1134, 780);
             this.dataGridViewSubjects.TabIndex = 2;
             // 
             // tabPageTeachers
@@ -693,7 +683,7 @@ namespace school
             this.tabPageTeachers.Location = new System.Drawing.Point(52, 4);
             this.tabPageTeachers.Name = "tabPageTeachers";
             this.tabPageTeachers.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageTeachers.Size = new System.Drawing.Size(1133, 820);
+            this.tabPageTeachers.Size = new System.Drawing.Size(1132, 820);
             this.tabPageTeachers.TabIndex = 6;
             this.tabPageTeachers.Text = "Сотрудники";
             this.tabPageTeachers.UseVisualStyleBackColor = true;
@@ -721,7 +711,7 @@ namespace school
             this.tabPageStudents.Location = new System.Drawing.Point(52, 4);
             this.tabPageStudents.Name = "tabPageStudents";
             this.tabPageStudents.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageStudents.Size = new System.Drawing.Size(1133, 820);
+            this.tabPageStudents.Size = new System.Drawing.Size(1149, 820);
             this.tabPageStudents.TabIndex = 7;
             this.tabPageStudents.Text = "Ученики";
             this.tabPageStudents.UseVisualStyleBackColor = true;
@@ -735,7 +725,7 @@ namespace school
             this.tabControl3.Location = new System.Drawing.Point(6, 6);
             this.tabControl3.Name = "tabControl3";
             this.tabControl3.SelectedIndex = 0;
-            this.tabControl3.Size = new System.Drawing.Size(1142, 806);
+            this.tabControl3.Size = new System.Drawing.Size(1158, 806);
             this.tabControl3.TabIndex = 5;
             // 
             // tabPage9
@@ -744,7 +734,7 @@ namespace school
             this.tabPage9.Location = new System.Drawing.Point(4, 26);
             this.tabPage9.Name = "tabPage9";
             this.tabPage9.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage9.Size = new System.Drawing.Size(1134, 776);
+            this.tabPage9.Size = new System.Drawing.Size(1150, 776);
             this.tabPage9.TabIndex = 0;
             this.tabPage9.Text = "Класс";
             this.tabPage9.UseVisualStyleBackColor = true;
@@ -763,7 +753,7 @@ namespace school
             this.dataGridViewStudents.RowHeadersVisible = false;
             this.dataGridViewStudents.RowTemplate.Height = 25;
             this.dataGridViewStudents.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewStudents.Size = new System.Drawing.Size(1122, 764);
+            this.dataGridViewStudents.Size = new System.Drawing.Size(1124, 764);
             this.dataGridViewStudents.TabIndex = 2;
             // 
             // tabPageAttendance
@@ -784,11 +774,67 @@ namespace school
             this.tabPageReports.Text = "Отчеты";
             this.tabPageReports.UseVisualStyleBackColor = true;
             // 
+            // dateTimePickerPersonalStatisticsAfter
+            // 
+            this.dateTimePickerPersonalStatisticsAfter.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dateTimePickerPersonalStatisticsAfter.Location = new System.Drawing.Point(548, 8);
+            this.dateTimePickerPersonalStatisticsAfter.Name = "dateTimePickerPersonalStatisticsAfter";
+            this.dateTimePickerPersonalStatisticsAfter.Size = new System.Drawing.Size(554, 25);
+            this.dateTimePickerPersonalStatisticsAfter.TabIndex = 3;
+            // 
+            // dateTimePickerPersonalStatisticsBefore
+            // 
+            this.dateTimePickerPersonalStatisticsBefore.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dateTimePickerPersonalStatisticsBefore.Location = new System.Drawing.Point(6, 8);
+            this.dateTimePickerPersonalStatisticsBefore.Name = "dateTimePickerPersonalStatisticsBefore";
+            this.dateTimePickerPersonalStatisticsBefore.Size = new System.Drawing.Size(536, 25);
+            this.dateTimePickerPersonalStatisticsBefore.TabIndex = 4;
+            // 
+            // dataGridViewClassStatistics1
+            // 
+            this.dataGridViewClassStatistics1.AllowUserToAddRows = false;
+            this.dataGridViewClassStatistics1.AllowUserToDeleteRows = false;
+            this.dataGridViewClassStatistics1.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.dataGridViewClassStatistics1.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dataGridViewClassStatistics1.Location = new System.Drawing.Point(556, 3);
+            this.dataGridViewClassStatistics1.Name = "dataGridViewClassStatistics1";
+            this.dataGridViewClassStatistics1.ReadOnly = true;
+            this.dataGridViewClassStatistics1.RowHeadersVisible = false;
+            this.dataGridViewClassStatistics1.RowTemplate.Height = 25;
+            this.dataGridViewClassStatistics1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dataGridViewClassStatistics1.Size = new System.Drawing.Size(549, 395);
+            this.dataGridViewClassStatistics1.TabIndex = 3;
+            // 
+            // dataGridViewStatisticsClass2
+            // 
+            this.dataGridViewStatisticsClass2.AllowUserToAddRows = false;
+            this.dataGridViewStatisticsClass2.AllowUserToDeleteRows = false;
+            this.dataGridViewStatisticsClass2.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.dataGridViewStatisticsClass2.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dataGridViewStatisticsClass2.Location = new System.Drawing.Point(5, 404);
+            this.dataGridViewStatisticsClass2.Name = "dataGridViewStatisticsClass2";
+            this.dataGridViewStatisticsClass2.ReadOnly = true;
+            this.dataGridViewStatisticsClass2.RowHeadersVisible = false;
+            this.dataGridViewStatisticsClass2.RowTemplate.Height = 25;
+            this.dataGridViewStatisticsClass2.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dataGridViewStatisticsClass2.Size = new System.Drawing.Size(1100, 357);
+            this.dataGridViewStatisticsClass2.TabIndex = 4;
+            // 
+            // comboBoxSubjects
+            // 
+            this.comboBoxSubjects.FormattingEnabled = true;
+            this.comboBoxSubjects.Location = new System.Drawing.Point(6, 3);
+            this.comboBoxSubjects.Name = "comboBoxSubjects";
+            this.comboBoxSubjects.Size = new System.Drawing.Size(1134, 25);
+            this.comboBoxSubjects.TabIndex = 3;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1189, 880);
+            this.ClientSize = new System.Drawing.Size(1205, 880);
             this.Controls.Add(this.panelMain);
             this.Controls.Add(this.panelTop);
             this.Name = "Form1";
@@ -829,7 +875,6 @@ namespace school
             this.tabPagePersonal.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewPersonalStatistics)).EndInit();
             this.tabPageClass.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewClassStatistics1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewClassStatistics)).EndInit();
             this.tabPageEvents.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewEvents)).EndInit();
@@ -841,6 +886,8 @@ namespace school
             this.tabControl3.ResumeLayout(false);
             this.tabPage9.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStudents)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewClassStatistics1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewStatisticsClass2)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -879,7 +926,7 @@ namespace school
         private System.Windows.Forms.TabPage tabPageStudents;
         private System.Windows.Forms.TabControl tabControlStatistic;
         private System.Windows.Forms.TabPage tabPagePersonal;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label labelStatisticsSummary;
         private System.Windows.Forms.DataGridView dataGridViewPersonalStatistics;
         private System.Windows.Forms.TabPage tabPageClass;
         private System.Windows.Forms.DataGridView dataGridViewClassStatistics;
@@ -891,7 +938,11 @@ namespace school
         private System.Windows.Forms.TabPage tabPage9;
         private System.Windows.Forms.TabPage tabPageAttendance;
         private System.Windows.Forms.TabPage tabPageReports;
+        private System.Windows.Forms.DateTimePicker dateTimePickerPersonalStatisticsBefore;
+        private System.Windows.Forms.DateTimePicker dateTimePickerPersonalStatisticsAfter;
         private System.Windows.Forms.DataGridView dataGridViewClassStatistics1;
+        private System.Windows.Forms.DataGridView dataGridViewStatisticsClass2;
+        private System.Windows.Forms.ComboBox comboBoxSubjects;
     }
 }
 
