@@ -123,7 +123,6 @@ namespace school.Models
         public int TeacherID { get; set; }
         public string TeacherName { get; set; }
 
-        // ✅ Свойства для DataGridView (C# 7.3)
         public string DayOfWeekDisplay => GetDayName(DayOfWeek);
         public string LessonTimeDisplay => LessonTime?.ToString(@"hh\:mm") ?? "";
 
@@ -157,5 +156,37 @@ namespace school.Models
         [Required]
         [StringLength(100)]
         public string Location { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Таблица посещаемости (расширенная)
+    /// </summary>
+    public class Attendance
+    {
+        public int AttendanceID { get; set; }
+
+        [Required]
+        public DateTime AttendanceDate { get; set; }  // Дата урока
+
+        [Required]
+        public int UserID { get; set; }
+        public User Student { get; set; }  // Navigation property (ученик)
+
+        [Required]
+        public bool Present { get; set; } = true;  // Присутствовал (true=да, false=нет)
+
+        [Required]
+        public bool ExcuseReason { get; set; } = false;  // Уважительная причина (true=да, false=нет)
+
+        public DateTime? LessonDate { get; set; }  // Время урока (nullable value type)
+
+        [StringLength(200)]
+        public string Comment { get; set; } = "";  // ✅ string по умолчанию null-safe в C# 7.3
+
+        public string StudentNameDisplay => Student != null ? Student.FullName : "";
+        public string AttendanceDateDisplay => AttendanceDate.ToString("dd.MM.yyyy");
+        public string PresentDisplay => Present ? "Присутствует" : "Отсутствует";
+        public string ExcuseDisplay => ExcuseReason ? "Уважительная" : "Не уважительная";
+        public string StatusDisplay => Present ? "✓" : (ExcuseReason ? "⚠️" : "✗");
     }
 }

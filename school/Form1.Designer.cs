@@ -845,6 +845,9 @@ namespace school
             // 
             // tabControlAttendance
             // 
+            this.tabControlAttendance.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControlAttendance.Controls.Add(this.tabPage8);
             this.tabControlAttendance.Location = new System.Drawing.Point(3, 3);
             this.tabControlAttendance.Name = "tabControlAttendance";
@@ -876,9 +879,9 @@ namespace school
             // 
             // buttonPrintShedule
             // 
-            this.buttonPrintShedule.Location = new System.Drawing.Point(462, 6);
+            this.buttonPrintShedule.Location = new System.Drawing.Point(443, 6);
             this.buttonPrintShedule.Name = "buttonPrintShedule";
-            this.buttonPrintShedule.Size = new System.Drawing.Size(173, 38);
+            this.buttonPrintShedule.Size = new System.Drawing.Size(185, 38);
             this.buttonPrintShedule.TabIndex = 4;
             this.buttonPrintShedule.Text = "Печать";
             this.buttonPrintShedule.UseVisualStyleBackColor = true;

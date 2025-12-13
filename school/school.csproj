@@ -227,6 +227,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AtterdanceController.cs" />
     <Compile Include="Calendar.cs" />
     <Compile Include="Class.cs" />
     <Compile Include="ClassController.cs" />
