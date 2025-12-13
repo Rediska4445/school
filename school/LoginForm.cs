@@ -31,6 +31,8 @@ namespace school
 
         public LoginForm()
         {
+            Controller.sqlController.PrepareDatabase(Form1.CONNECTION_STRING);
+
             InitializeComponent();
 
             txtLogin.Text = "Иванов Иван Иванович";
