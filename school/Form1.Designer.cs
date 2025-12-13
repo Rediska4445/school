@@ -82,7 +82,7 @@ namespace school
             this.dateTimePickerPersonalStatisticsBefore = new System.Windows.Forms.DateTimePicker();
             this.dataGridViewClassStatistics1 = new System.Windows.Forms.DataGridView();
             this.dataGridViewStatisticsClass2 = new System.Windows.Forms.DataGridView();
-            this.comboBoxSubjects = new System.Windows.Forms.ComboBox();
+            this.exitBtnm = new System.Windows.Forms.Button();
             this.panelTop.SuspendLayout();
             this.panelMain.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -131,6 +131,7 @@ namespace school
             // panelTop
             // 
             this.panelTop.BackColor = System.Drawing.Color.LightSteelBlue;
+            this.panelTop.Controls.Add(this.exitBtnm);
             this.panelTop.Controls.Add(this.labelRole);
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelTop.Location = new System.Drawing.Point(0, 0);
@@ -189,7 +190,7 @@ namespace school
             this.tabHomework.Location = new System.Drawing.Point(52, 4);
             this.tabHomework.Name = "tabHomework";
             this.tabHomework.Padding = new System.Windows.Forms.Padding(9);
-            this.tabHomework.Size = new System.Drawing.Size(1133, 820);
+            this.tabHomework.Size = new System.Drawing.Size(1149, 820);
             this.tabHomework.TabIndex = 0;
             this.tabHomework.Text = "Д/З";
             this.tabHomework.UseVisualStyleBackColor = true;
@@ -201,7 +202,7 @@ namespace school
             this.panelHomework.Location = new System.Drawing.Point(9, 9);
             this.panelHomework.Name = "panelHomework";
             this.panelHomework.Padding = new System.Windows.Forms.Padding(9);
-            this.panelHomework.Size = new System.Drawing.Size(1115, 802);
+            this.panelHomework.Size = new System.Drawing.Size(1131, 802);
             this.panelHomework.TabIndex = 0;
             // 
             // homeworkTabControl
@@ -214,7 +215,7 @@ namespace school
             this.homeworkTabControl.Location = new System.Drawing.Point(3, 3);
             this.homeworkTabControl.Name = "homeworkTabControl";
             this.homeworkTabControl.SelectedIndex = 0;
-            this.homeworkTabControl.Size = new System.Drawing.Size(1100, 796);
+            this.homeworkTabControl.Size = new System.Drawing.Size(1116, 796);
             this.homeworkTabControl.TabIndex = 3;
             // 
             // tabPage2
@@ -225,7 +226,7 @@ namespace school
             this.tabPage2.Location = new System.Drawing.Point(4, 26);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(1092, 766);
+            this.tabPage2.Size = new System.Drawing.Size(1108, 766);
             this.tabPage2.TabIndex = 0;
             this.tabPage2.Text = "Период";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -237,7 +238,7 @@ namespace school
             this.dateTimePickerHomework.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dateTimePickerHomework.Location = new System.Drawing.Point(6, 6);
             this.dateTimePickerHomework.Name = "dateTimePickerHomework";
-            this.dateTimePickerHomework.Size = new System.Drawing.Size(1080, 25);
+            this.dateTimePickerHomework.Size = new System.Drawing.Size(1096, 25);
             this.dateTimePickerHomework.TabIndex = 0;
             this.dateTimePickerHomework.Value = new System.DateTime(2025, 12, 7, 14, 53, 7, 265);
             this.dateTimePickerHomework.ValueChanged += new System.EventHandler(this.dateTimePickerHomework_ValueChanged_1);
@@ -246,7 +247,7 @@ namespace school
             // 
             this.labelHomeworkPeriod.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.labelHomeworkPeriod.AutoSize = true;
-            this.labelHomeworkPeriod.Location = new System.Drawing.Point(525, 744);
+            this.labelHomeworkPeriod.Location = new System.Drawing.Point(533, 744);
             this.labelHomeworkPeriod.Name = "labelHomeworkPeriod";
             this.labelHomeworkPeriod.Size = new System.Drawing.Size(45, 19);
             this.labelHomeworkPeriod.TabIndex = 2;
@@ -266,7 +267,7 @@ namespace school
             this.dataGridViewHomework.RowHeadersVisible = false;
             this.dataGridViewHomework.RowTemplate.Height = 25;
             this.dataGridViewHomework.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewHomework.Size = new System.Drawing.Size(1080, 704);
+            this.dataGridViewHomework.Size = new System.Drawing.Size(1096, 704);
             this.dataGridViewHomework.TabIndex = 1;
             // 
             // tabPage3
@@ -650,7 +651,6 @@ namespace school
             // 
             // tabPageSubjects
             // 
-            this.tabPageSubjects.Controls.Add(this.comboBoxSubjects);
             this.tabPageSubjects.Controls.Add(this.dataGridViewSubjects);
             this.tabPageSubjects.Location = new System.Drawing.Point(52, 4);
             this.tabPageSubjects.Name = "tabPageSubjects";
@@ -668,13 +668,13 @@ namespace school
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewSubjects.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewSubjects.Location = new System.Drawing.Point(6, 32);
+            this.dataGridViewSubjects.Location = new System.Drawing.Point(6, 6);
             this.dataGridViewSubjects.Name = "dataGridViewSubjects";
             this.dataGridViewSubjects.ReadOnly = true;
             this.dataGridViewSubjects.RowHeadersVisible = false;
             this.dataGridViewSubjects.RowTemplate.Height = 25;
             this.dataGridViewSubjects.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewSubjects.Size = new System.Drawing.Size(1134, 780);
+            this.dataGridViewSubjects.Size = new System.Drawing.Size(1134, 806);
             this.dataGridViewSubjects.TabIndex = 2;
             // 
             // tabPageTeachers
@@ -776,8 +776,7 @@ namespace school
             // 
             // dateTimePickerPersonalStatisticsAfter
             // 
-            this.dateTimePickerPersonalStatisticsAfter.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dateTimePickerPersonalStatisticsAfter.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.dateTimePickerPersonalStatisticsAfter.Location = new System.Drawing.Point(548, 8);
             this.dateTimePickerPersonalStatisticsAfter.Name = "dateTimePickerPersonalStatisticsAfter";
             this.dateTimePickerPersonalStatisticsAfter.Size = new System.Drawing.Size(554, 25);
@@ -785,8 +784,7 @@ namespace school
             // 
             // dateTimePickerPersonalStatisticsBefore
             // 
-            this.dateTimePickerPersonalStatisticsBefore.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dateTimePickerPersonalStatisticsBefore.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.dateTimePickerPersonalStatisticsBefore.Location = new System.Drawing.Point(6, 8);
             this.dateTimePickerPersonalStatisticsBefore.Name = "dateTimePickerPersonalStatisticsBefore";
             this.dateTimePickerPersonalStatisticsBefore.Size = new System.Drawing.Size(536, 25);
@@ -822,13 +820,16 @@ namespace school
             this.dataGridViewStatisticsClass2.Size = new System.Drawing.Size(1100, 357);
             this.dataGridViewStatisticsClass2.TabIndex = 4;
             // 
-            // comboBoxSubjects
+            // exitBtnm
             // 
-            this.comboBoxSubjects.FormattingEnabled = true;
-            this.comboBoxSubjects.Location = new System.Drawing.Point(6, 3);
-            this.comboBoxSubjects.Name = "comboBoxSubjects";
-            this.comboBoxSubjects.Size = new System.Drawing.Size(1134, 25);
-            this.comboBoxSubjects.TabIndex = 3;
+            this.exitBtnm.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.exitBtnm.Location = new System.Drawing.Point(1099, 9);
+            this.exitBtnm.Name = "exitBtnm";
+            this.exitBtnm.Size = new System.Drawing.Size(93, 30);
+            this.exitBtnm.TabIndex = 1;
+            this.exitBtnm.Text = "Выйти";
+            this.exitBtnm.UseVisualStyleBackColor = true;
+            this.exitBtnm.Click += new System.EventHandler(this.exitBtnm_Click);
             // 
             // Form1
             // 
@@ -942,7 +943,7 @@ namespace school
         private System.Windows.Forms.DateTimePicker dateTimePickerPersonalStatisticsAfter;
         private System.Windows.Forms.DataGridView dataGridViewClassStatistics1;
         private System.Windows.Forms.DataGridView dataGridViewStatisticsClass2;
-        private System.Windows.Forms.ComboBox comboBoxSubjects;
+        private System.Windows.Forms.Button exitBtnm;
     }
 }
 

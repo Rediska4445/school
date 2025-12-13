@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using static school.Controllers.HomeworkController;
 
 namespace school
@@ -61,6 +62,9 @@ namespace school
 
                 // Удалить отчеты нахуй
                 tabControl.TabPages.RemoveByKey("tabPageReports");
+
+                // Удалить предметы нахуй
+                tabControl.TabPages.RemoveByKey("tabPageSubjects");
             }
             // Учитель может смотреть статистику своего класса.
             // Директор может менять класс с помощью comboBox.
@@ -326,14 +330,8 @@ namespace school
             Application.Exit();
         }
 
-        // Метод смены вкладок.
-        // Он также сохраняет изменения, при смене вкладки.
-        private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
+        public void CommitsAll(int previousTab)
         {
-            // Предыдущая хуйня
-            // Может сохранить только если предыдущая хуйня не текущая (здесь - расписание)
-            int previousTab = tabControl.SelectedIndex;
-
             // Сохранение расписания
             if (previousTab != 3 && UserController.CurrentUser.PermissionID == 3)
             {
@@ -360,6 +358,25 @@ namespace school
                     MessageBox.Show($"✅ Сохранено {saved} оценок!");
             }
 
+            // Сохранение предметов (только директор может менять)
+            if (previousTab != 5)
+            {
+                int saved = SubjectController._controller.CommitSubjectChanges();
+                if (saved > 0)
+                    MessageBox.Show($"✅ Сохранено {saved} предметов!");
+            }
+        }
+
+        // Метод смены вкладок.
+        // Он также сохраняет изменения, при смене вкладки.
+        private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Предыдущая хуйня
+            // Может сохранить только если предыдущая хуйня не текущая (здесь - расписание)
+            int previousTab = tabControl.SelectedIndex;
+
+            CommitsAll(previousTab);
+
             // Загрузка таблиц
             switch (tabControl.SelectedIndex)
             {
@@ -375,6 +392,9 @@ namespace school
                 // Расписание
                 case 2: LoadScheduleGrid(); break;
 
+                // Предметы 
+                case 5: LoadSubjects(); break;
+
                 // Сотрудники
                 case 6: LoadTeachersGrid(); break;
 
@@ -382,10 +402,144 @@ namespace school
                 case 7: LoadStudentsGrid(); break;
 
                 // Вкладка "Мероприятия"
-                case 4: 
-                    LoadEventsGrid();
-                    break;
+                case 4: LoadEventsGrid(); break;
             }
+        }
+
+        private bool IsValidSubjectRow(DataGridViewRow row)
+        {
+            string nameValue = row.Cells["SubjectName"].Value?.ToString()?.Trim();
+            return !string.IsNullOrWhiteSpace(nameValue);  // ✅ ТОЛЬКО Name!
+        }
+
+        private void SetupSubject()
+        {
+            FileLogger.logger.Info("=== SetupSubject НАЧАЛО ===");
+
+            bool isDirector = UserController.CurrentUser.PermissionID == 3;
+            FileLogger.logger.Info($"isDirector: {isDirector} (PermissionID: {UserController.CurrentUser.PermissionID})");
+
+            dataGridViewSubjects.Columns.Add("SubjectID", "ID");
+            dataGridViewSubjects.Columns.Add("SubjectName", "Предмет");
+            FileLogger.logger.Info("Колонки добавлены");
+
+            dataGridViewSubjects.ReadOnly = !isDirector;
+            dataGridViewSubjects.AllowUserToAddRows = isDirector;
+            dataGridViewSubjects.AllowUserToDeleteRows = isDirector;
+            dataGridViewSubjects.EditMode = DataGridViewEditMode.EditOnKeystrokeOrF2;
+            dataGridViewSubjects.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dataGridViewSubjects.MultiSelect = false;
+
+            FileLogger.logger.Info($"ReadOnly: {!isDirector}, AddRows: {isDirector}, DeleteRows: {isDirector}");
+
+            if(isDirector) {
+                dataGridViewSubjects.CellValueChanged += dataGridViewSubjects_CellValueChanged;
+                dataGridViewSubjects.UserDeletingRow += dataGridViewSubjects_UserDeletedRow;
+            }
+
+            FileLogger.logger.Info("Обработчики событий добавлены");
+
+            FileLogger.logger.Info("=== SetupSubject КОНЕЦ ===");
+        }
+
+        private void dataGridViewSubjects_UserDeletedRow(object sender, DataGridViewRowCancelEventArgs e)
+        {
+            FileLogger.logger.Info($"UserDeletedRow: RowIndex={e.Row.Index}");
+
+            // Получаем ID удаленной строки ДО удаления (через контроллер)
+            if (e.Row.Index >= 0 && e.Row.Cells["SubjectID"].Value != null)
+            {
+                if (int.TryParse(e.Row.Cells["SubjectID"].Value.ToString(), out int subjectId))
+                {
+                    if (subjectId > 0)
+                    {
+                        FileLogger.logger.Info($"ОТМЕЧАЕМ УДАЛЕНИЕ: ID={subjectId}");
+                        SubjectController._controller.AddSubjectChange("DELETE", new Subject { SubjectID = subjectId });
+                    }
+                }
+            }
+        }
+
+        private void dataGridViewSubjects_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            FileLogger.logger.Debug($"CellValueChanged: Row={e.RowIndex}, Col={e.ColumnIndex}");
+
+            if (e.RowIndex < 0)
+            {
+                FileLogger.logger.Debug("RowIndex < 0 - выход");
+                return;
+            }
+
+            DataGridViewRow row = dataGridViewSubjects.Rows[e.RowIndex];
+            if (!IsValidSubjectRow(row))
+            {
+                FileLogger.logger.Debug($"Строка {e.RowIndex} не валидна");
+                return;
+            }
+
+            int subjectId = 0;
+            var idValue = row.Cells["SubjectID"].Value;
+            string nameValue = row.Cells["SubjectName"].Value?.ToString();
+
+            FileLogger.logger.Debug($"ID Value: '{idValue}' | Name: '{nameValue}'");
+
+            // ✅ Если id пустая строка -> -1
+            if (idValue == null || idValue.ToString().Trim() == "")
+            {
+                subjectId = -1;
+                FileLogger.logger.Debug("ID пустая строка -> -1 (новый предмет)");
+            }
+            else if (int.TryParse(idValue.ToString(), out subjectId))
+            {
+                FileLogger.logger.Debug($"ID распарсен: {subjectId}");
+            }
+            else
+            {
+                subjectId = -1;
+                FileLogger.logger.Debug("ID не распарсен -> -1 (новый предмет)");
+            }
+
+            var subject = new Subject
+            {
+                SubjectID = subjectId,
+                SubjectName = nameValue.Trim()
+            };
+
+            FileLogger.logger.Info($"Добавляем изменение: ID={subject.SubjectID} Name='{subject.SubjectName}' (новый: {subject.SubjectID <= 0})");
+
+            SubjectController._controller.AddSubjectChange("EDIT", subject);
+        }
+
+        private void LoadSubjects()
+        {
+            if (UserController.CurrentUser.PermissionID <= 1)
+                return;
+
+            FileLogger.logger.Info("=== LoadSubjects НАЧАЛО ===");
+
+            if (dataGridViewSubjects.Columns.Count == 0)
+            {
+                FileLogger.logger.Info("Колонки отсутствуют - вызываем SetupSubject");
+                SetupSubject();
+            }
+            else
+            {
+                FileLogger.logger.Info("Колонки уже есть");
+            }
+
+            dataGridViewSubjects.Rows.Clear();
+            FileLogger.logger.Info("Строки очищены");
+
+            var subjects = SubjectController._controller.GetAllSubjects();
+            FileLogger.logger.Info($"Загружено предметов: {subjects.Count}");
+
+            foreach (Subject subject in subjects)
+            {
+                dataGridViewSubjects.Rows.Add(subject.SubjectID, subject.SubjectName);
+                FileLogger.logger.Debug($"Добавлена строка: {subject.SubjectID} - {subject.SubjectName}");
+            }
+
+            FileLogger.logger.Info("=== LoadSubjects КОНЕЦ ===");
         }
 
         // Загрузка расписания с БД.
@@ -666,18 +820,6 @@ namespace school
 
                 this.Controls.Add(directorComboBox);
                 directorComboBox.BringToFront();
-            }
-        }
-
-        private void InitializeSubjectsCombo()
-        {
-            var classes = ClassController._controller.GetAllClasses();
-            comboBoxSubjects.Items.Clear();
-
-            foreach (var cls in classes)
-            {
-                var item = new ComboBoxItem { Text = cls.ClassName, ClassID = cls.ClassID };
-                comboBoxSubjects.Items.Add(item);
             }
         }
 
@@ -967,10 +1109,8 @@ namespace school
                     gradesList = GradesController._controller.GetGradesForStudentPeriod(UserController.CurrentUser.UserID, startDate, endDate);
                 }
 
-                // ✅ СНАЧАЛА СОЗДАЕМ КОЛОНКИ
                 SetupGradesGrid();
 
-                // ✅ ПОТОМ заполняем РУЧНОЙ строки
                 foreach (var grade in gradesList)
                 {
                     dataGridViewGrades.Rows.Add(
@@ -1066,15 +1206,13 @@ namespace school
             {
                 dataGridViewEvents.Rows.Clear();
 
-                // ✅ Создаём колонки (если нет)
                 if (dataGridViewEvents.Columns.Count == 0)
                 {
                     CreateEventsColumns();
                     FileLogger.logger.Debug("📐 Колонки мероприятий созданы");
                 }
 
-                // ✅ Получаем все мероприятия
-                var events = EventsController._controller.GetAllEvents();  // Твой метод
+                var events = EventsController._controller.GetAllEvents(); 
                 FileLogger.logger.Info($"📊 Получено {events.Count} мероприятий");
 
                 if (events.Count == 0)
@@ -1083,21 +1221,21 @@ namespace school
                     return;
                 }
 
-                // ✅ Заполняем строки
                 foreach (var ev in events)
                 {
                     dataGridViewEvents.Rows.Add(
                         ev.EventID,
                         ev.EventName,
-                        ev.EventTime.ToString("dd.MM.yyyy HH:mm"),  // ✅ Форматированное время
+                        ev.EventTime.ToString("dd.MM.yyyy HH:mm"), 
                         ev.Location
                     );
 
                     FileLogger.logger.Debug($"➕ {ev.EventName} | {ev.EventTime:dd.MM HH:mm} | {ev.Location}");
                 }
 
-                // ✅ Настройка для редактирования
-                dataGridViewEvents.ReadOnly = false;  // ✅ Разрешаем редактирование
+                bool isDirector = UserController.CurrentUser.PermissionID >= 3;
+
+                dataGridViewEvents.ReadOnly = !isDirector;  
                 dataGridViewEvents.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
                 dataGridViewEvents.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
@@ -1288,6 +1426,12 @@ namespace school
             dataGridViewStudents.Columns["FullName"].FillWeight = 50;
             dataGridViewStudents.Columns["PermissionName"].FillWeight = 25;
             dataGridViewStudents.Columns["ClassName"].FillWeight = 25;  
+        }
+
+        private void exitBtnm_Click(object sender, EventArgs e)
+        {
+            Hide();
+            new LoginForm().Show();
         }
     }
 }

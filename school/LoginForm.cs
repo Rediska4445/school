@@ -1,13 +1,6 @@
 ﻿using school.Controllers;
 using school.Models;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace school
@@ -16,10 +9,10 @@ namespace school
     {
         public static bool IsLoggedIn { get; private set; }
 
-        // Существующие записи для тестов
+        //      Существующие записи для тестов
         //        7	Борисова Дарья  hashed_pass8 Ученик	5А
         //      8	Васильев Максим hashed_pass9 Ученик	5Б
-        //      9	Григорьева Елена    hashed_pass10 Ученик	6А InitializeSubjectsCombo
+        //      9	Григорьева Елена    hashed_pass10 Ученик	6А
         //      10	Дмитриев Сергей hashed_pass11 Ученик	7А
         //      11	Егорова Катя    hashed_pass12 Ученик	7Б
         //      6	Кузнецова Виктория  pass9a1 Ученик	5А
@@ -35,8 +28,8 @@ namespace school
 
             InitializeComponent();
 
-            txtLogin.Text = "Смирнова Ольга Васильевна";
-            txtPassword.Text = "hashed_pass5";
+            txtLogin.Text = "Иванов Иван Иванович";
+            txtPassword.Text = "hashed_pass1";
         }
 
         private void btnLogin_Click(object sender, EventArgs e)
