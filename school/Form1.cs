@@ -3,6 +3,7 @@ using school.Models;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml.Linq;
@@ -1239,11 +1240,11 @@ namespace school
                 dataGridViewEvents.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
                 dataGridViewEvents.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
-                FileLogger.logger.Info($"✅ Загружено {dataGridViewEvents.Rows.Count} мероприятий");
+                FileLogger.logger.Info($"Загружено {dataGridViewEvents.Rows.Count} мероприятий");
             }
             catch (Exception ex)
             {
-                FileLogger.logger.Error($"💥 LoadEventsGrid: {ex.Message}");
+                FileLogger.logger.Error($"LoadEventsGrid: {ex.Message}");
                 MessageBox.Show($"Ошибка загрузки мероприятий: {ex.Message}");
             }
         }
@@ -1264,7 +1265,7 @@ namespace school
             dataGridViewEvents.Columns["EventTime"].FillWeight = 30;
             dataGridViewEvents.Columns["Location"].FillWeight = 20;
 
-            FileLogger.logger.Debug("📐 Колонки Events настроены");
+            FileLogger.logger.Debug("Колонки Events настроены");
         }
 
         /* Сегмент с вкладкой "Сотрудники" */
@@ -1432,6 +1433,141 @@ namespace school
         {
             Hide();
             new LoginForm().Show();
+        }
+
+        private void buttonPrintShedule_Click(object sender, EventArgs e)
+        {
+            printDocument1.PrintPage += printDocument1_PrintPage;
+            printDocumentDialog1.Document = printDocument1;
+
+            if (printDocumentDialog1.ShowDialog() == DialogResult.OK)
+            {
+                printDocument1.Print();
+            }
+        }
+
+        private void printDocument1_PrintPage(object sender, PrintPageEventArgs e)
+        {
+            float x = 40f;
+            float y = 80f;
+            float pageWidth = 750f;
+
+            // Заголовок
+            e.Graphics.DrawString("📅 РАСПИСАНИЕ УРОКОВ", new Font("Arial", 16, FontStyle.Bold), Brushes.Black, x + (pageWidth - 200) / 2, y);
+            y += 50;
+
+            float colWidth = pageWidth / sheduleGridView.ColumnCount;
+
+            // Заголовки (28px высота)
+            for (int col = 0; col < sheduleGridView.ColumnCount; col++)
+            {
+                float colX = x + col * colWidth;
+                e.Graphics.FillRectangle(Brushes.LightBlue, colX, y, colWidth, 28);
+                e.Graphics.DrawRectangle(Pens.DarkBlue, colX, y, colWidth, 28);
+                e.Graphics.DrawString(sheduleGridView.Columns[col].HeaderText, new Font("Arial", 10, FontStyle.Bold), Brushes.White, colX + 5, y + 5);
+            }
+            y += 32;
+
+            // ✅ ДАННЫЕ С ДИНАМИЧЕСКОЙ ВЫСОТОЙ!
+            for (int row = 0; row < sheduleGridView.RowCount && y < 1050; row++)
+            {
+                // ✅ ВЫЧИСЛЯЕМ НУЖНУЮ ВЫСОТУ для этой строки
+                float neededHeight = GetRowHeight(e.Graphics, row, colWidth, x);
+
+                // 1. ФОН
+                for (int col = 0; col < sheduleGridView.ColumnCount; col++)
+                {
+                    float colX = x + col * colWidth;
+                    e.Graphics.FillRectangle(Brushes.White, colX, y, colWidth, neededHeight);
+                }
+
+                // 2. РАМКИ (УВЕЛИЧЕННЫЕ!)
+                for (int col = 0; col < sheduleGridView.ColumnCount; col++)
+                {
+                    float colX = x + col * colWidth;
+                    e.Graphics.DrawRectangle(Pens.Gray, colX, y, colWidth, neededHeight);
+                }
+
+                // 3. ТЕКСТ С ПЕРЕНОСОМ
+                for (int col = 0; col < sheduleGridView.ColumnCount; col++)
+                {
+                    float colX = x + col * colWidth;
+                    string cellText = sheduleGridView.Rows[row].Cells[col].Value?.ToString() ?? "";
+                    DrawTextWithWrap(e.Graphics, cellText, colX + 4, y + 4, colWidth - 8, new Font("Arial", 8));
+                }
+
+                y += neededHeight; // ✅ ДИНАМИЧЕСКИ!
+            }
+        }
+
+        // ✅ ВЫЧИСЛЯЕМ ВЫСОТУ СТРОКИ ПО СОДЕРЖИМОМУ
+        private float GetRowHeight(Graphics g, int rowIndex, float colWidth, float startX)
+        {
+            float maxHeight = 24f;
+            Font font = new Font("Arial", 8);
+            float lineHeight = g.MeasureString("А", font).Height + 3;
+
+            for (int col = 0; col < sheduleGridView.ColumnCount; col++)
+            {
+                string text = sheduleGridView.Rows[rowIndex].Cells[col].Value?.ToString() ?? "";
+                float colHeight = CalculateTextHeight(g, text, colWidth - 8, font);
+                if (colHeight > maxHeight) maxHeight = colHeight;
+            }
+
+            return Math.Max(24f, maxHeight);
+        }
+
+        // ✅ ПЕРЕНОС ТЕКСТА
+        private void DrawTextWithWrap(Graphics g, string text, float x, float y, float maxWidth, Font font)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            string[] words = text.Split(' ');
+            string currentLine = "";
+            float lineHeight = g.MeasureString("А", font).Height + 3;
+
+            foreach (string word in words)
+            {
+                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                if (g.MeasureString(testLine, font).Width > maxWidth)
+                {
+                    g.DrawString(currentLine, font, Brushes.Black, x, y);
+                    y += lineHeight;
+                    currentLine = word;
+                }
+                else
+                {
+                    currentLine = testLine;
+                }
+            }
+            g.DrawString(currentLine, font, Brushes.Black, x, y);
+        }
+
+        // ✅ ВЫЧИСЛЯЕМ ВЫСОТУ ТЕКСТА
+        private float CalculateTextHeight(Graphics g, string text, float maxWidth, Font font)
+        {
+            if (string.IsNullOrEmpty(text)) return 0;
+
+            string[] words = text.Split(' ');
+            string currentLine = "";
+            float lineHeight = g.MeasureString("А", font).Height + 3;
+            int lines = 1;
+
+            foreach (string word in words)
+            {
+                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                if (g.MeasureString(testLine, font).Width > maxWidth)
+                {
+                    lines++;
+                    currentLine = word;
+                }
+                else
+                {
+                    currentLine = testLine;
+                }
+            }
+
+            return lines * lineHeight;
         }
     }
 }
