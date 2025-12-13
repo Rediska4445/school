@@ -18,7 +18,7 @@ namespace school
     public partial class Form1 : Form
     {
         // Ебанный список из классов для ебанного расписания
-        private ComboBox comboBoxScheduleClass; 
+        private ComboBox directorComboBox; 
 
         // Хуйня для подключения к БД
         public static string CONNECTION_STRING = "Server=(localdb)\\MSSQLLocalDB;Database=SchoolSystemTest;Integrated Security=true;";
@@ -42,6 +42,44 @@ namespace school
 
             // Текст с ролью и именем
             labelRole.Text = UserController.CurrentUser.PermissionName + " - " + UserController.CurrentUser.FullName;
+
+            // Подготовка всякой хуйни для ролевой системы
+            PrepareRole();
+        }
+
+        private void PrepareRole()
+        {
+            if (UserController.CurrentUser.PermissionID == 1) // Только ученик
+            {
+                tabControlStatistic.TabPages.RemoveByKey("tabPageClass");
+
+                tabControlStatistic.SelectedTab = tabControlStatistic.TabPages["tabPersonalStats"];
+
+                SetupPersonalStatisticsGrid();
+            }
+        }
+
+        private void SetupPersonalStatisticsGrid()
+        {
+            var grid = dataGridViewPersonalStatistics;
+
+            grid.Columns.Clear();
+            grid.Rows.Clear();
+
+            grid.Columns.Add("colKey", "Показатель");
+            grid.Columns.Add("colValue", "Значение");
+
+            grid.ReadOnly = true;
+            grid.AllowUserToAddRows = false;
+            grid.AllowUserToDeleteRows = false;
+            grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            grid.RowHeadersVisible = false;
+
+            grid.Columns["colKey"].FillWeight = 60;
+            grid.Columns["colValue"].FillWeight = 40;
+
+            FileLogger.logger.Info("✅ Таблица статистики Ключ|Значение подготовлена");
         }
 
         // Проверка на пустые ячейки в строке таблицы оценок.
@@ -202,8 +240,8 @@ namespace school
         {
             // Если директор и прочая лабуда для проверки
             if (UserController.CurrentUser.PermissionID >= 3 &&
-                comboBoxScheduleClass != null &&
-                comboBoxScheduleClass.SelectedItem is ComboBoxItem selectedItem)
+                directorComboBox != null &&
+                directorComboBox.SelectedItem is ComboBoxItem selectedItem)
             {
 
                 // Вызвать загрузку с тем классом что выбран в списке
@@ -317,7 +355,7 @@ namespace school
                 sheduleGridView.Rows.Clear();
 
                 // Если список для директора ещё не появился
-                if(comboBoxScheduleClass == null)
+                if(directorComboBox == null)
                 {
 
                     // Загрузить список с классами для расписания
@@ -389,7 +427,7 @@ namespace school
 
                 if (UserController.CurrentUser.PermissionID == 3)
                 {
-                    if (comboBoxScheduleClass == null)
+                    if (directorComboBox == null)
                     {
                         FileLogger.logger.Warn(
                             "GetCurrentClassId: PermissionID=3 (директор), но comboBoxScheduleClass == null. " +
@@ -397,7 +435,7 @@ namespace school
                     }
                     else
                     {
-                        if (comboBoxScheduleClass.SelectedItem is ComboBoxItem selectedItem)
+                        if (directorComboBox.SelectedItem is ComboBoxItem selectedItem)
                         {
                             FileLogger.logger.Info(
                                 $"GetCurrentClassId: выбран класс из комбобокса: ClassID={selectedItem.ClassID}, Text='{selectedItem.Text}'");
@@ -407,7 +445,7 @@ namespace school
                         {
                             FileLogger.logger.Warn(
                                 "GetCurrentClassId: comboBoxScheduleClass.SelectedItem НЕ ComboBoxItem или null. " +
-                                "Text='" + comboBoxScheduleClass.Text + "'. Возвращаем ClassID пользователя.");
+                                "Text='" + directorComboBox.Text + "'. Возвращаем ClassID пользователя.");
                         }
                     }
                 }
@@ -447,15 +485,15 @@ namespace school
         {
             bool isDirector = UserController.CurrentUser.PermissionID == 3;
 
-            if (comboBoxScheduleClass != null)
+            if (directorComboBox != null)
             {
-                comboBoxScheduleClass.Dispose();
-                comboBoxScheduleClass = null;
+                directorComboBox.Dispose();
+                directorComboBox = null;
             }
 
             if (isDirector)
             {
-                comboBoxScheduleClass = new ComboBox
+                directorComboBox = new ComboBox
                 {
                     Location = new Point(10, 10),
                     Size = new Size(120, 25),
@@ -463,20 +501,20 @@ namespace school
                 };
 
                 var classes = ClassController._controller.GetAllClasses();
-                comboBoxScheduleClass.Items.Clear();
+                directorComboBox.Items.Clear();
 
                 foreach (var cls in classes)
                 {
                     var item = new ComboBoxItem { Text = cls.ClassName, ClassID = cls.ClassID };
-                    comboBoxScheduleClass.Items.Add(item);
+                    directorComboBox.Items.Add(item);
                 }
 
-                if (comboBoxScheduleClass.Items.Count > 0)
-                    comboBoxScheduleClass.SelectedIndex = 0;
+                if (directorComboBox.Items.Count > 0)
+                    directorComboBox.SelectedIndex = 0;
 
-                comboBoxScheduleClass.SelectedIndexChanged += ComboBoxScheduleClass_SelectedIndexChanged;
-                this.Controls.Add(comboBoxScheduleClass);
-                comboBoxScheduleClass.BringToFront();
+                directorComboBox.SelectedIndexChanged += ComboBoxScheduleClass_SelectedIndexChanged;
+                this.Controls.Add(directorComboBox);
+                directorComboBox.BringToFront();
                 sheduleGridView.Top = 45;
             }
             else
@@ -488,7 +526,7 @@ namespace school
         // Слушатель выпадающего списка с классами для директора
         private void ComboBoxScheduleClass_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBoxScheduleClass.SelectedItem is ComboBoxItem selectedItem)
+            if (directorComboBox.SelectedItem is ComboBoxItem selectedItem)
             {
                 LoadScheduleGrid(selectedItem.ClassID);
             }
@@ -879,7 +917,6 @@ namespace school
         }
 
         /* Сегмент с вкладкой "Мероприятия" */
-
         private void LoadEventsGrid()
         {
             FileLogger.logger.Info("🔄 LoadEventsGrid: загрузка мероприятий");

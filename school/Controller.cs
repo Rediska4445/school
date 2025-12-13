@@ -127,6 +127,23 @@ namespace school
                   Location NVARCHAR(100) COLLATE Cyrillic_General_CI_AS NOT NULL,
                   INDEX IX_Events_EventTime (EventTime DESC),
                   INDEX IX_Events_EventName (EventName)
+              );",
+                // 13. ✅ НОВАЯ ТАБЛИЦА Attendance (посещаемость)
+            @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Attendance' AND xtype='U')
+              CREATE TABLE Attendance (
+                  AttendanceID INT IDENTITY(1,1) PRIMARY KEY,
+                  AttendanceDate DATE NOT NULL,
+                  UserID INT NOT NULL,
+                  Present BIT NOT NULL DEFAULT 1,
+                  ExcuseReason BIT NOT NULL DEFAULT 0,
+                  LessonDate DATETIME2 NULL,
+                  Comment NVARCHAR(200) COLLATE Cyrillic_General_CI_AS NULL,
+                  CONSTRAINT FK_Attendance_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+                  UNIQUE (AttendanceDate, UserID),
+                  INDEX IX_Attendance_Date (AttendanceDate DESC),
+                  INDEX IX_Attendance_User (UserID),
+                  INDEX IX_Attendance_Present (Present),
+                  INDEX IX_Attendance_Excuse (ExcuseReason)
               );"
         };
 
@@ -143,16 +160,16 @@ namespace school
                         {
                             command.CommandTimeout = 30;
                             command.ExecuteNonQuery();
-                            FileLogger.logger.Info($"✅ Выполнен скрипт: {script.Split('\n')[0].Trim()}");
+                            FileLogger.logger.Info($"Выполнен скрипт: {script.Split('\n')[0].Trim()}");
                         }
                     }
                 }
 
-                FileLogger.logger.Info("🎉 База данных полностью инициализирована!");
+                FileLogger.logger.Info("База данных полностью инициализирована!");
             }
             catch (Exception ex)
             {
-                FileLogger.logger.Error($"💥 Ошибка инициализации БД: {ex.Message}");
+                FileLogger.logger.Error($"Ошибка инициализации БД: {ex.Message}");
             }
         }
     }
