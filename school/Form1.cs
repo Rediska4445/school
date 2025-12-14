@@ -1,10 +1,13 @@
-﻿using school.Controllers;
+﻿using RedSqlConnector;
+using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
@@ -68,6 +71,9 @@ namespace school
 
                 // Удалить предметы нахуй
                 tabControl.TabPages.RemoveByKey("tabPageSubjects");
+
+                FileLogger.logger.Info("👤 Ученик - показываем только 'Личное'");
+                tabControlAttendance.TabPages.RemoveByKey("tabPage7");
             }
             // Учитель может смотреть статистику своего класса.
             // Директор может менять класс с помощью comboBox.
@@ -83,9 +89,11 @@ namespace school
                 {
                     InitializeScheduleClassCombo();
                 }
+
+                FileLogger.logger.Info("👨‍🏫 Учитель/Директор - показываем 'Класс'");
+                tabControlAttendance.TabPages.RemoveByKey("tabPage8");
             }
         }
-
 
         // Слушатель выпадающего списка с классами для директора
         private void ComboBoxStatisticsClass_SelectedIndexChanged(object sender, EventArgs e)
@@ -231,7 +239,6 @@ namespace school
         {
             dataGridViewClassStatistics1.Rows.Clear();
 
-            // Создаем колонки если нет
             if (dataGridViewClassStatistics1.Columns.Count == 0)
             {
                 dataGridViewClassStatistics1.Columns.Add("Key", "Показатель");
@@ -366,6 +373,14 @@ namespace school
                 if (saved > 0)
                     MessageBox.Show($"✅ Сохранено {saved} предметов!");
             }
+
+            // Сохранение посещаемость (tabPageAttendance)
+            if (previousTabName != "tabPageAttendance")
+            {
+                int saved = AtterdanceController.Instance.CommitAttendanceChanges();
+                if (saved > 0)
+                    MessageBox.Show($"✅ Сохранено {saved} посещаемости!");
+            }
         }
 
         // Метод смены вкладок.
@@ -412,38 +427,137 @@ namespace school
             }
         }
 
-        public void SetupAttendance()
+        public void SetupAttendance(DataGridView dataGridView)
         {
-            dataGridViewPersonalAttendance.Rows.Clear();
-            dataGridViewPersonalAttendance.Columns.Clear();
+            dataGridView.Rows.Clear();
+            dataGridView.Columns.Clear();
 
-            dataGridViewPersonalAttendance.Columns.Add("AttendanceDate", "Дата");
-            dataGridViewPersonalAttendance.Columns.Add("SubjectName", "Предмет");
-            dataGridViewPersonalAttendance.Columns.Add("LessonDate", "Время");
-            dataGridViewPersonalAttendance.Columns.Add("Status", "Статус");
-            dataGridViewPersonalAttendance.Columns.Add("Comment", "Комментарий");
+            dataGridView.Columns.Add("AttendanceID", "AttendanceID");
+            dataGridView.Columns["AttendanceID"].Visible = false;
 
-            if (UserController.CurrentUser.PermissionID >= 2)
+            if (UserController.CurrentUser.PermissionID <= 1) 
             {
-                dataGridViewPersonalAttendance.ReadOnly = false;
-                dataGridViewPersonalAttendance.AllowUserToAddRows = true;
-                dataGridViewPersonalAttendance.AllowUserToDeleteRows = true;
+                dataGridView.Columns.Add("AttendanceDate", "Дата");
+                dataGridView.Columns.Add("SubjectName", "Предмет");
+                dataGridView.Columns.Add("LessonDate", "Время");
+                dataGridView.Columns.Add("Status", "Статус");
+                dataGridView.Columns.Add("Comment", "Комментарий");
+
+                dataGridView.Columns["AttendanceDate"].Width = 90;
+                dataGridView.Columns["SubjectName"].Width = 150;
+                dataGridView.Columns["LessonDate"].Width = 70;
+                dataGridView.Columns["Status"].Width = 120;
+                dataGridView.Columns["Comment"].Width = 200;
+
+                dataGridView.ReadOnly = true;
+                dataGridView.AllowUserToAddRows = false;
+                dataGridView.AllowUserToDeleteRows = false;
             }
-            else
+            else if (UserController.CurrentUser.PermissionID >= 2)
             {
-                dataGridViewPersonalAttendance.ReadOnly = true;
+                dataGridView.Columns.Add("StudentName", "Ученик");
+                dataGridView.Columns.Add("AttendanceDate", "Дата");
+                dataGridView.Columns.Add("SubjectName", "Предмет");
+                dataGridView.Columns.Add("LessonDate", "Время");
+                dataGridView.Columns.Add("Status", "Статус");
+                dataGridView.Columns.Add("Comment", "Комментарий");
+
+                dataGridView.Columns["StudentName"].Width = 200;
+                dataGridView.Columns["AttendanceDate"].Width = 90;
+                dataGridView.Columns["SubjectName"].Width = 120;
+                dataGridView.Columns["LessonDate"].Width = 70;
+                dataGridView.Columns["Status"].Width = 120;
+                dataGridView.Columns["Comment"].Width = 150;
+
+                dataGridView.ReadOnly = false;
+                dataGridView.AllowUserToAddRows = true;
+                dataGridView.AllowUserToDeleteRows = true;
+
+                dataGridView.CellValueChanged += dataGridViewClassAttendance_CellValueChanged;
+                dataGridView.UserDeletedRow += DataGridViewClassAttendance_UserDeletedRow;
+
+                dataGridView.ReadOnly = false;
+                dataGridView.AllowUserToAddRows = true;
+                dataGridView.AllowUserToDeleteRows = true;
             }
+
+            dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dataGridView.MultiSelect = false;
+
+            FileLogger.logger.Debug($"✅ SetupAttendance для {dataGridView.Name}");
+        }
+
+        private void dataGridViewClassAttendance_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            var row = dataGridViewClassAtterdance.Rows[e.RowIndex];
+
+            string attIdStr = row.Cells["AttendanceID"].Value?.ToString()?.Trim();
+            string attStudStr = row.Cells["StudentName"].Value?.ToString()?.Trim();
+            string userIdStr = row.Cells["AttendanceDate"].Value?.ToString()?.Trim();
+            string subjectStr = row.Cells["SubjectName"].Value?.ToString()?.Trim();
+            string dateStr = row.Cells["LessonDate"].Value?.ToString()?.Trim();
+            string statusStr = row.Cells["Status"].Value?.ToString()?.Trim();
+            string commentStr = row.Cells["Comment"].Value?.ToString()?.Trim();
+
+            if (string.IsNullOrEmpty(attStudStr) ||
+                string.IsNullOrEmpty(userIdStr) ||
+                string.IsNullOrEmpty(dateStr) ||
+                string.IsNullOrEmpty(statusStr) ||
+                string.IsNullOrEmpty(subjectStr))
+            {
+                FileLogger.logger.Debug($"⏭️ Пустые ячейки в строке (Row={e.RowIndex})");
+                return;
+            }
+
+            string date = row.Cells["AttendanceDate"].Value?.ToString()?.Trim();
+            string status = row.Cells["Status"].Value?.ToString()?.Trim();
+            string comment = row.Cells["Comment"].Value?.ToString()?.Trim();
+
+            if (string.IsNullOrEmpty(date) || string.IsNullOrEmpty(status))
+            {
+                FileLogger.logger.Debug($"⏭️ Неполная строка (Row={e.RowIndex})");
+                return;
+            }
+
+            int id = -1;
+
+            if(!string.IsNullOrEmpty(attIdStr))
+            {
+                id = int.Parse(attIdStr);
+            }
+
+            var attendance = new Attendance
+            {
+                AttendanceID = id,  // ✅ -1 для новых
+                UserID = UserController._userController.GetStudentIdByName(attStudStr),
+                AttendanceDate = DateTime.Parse(dateStr ?? DateTime.Today.ToString()),
+                Present = row.Cells["Status"].Value?.ToString() == "Присутствует",
+                ExcuseReason = row.Cells["Status"].Value?.ToString()?.Contains("оправдание") ?? false,
+                Comment = commentStr ?? ""
+            };
+
+            AtterdanceController.Instance.AddAttendanceChange("EDIT", attendance);
+        }
+
+        private void DataGridViewClassAttendance_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
+        {
+
         }
 
         private void LoadAttendance()
         {
-            if (dataGridViewPersonalAttendance.Columns.Count == 0)
-            {
-                SetupAttendance();
-            }
-
             if (UserController.CurrentUser.PermissionID <= 1)
             {
+                if (dataGridViewPersonalAttendance.Columns.Count == 0)
+                {
+                    SetupAttendance(dataGridViewPersonalAttendance);
+                }
+
+                dataGridViewPersonalAttendance.Rows.Clear();
+
                 int userId = UserController.CurrentUser.UserID;
 
                 try
@@ -465,6 +579,46 @@ namespace school
                 catch (Exception ex)
                 {
                     FileLogger.logger.Error($"Ошибка LoadAttendance: {ex.Message}");
+                }
+            }
+            else if (UserController.CurrentUser.PermissionID >= 2)
+            {
+                if (dataGridViewClassAtterdance.Columns.Count == 0)
+                {
+                    SetupAttendance(dataGridViewClassAtterdance);
+                }
+
+                dataGridViewClassAtterdance.Rows.Clear();
+
+                int userId = UserController.CurrentUser.UserID;
+
+                int classId = UserController.CurrentUser.ClassID.Value;
+                DateTime startDate = dateTimePickerAttendanceStart.Value.Date;
+                DateTime endDate = dateTimePickerAttendanceEnd.Value.Date;
+
+                try
+                {
+                    var attendances = AtterdanceController.Instance.GetClassAttendance(classId, startDate, endDate);
+
+                    dataGridViewClassAtterdance.Rows.Clear();
+
+                    foreach (var attendance in attendances)
+                    {
+                        dataGridViewClassAtterdance.Rows.Add(
+                            attendance.AttendanceID,
+                            attendance.StudentNameDisplay,
+                            string.Format("{0:dd.MM.yyyy}", attendance.AttendanceDate),
+                            attendance.SubjectName,
+                            attendance.LessonDate != DateTime.MinValue ?
+                                string.Format("{0:HH:mm}", attendance.LessonDate) : "",
+                            attendance.StatusDisplay,
+                            attendance.Comment
+                        );
+                    }
+                }
+                catch (Exception ex)
+                {
+                    FileLogger.logger.Error($"Ошибка загрузки посещаемости класса: {ex.Message}");
                 }
             }
         }
@@ -509,7 +663,6 @@ namespace school
         {
             FileLogger.logger.Info($"UserDeletedRow: RowIndex={e.Row.Index}");
 
-            // Получаем ID удаленной строки ДО удаления (через контроллер)
             if (e.Row.Index >= 0 && e.Row.Cells["SubjectID"].Value != null)
             {
                 if (int.TryParse(e.Row.Cells["SubjectID"].Value.ToString(), out int subjectId))
@@ -546,7 +699,6 @@ namespace school
 
             FileLogger.logger.Debug($"ID Value: '{idValue}' | Name: '{nameValue}'");
 
-            // ✅ Если id пустая строка -> -1
             if (idValue == null || idValue.ToString().Trim() == "")
             {
                 subjectId = -1;
@@ -912,10 +1064,8 @@ namespace school
 
             var row = dataGridViewHomework.Rows[e.RowIndex];
 
-            // ✅ ПРОВЕРКА: все поля заполнены?
             if (IsHomeworkRowComplete(row))
             {
-                // ✅ ПОЛУЧАЕМ ID через методы контроллера
                 var classObj = ClassController._controller.GetClassByName(row.Cells["colClass"].Value.ToString());
                 var subjectObj = SubjectController._controller.GetSubjectByName(row.Cells["colSubject"].Value.ToString());
 
@@ -928,7 +1078,6 @@ namespace school
                     TeacherID = UserController.CurrentUser.UserID
                 };
 
-                // ✅ Проверка: предмет и класс найдены
                 if (homework.ClassID == 0 || homework.SubjectID == 0)
                 {
                     MessageBox.Show("❌ Класс или предмет не найден в БД!");
@@ -1416,7 +1565,7 @@ namespace school
             printDialog1.Document = printDocument1;
             if (printDialog1.ShowDialog() == DialogResult.OK)
             {
-                printDocument1.PrintPage -= printDocument2_PrintPage; // на всякий случай
+                printDocument1.PrintPage -= printDocument2_PrintPage; 
                 printDocument1.PrintPage += printDocument2_PrintPage;
                 printDocument1.Print();
                 printDocument1.PrintPage -= printDocument2_PrintPage;
@@ -1447,19 +1596,6 @@ namespace school
             else
             {
                 e.HasMorePages = false;
-            }
-        }
-
-        private List<DataGridView> gridsToPrint = new List<DataGridView>();
-        private string gridsTitle = "";
-
-        private void PrintPageHandler(object sender, PrintPageEventArgs printArgs)
-        {
-            foreach (DataGridView grid in gridsToPrint)
-            {
-                DataGridViewPrinter.PrintDataGridView(grid, gridsTitle, printArgs);
-
-                if (printArgs.HasMorePages) break;
             }
         }
 
@@ -1534,5 +1670,14 @@ namespace school
             }
         }
 
+        private void dateTimePickerAttendanceStart_ValueChanged(object sender, EventArgs e)
+        {
+            LoadAttendance();
+        }
+
+        private void dateTimePickerAttendanceEnd_ValueChanged(object sender, EventArgs e)
+        {
+            LoadAttendance();
+        }
     }
 }

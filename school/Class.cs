@@ -176,9 +176,6 @@ namespace school.Models
     /// <summary>
     /// Таблица посещаемости (расширенная)
     /// </summary>
-    /// <summary>
-    /// Таблица посещаемости (расширенная) - C# 7.3
-    /// </summary>
     public class Attendance
     {
         public int AttendanceID { get; set; }

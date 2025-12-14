@@ -97,6 +97,9 @@ namespace school
             this.panel2 = new System.Windows.Forms.Panel();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.dateTimePickerAttendanceStart = new System.Windows.Forms.DateTimePicker();
+            this.dateTimePickerAttendanceEnd = new System.Windows.Forms.DateTimePicker();
+            this.label2 = new System.Windows.Forms.Label();
             this.panelTop.SuspendLayout();
             this.panelMain.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -887,6 +890,9 @@ namespace school
             // 
             // tabPage7
             // 
+            this.tabPage7.Controls.Add(this.label2);
+            this.tabPage7.Controls.Add(this.dateTimePickerAttendanceEnd);
+            this.tabPage7.Controls.Add(this.dateTimePickerAttendanceStart);
             this.tabPage7.Controls.Add(this.dataGridViewClassAtterdance);
             this.tabPage7.Location = new System.Drawing.Point(4, 26);
             this.tabPage7.Name = "tabPage7";
@@ -901,9 +907,9 @@ namespace school
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewClassAtterdance.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridViewClassAtterdance.Location = new System.Drawing.Point(6, 3);
+            this.dataGridViewClassAtterdance.Location = new System.Drawing.Point(6, 34);
             this.dataGridViewClassAtterdance.Name = "dataGridViewClassAtterdance";
-            this.dataGridViewClassAtterdance.Size = new System.Drawing.Size(1123, 779);
+            this.dataGridViewClassAtterdance.Size = new System.Drawing.Size(1123, 748);
             this.dataGridViewClassAtterdance.TabIndex = 1;
             // 
             // tabPageReports
@@ -929,6 +935,7 @@ namespace school
             // 
             // buttonPrint
             // 
+            this.buttonPrint.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.buttonPrint.Location = new System.Drawing.Point(1000, 9);
             this.buttonPrint.Name = "buttonPrint";
             this.buttonPrint.Size = new System.Drawing.Size(93, 30);
@@ -971,6 +978,37 @@ namespace school
             this.label1.Size = new System.Drawing.Size(113, 19);
             this.label1.TabIndex = 3;
             this.label1.Text = "Путь к шаблону:";
+            // 
+            // dateTimePickerAttendanceStart
+            // 
+            this.dateTimePickerAttendanceStart.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dateTimePickerAttendanceStart.Location = new System.Drawing.Point(6, 4);
+            this.dateTimePickerAttendanceStart.Name = "dateTimePickerAttendanceStart";
+            this.dateTimePickerAttendanceStart.Size = new System.Drawing.Size(551, 25);
+            this.dateTimePickerAttendanceStart.TabIndex = 2;
+            this.dateTimePickerAttendanceStart.ValueChanged += new System.EventHandler(this.dateTimePickerAttendanceStart_ValueChanged);
+            // 
+            // dateTimePickerAttendanceEnd
+            // 
+            this.dateTimePickerAttendanceEnd.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dateTimePickerAttendanceEnd.Location = new System.Drawing.Point(575, 4);
+            this.dateTimePickerAttendanceEnd.Name = "dateTimePickerAttendanceEnd";
+            this.dateTimePickerAttendanceEnd.Size = new System.Drawing.Size(554, 25);
+            this.dateTimePickerAttendanceEnd.TabIndex = 3;
+            this.dateTimePickerAttendanceEnd.ValueChanged += new System.EventHandler(this.dateTimePickerAttendanceEnd_ValueChanged);
+            // 
+            // label2
+            // 
+            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(559, 6);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(15, 19);
+            this.label2.TabIndex = 4;
+            this.label2.Text = "-";
             // 
             // Form1
             // 
@@ -1035,6 +1073,7 @@ namespace school
             this.tabPage8.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewPersonalAttendance)).EndInit();
             this.tabPage7.ResumeLayout(false);
+            this.tabPage7.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewClassAtterdance)).EndInit();
             this.tabPageReports.ResumeLayout(false);
             this.tabPageReports.PerformLayout();
@@ -1107,6 +1146,9 @@ namespace school
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.DateTimePicker dateTimePickerAttendanceEnd;
+        private System.Windows.Forms.DateTimePicker dateTimePickerAttendanceStart;
     }
 }
 

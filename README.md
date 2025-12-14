@@ -10,21 +10,21 @@
 
 <div align="center">
   <span style="font-size: 36px; font-weight: bold;">School</span><br>
-  <sup style="font-size: 18px;">Электронный дневник для школы</sup>
+  <sup style="font-size: 18px;">Electronic school diary</sup>
 </div>
 
 ---
 
-> <h4>Учебный проект для практики работы с MySQL и базами данных. Ничего коммерческого.</h4>
-> README тоже не особо нужен, но писать приятно!
+> <h4>Educational project for MySQL and database practice. Nothing commercial.</h4>
+> README also isn't really needed, but writing it is fun!
 
 ---
 
 <div align="center">
-  <span style="font-size: 16px; font-weight: light;">Ученик, Учитель, Директор</span><br>
+  <span style="font-size: 16px; font-weight: light;">Student, Teacher, Director</span><br>
   
-  Pet project для практики C#, MySQL, MVC архитектуры и школьной тематики.
-  Три роли пользователей с разными правами доступа (5%/50%/100%).
+  Pet project for C#, MySQL, MVC architecture and school management practice.
+  Three user roles with different access levels (5%/50%/100%).
 </div>
 
 <p align="center">
@@ -45,37 +45,37 @@
 
 ### Overview
 
-| **Оценки**     | **Домашка**    | **Справочники**   | **Отчеты**     |
-|----------------|----------------|--------------------|----------------|
-| Просмотр/ред. | Задания/сроки  | Ученики/сотрудники| Печать таблиц |
-| Статистика    |                |                   |                |
+| **Grades**    | **Homework**  | **Directories**  | **Reports**    |
+|---------------|---------------|------------------|----------------|
+| View/Edit     | Tasks/Deadlines| Students/Staff  | Print tables   |
+| Statistics    |               |                  |                |
 
-| **Расписание** | **Роли**             | **Архитектура** |
-|----------------|----------------------|-----------------|
-| Просмотр/ред.  | Ученик/Учитель/Директор | MVC + тесты    |
+| **Schedule**  | **Roles**             | **Architecture** |
+|---------------|-----------------------|------------------|
+| View/Edit     | Student/Teacher/Director | MVC + Tests    |
 
-> **Права доступа:** Ученик ~5%, Учитель ~50%, Директор 100%.
+> **Access rights:** Student ~5%, Teacher ~50%, Director 100%.
 
 ### Details
 
-- **Работа с оценками**
-  - Просмотр/редактирование (по ролям)
-  - Статистика успеваемости
-- **Домашние задания**
-  - Создание/просмотр заданий
-  - Сроки выполнения
-- **Базы данных**
-  - Справочник сотрудников
-  - Справочник учеников
-- **Отчетность**
-  - Печать таблиц
-  - Экспорт данных
-- **Расписание**
-  - Просмотр/редактирование уроков
-- **Система ролей**
-  - LoginForm с авторизацией
-  - Разграничение прав доступа
-  - Одна Form1 с вкладками (без окон)
+- **Grades management**
+  - View/edit (role-based)
+  - Performance statistics
+- **Homework**
+  - Create/view assignments
+  - Deadlines
+- **Databases**
+  - Staff directory
+  - Students directory
+- **Reporting**
+  - Print tables
+  - Data export
+- **Schedule**
+  - View/edit lessons
+- **Role system**
+  - LoginForm with authentication
+  - Access rights control
+  - One Form1 with tabs (no windows)
 
 ---
 
@@ -83,5 +83,5 @@
 
 ### Visual Studio 💻
 
-1. Открой проект в Visual Studio
-2. Установи через NuGet:
+1. Open project in Visual Studio
+2. Install via NuGet:
