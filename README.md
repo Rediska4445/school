@@ -42,16 +42,15 @@
 
 ---
 
-# ✨ Features
+# Features
 
 ### Overview
 
 | **Grades**    | **Homework**  | **Directories**  | **Reports**    |
 |---------------|---------------|------------------|----------------|
 | View/Edit     | Tasks/Deadlines| Students/Staff  | Print tables   |
-| **Schedule**  | **Roles**             | **Architecture** |
-|---------------|-----------------------|------------------|
-| View/Edit     | Student/Teacher/Director | MVC + Tests    |
+| **Schedule**  | **Roles**             | **Architecture** | **Statistics** |
+| View/Edit     | Student/Teacher/Director | MVC + Tests    | Microsoft Sql |
 
 | **Schedule**  |   **Roles**   | **Architecture** | Statistics |
 >
@@ -81,9 +80,9 @@
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### Visual Studio 💻
+### Visual Studio
 
 1. Open project in Visual Studio
 2. Install via NuGet:
@@ -92,7 +91,7 @@
 3. Configure MySQL connection string in `appsettings`
 4. Run `LoginForm`
 
-### SSMS 🗄️
+### SSMS
 
 1. Create DB using scripts in `/Database/`
 2. Run migrations (if any)
@@ -100,7 +99,7 @@
 
 ---
 
-## 🛠️ Built With
+## Built With
 
 | Framework/Library              | Description                  |
 |--------------------------------|------------------------------|
@@ -113,7 +112,7 @@
 
 ---
 
-## 📊 System Requirements
+## System Requirements
 
 | OS            | **CPU**        | **RAM** |
 |---------------|----------------|---------|
@@ -124,7 +123,7 @@
 
 ---
 
-## 🔧 Architecture Highlights
+## Architecture Highlights
 MVC Pattern:
 - Models (DB tables)
 - Controllers (SQL operations + NUnit tests)
@@ -138,22 +137,22 @@ Features:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 **Solo project**<br>
 Contributions welcome! Open issues or PRs.
 
 ---
 
-## 📄 License
+## License
 
 **Free for open-source use with restrictions:**
 
-- ✅ **Free modification**
-- ✅ **Free distribution** of source code
-- ❌ **No selling** code or software
-- ⚠️ **Changes require** author approval
-- 🎯 **Open-source use only**
+- **Free modification**
+- **Free distribution** of source code
+- **No selling** code or software
+- **Changes require** author approval
+- **Open-source use only**
 
 > Commercial use or modifications without permission — contact author.
 
