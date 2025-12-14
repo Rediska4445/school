@@ -5,13 +5,8 @@
 </div>
 
 <div align="center">
-
   <span style="font-size: 36px; font-weight: bold;">School</span><br>
   <sup style="font-size: 18px;">Electronic school diary</sup>
-
-  <span style="font-size: 64px; font-weight: bold;">School</span><br>
-  <sup style="font-size: 36px;">Electronic school diary</sup>
->
 </div>
 
 ---
@@ -51,9 +46,7 @@
 | View/Edit     | Tasks/Deadlines| Students/Staff  | Print tables   |
 | **Schedule**  | **Roles**             | **Architecture** | **Statistics** |
 | View/Edit     | Student/Teacher/Director | MVC + Tests    | Microsoft Sql |
-
 | **Schedule**  |   **Roles**   | **Architecture** | Statistics |
->
 
 > **Access rights:** Student ~5%, Teacher ~50%, Director 100%.
 
@@ -86,8 +79,6 @@
 
 1. Open project in Visual Studio
 2. Install via NuGet:
-
-
 3. Configure MySQL connection string in `appsettings`
 4. Run `LoginForm`
 
