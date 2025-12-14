@@ -1,0 +1,30 @@
+{
+  "title": {
+    "x": 40,
+    "y": 80,
+    "pageWidth": 750,
+    "offset": 200,
+    "fontSize": 16
+  },
+  "header": {
+    "bgColor": "LightBlue",
+    "borderColor": "DarkBlue",
+    "fontSize": 10,
+    "height": 28,
+    "paddingX": 5,
+    "paddingY": 5,
+    "offsetY": 32
+  },
+  "row": {
+    "bgColor": "White",
+    "borderColor": "DarkBlue",
+    "fontSize": 8,
+    "cellPaddingX": 4,
+    "cellPaddingY": 4,
+    "cellPaddingTotal": 8,
+    "minHeight": 48
+  },
+  "page": {
+    "maxY": 1050
+  }
+}

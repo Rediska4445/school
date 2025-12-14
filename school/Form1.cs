@@ -333,36 +333,34 @@ namespace school
             Application.Exit();
         }
 
-        public void CommitsAll(int previousTab)
+        public void CommitsAll(string previousTabName)
         {
-            // Сохранение расписания
-            if (previousTab != 3 && UserController.CurrentUser.PermissionID == 3)
+            // Сохранение расписания (tabShedule)
+            if (previousTabName != "tabShedule" && UserController.CurrentUser.PermissionID == 3)
             {
                 int saved = SheduleController._controller.CommitScheduleChanges();
                 if (saved > 0)
-                {
                     MessageBox.Show($"✅ Выполнено {saved} изменений расписания!");
-                }
             }
 
-            // Сохранение домашки
-            if (previousTab != 0)
+            // Сохранение домашки (tabHomework)
+            if (previousTabName != "tabHomework")
             {
                 int saved = _homeworkController.CommitHomeworkChanges();
                 if (saved > 0)
                     MessageBox.Show($"✅ Сохранено {saved} ДЗ!");
             }
 
-            // Сохранение оценок
-            if (previousTab != 1)
+            // Сохранение оценок (tabGrades)
+            if (previousTabName != "tabGrades")
             {
                 int saved = GradesController._controller.CommitGradeChanges();
                 if (saved > 0)
                     MessageBox.Show($"✅ Сохранено {saved} оценок!");
             }
 
-            // Сохранение предметов (только директор может менять)
-            if (previousTab != 5)
+            // Сохранение предметов (tabPageSubjects)
+            if (previousTabName != "tabPageSubjects")
             {
                 int saved = SubjectController._controller.CommitSubjectChanges();
                 if (saved > 0)
@@ -376,9 +374,9 @@ namespace school
         {
             // Предыдущая хуйня
             // Может сохранить только если предыдущая хуйня не текущая (здесь - расписание)
-            int previousTab = tabControl.SelectedIndex;
+            string previousTabName = tabControl.SelectedTab?.Name ?? "tabShedule";
 
-            CommitsAll(previousTab);
+            CommitsAll(previousTabName);
 
             FileLogger.logger.Info("Индексы панелей: " + tabControl.TabCount + " Selected: " + tabControl.SelectedIndex);
 
@@ -1389,126 +1387,152 @@ namespace school
 
         private void printDocument1_PrintPage(object sender, PrintPageEventArgs e)
         {
-            float x = 40f;
-            float y = 80f;
-            float pageWidth = 750f;
-
-            // Заголовок
-            e.Graphics.DrawString("📅 РАСПИСАНИЕ УРОКОВ", new Font("Arial", 16, FontStyle.Bold), Brushes.Black, x + (pageWidth - 200) / 2, y);
-            y += 50;
-
-            float colWidth = pageWidth / sheduleGridView.ColumnCount;
-
-            // Заголовки (28px высота)
-            for (int col = 0; col < sheduleGridView.ColumnCount; col++)
-            {
-                float colX = x + col * colWidth;
-                e.Graphics.FillRectangle(Brushes.LightBlue, colX, y, colWidth, 28);
-                e.Graphics.DrawRectangle(Pens.DarkBlue, colX, y, colWidth, 28);
-                e.Graphics.DrawString(sheduleGridView.Columns[col].HeaderText, new Font("Arial", 10, FontStyle.Bold), Brushes.White, colX + 5, y + 5);
-            }
-            y += 32;
-
-            // ✅ ДАННЫЕ С ДИНАМИЧЕСКОЙ ВЫСОТОЙ!
-            for (int row = 0; row < sheduleGridView.RowCount && y < 1050; row++)
-            {
-                // ✅ ВЫЧИСЛЯЕМ НУЖНУЮ ВЫСОТУ для этой строки
-                float neededHeight = GetRowHeight(e.Graphics, row, colWidth, x);
-
-                // 1. ФОН
-                for (int col = 0; col < sheduleGridView.ColumnCount; col++)
-                {
-                    float colX = x + col * colWidth;
-                    e.Graphics.FillRectangle(Brushes.White, colX, y, colWidth, neededHeight);
-                }
-
-                // 2. РАМКИ (УВЕЛИЧЕННЫЕ!)
-                for (int col = 0; col < sheduleGridView.ColumnCount; col++)
-                {
-                    float colX = x + col * colWidth;
-                    e.Graphics.DrawRectangle(Pens.Gray, colX, y, colWidth, neededHeight);
-                }
-
-                // 3. ТЕКСТ С ПЕРЕНОСОМ
-                for (int col = 0; col < sheduleGridView.ColumnCount; col++)
-                {
-                    float colX = x + col * colWidth;
-                    string cellText = sheduleGridView.Rows[row].Cells[col].Value?.ToString() ?? "";
-                    DrawTextWithWrap(e.Graphics, cellText, colX + 4, y + 4, colWidth - 8, new Font("Arial", 8));
-                }
-
-                y += neededHeight; // ✅ ДИНАМИЧЕСКИ!
-            }
+            DataGridViewPrinter.PrintDataGridView(sheduleGridView, "Расписание", e);
         }
 
-        // ✅ ВЫЧИСЛЯЕМ ВЫСОТУ СТРОКИ ПО СОДЕРЖИМОМУ
-        private float GetRowHeight(Graphics g, int rowIndex, float colWidth, float startX)
+        private void printDocumentAtterdance_PrintPage(object sender, PrintPageEventArgs e)
         {
-            float maxHeight = 24f;
-            Font font = new Font("Arial", 8);
-            float lineHeight = g.MeasureString("А", font).Height + 3;
-
-            for (int col = 0; col < sheduleGridView.ColumnCount; col++)
-            {
-                string text = sheduleGridView.Rows[rowIndex].Cells[col].Value?.ToString() ?? "";
-                float colHeight = CalculateTextHeight(g, text, colWidth - 8, font);
-                if (colHeight > maxHeight) maxHeight = colHeight;
-            }
-
-            return Math.Max(24f, maxHeight);
+            DataGridViewPrinter.PrintDataGridView(dataGridViewClassAtterdance, "Посещаемость", e);
         }
 
-        // ✅ ПЕРЕНОС ТЕКСТА
-        private void DrawTextWithWrap(Graphics g, string text, float x, float y, float maxWidth, Font font)
+        private List<DataGridView> _gridsToPrint;
+        private int _currentGridIndex;
+        private string _currentPrintTitle;
+
+        private void buttonPrint_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(text)) return;
+            CommitsAll(tabControl.SelectedTab.Name);
 
-            string[] words = text.Split(' ');
-            string currentLine = "";
-            float lineHeight = g.MeasureString("А", font).Height + 3;
+            _gridsToPrint = GetCurrentGridViews();
+            _currentGridIndex = 0;
+            _currentPrintTitle = GetCurrentGridTitle();
 
-            foreach (string word in words)
+            if (_gridsToPrint == null || _gridsToPrint.Count == 0)
             {
-                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
-                if (g.MeasureString(testLine, font).Width > maxWidth)
-                {
-                    g.DrawString(currentLine, font, Brushes.Black, x, y);
-                    y += lineHeight;
-                    currentLine = word;
-                }
-                else
-                {
-                    currentLine = testLine;
-                }
+                MessageBox.Show("Нет таблиц для печати!", "Ошибка");
+                return;
             }
-            g.DrawString(currentLine, font, Brushes.Black, x, y);
+
+            printDialog1.Document = printDocument1;
+            if (printDialog1.ShowDialog() == DialogResult.OK)
+            {
+                printDocument1.PrintPage -= printDocument2_PrintPage; // на всякий случай
+                printDocument1.PrintPage += printDocument2_PrintPage;
+                printDocument1.Print();
+                printDocument1.PrintPage -= printDocument2_PrintPage;
+
+                _gridsToPrint = null;
+                _currentGridIndex = 0;
+            }
         }
 
-        // ✅ ВЫЧИСЛЯЕМ ВЫСОТУ ТЕКСТА
-        private float CalculateTextHeight(Graphics g, string text, float maxWidth, Font font)
+        private void printDocument2_PrintPage(object sender, PrintPageEventArgs e)
         {
-            if (string.IsNullOrEmpty(text)) return 0;
-
-            string[] words = text.Split(' ');
-            string currentLine = "";
-            float lineHeight = g.MeasureString("А", font).Height + 3;
-            int lines = 1;
-
-            foreach (string word in words)
+            if (_gridsToPrint == null || _gridsToPrint.Count == 0)
             {
-                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
-                if (g.MeasureString(testLine, font).Width > maxWidth)
-                {
-                    lines++;
-                    currentLine = word;
-                }
-                else
-                {
-                    currentLine = testLine;
-                }
+                e.HasMorePages = false;
+                return;
             }
 
-            return lines * lineHeight;
+            var grid = _gridsToPrint[_currentGridIndex];
+
+            DataGridViewPrinter.PrintDataGridView(grid, _currentPrintTitle, e);
+
+            _currentGridIndex++;
+
+            if (_currentGridIndex < _gridsToPrint.Count)
+            {
+                e.HasMorePages = true;
+            }
+            else
+            {
+                e.HasMorePages = false;
+            }
         }
+
+        private List<DataGridView> gridsToPrint = new List<DataGridView>();
+        private string gridsTitle = "";
+
+        private void PrintPageHandler(object sender, PrintPageEventArgs printArgs)
+        {
+            foreach (DataGridView grid in gridsToPrint)
+            {
+                DataGridViewPrinter.PrintDataGridView(grid, gridsTitle, printArgs);
+
+                if (printArgs.HasMorePages) break;
+            }
+        }
+
+        private List<DataGridView> GetCurrentGridViews()
+        {
+            List<DataGridView> grids = new List<DataGridView>();
+            Control currentTab = tabControl.SelectedTab;
+
+            FileLogger.logger.Debug($"🔍 Печать вкладки: '{currentTab?.Name}' (Controls: {currentTab?.Controls.Count ?? 0})");
+
+            FindDataGridViewsRecursive(currentTab, grids);
+
+            FileLogger.logger.Debug($"📊 ИТОГО таблиц для печати: {grids.Count}");
+            return grids;
+        }
+
+        private void FindDataGridViewsRecursive(Control parent, List<DataGridView> grids)
+        {
+            if (parent == null) return;
+
+            foreach (Control control in parent.Controls)
+            {
+                FileLogger.logger.Debug($"  Контрол: '{control.Name}' Type: {control.GetType().Name} Visible: {control.Visible} (Level: {GetControlLevel(control)})");
+
+                if (control is DataGridView dgv)
+                {
+                    FileLogger.logger.Debug($"    ✅ НАЙДЕН DataGridView: '{dgv.Name}' Rows: {dgv.RowCount}");
+
+                    if (dgv.RowCount > 0 && dgv.Visible)
+                    {
+                        grids.Add(dgv);
+                        FileLogger.logger.Debug($"    ✅ ДОБАВЛЕН в печать: '{dgv.Name}'");
+                    }
+                    else
+                    {
+                        FileLogger.logger.Debug($"    ❌ ПРОПУЩЕН (пустой/невидимый): Rows={dgv.RowCount}, Visible={dgv.Visible}");
+                    }
+                }
+
+                if (control.HasChildren)
+                {
+                    FileLogger.logger.Debug($"    📂 ИДЕМ ВГЛУБЬ: {control.Name} (Children: {control.Controls.Count})");
+                    FindDataGridViewsRecursive(control, grids);
+                }
+            }
+        }
+
+        private int GetControlLevel(Control control)
+        {
+            int level = 0;
+            Control current = control.Parent;
+            while (current != null)
+            {
+                level++;
+                current = current.Parent;
+            }
+            return level;
+        }
+
+        private string GetCurrentGridTitle()
+        {
+            switch (tabControl.SelectedTab.Name)
+            {
+                case "tabShedule": return "РАСПИСАНИЕ УРОКОВ";
+                case "tabHomework": return "ДОМАШНИЕ ЗАДАНИЯ";
+                case "tabGrades": return "ОЦЕНКИ";
+                case "tabPageEvents": return "МЕРОПРИЯТИЯ";
+                case "tabPageStudents": return "УЧЕНИКИ";
+                case "tabPageTeachers": return "СОТРУДНИКИ";
+                case "tabPageAttendance": return "ПОСЕЩАЕМОСТЬ";
+                default: return "ТАБЛИЦА";
+            }
+        }
+
     }
 }
