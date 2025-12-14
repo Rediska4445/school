@@ -1,10 +1,3 @@
-
-﻿<div align="center" style="margin-bottom: 16px; margin-top: 48px;">
-  <img src="res/visual/gui/logo.jpg" width="200" height="200" alt="School Logo"/>
-</div>
-
-
->
 <div align="center" style="margin-bottom: 22px;">
   <img src="https://img.shields.io/badge/C%23-7.3-blue?style=for-the-badge&logo=csharp&logoColor=white" alt="C# 7.3"/>
   <img src="https://img.shields.io/badge/MySQL-Darkblue?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL"/>
