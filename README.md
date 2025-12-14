@@ -49,9 +49,6 @@
 | **Grades**    | **Homework**  | **Directories**  | **Reports**    |
 |---------------|---------------|------------------|----------------|
 | View/Edit     | Tasks/Deadlines| Students/Staff  | Print tables   |
-
-| Statistics    |               |                  |                |
-
 | **Schedule**  | **Roles**             | **Architecture** |
 |---------------|-----------------------|------------------|
 | View/Edit     | Student/Teacher/Director | MVC + Tests    |
