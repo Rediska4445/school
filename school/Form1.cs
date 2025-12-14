@@ -7,7 +7,9 @@ using System.Drawing.Printing;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
+using User = school.Models.User;
 
 namespace school
 {
@@ -378,32 +380,94 @@ namespace school
 
             CommitsAll(previousTab);
 
+            FileLogger.logger.Info("Индексы панелей: " + tabControl.TabCount + " Selected: " + tabControl.SelectedIndex);
+
             // Загрузка таблиц
-            switch (tabControl.SelectedIndex)
+            switch (tabControl.SelectedTab.Name)
             {
                 // Домашка
-                case 0: LoadHomeworkGrid(); break;
+                case "tabHomework": LoadHomeworkGrid(); break;
 
                 // Оценки
-                case 1: LoadGradesGrid(); break;
+                case "tabGrades": LoadGradesGrid(); break;
 
                 // Статистика
-                case 3: LoadStatisticsGrid(); break;
+                case "tabStatistics": LoadStatisticsGrid(); break;
 
                 // Расписание
-                case 2: LoadScheduleGrid(); break;
-
-                // Предметы 
-                case 5: LoadSubjects(); break;
-
-                // Сотрудники
-                case 6: LoadTeachersGrid(); break;
-
-                // Ученики
-                case 7: LoadStudentsGrid(); break;
+                case "tabShedule": LoadScheduleGrid(); break;
 
                 // Вкладка "Мероприятия"
-                case 4: LoadEventsGrid(); break;
+                case "tabPageEvents": LoadEventsGrid(); break;
+
+                // Предметы 
+                case "tabPageSubjects": LoadSubjects(); break;
+
+                // Ученики
+                case "tabPageStudents": LoadStudentsGrid(); break;
+
+                // Сотрудники
+                case "tabPageTeachers": LoadTeachersGrid(); break;
+
+                // Вкладка посещаемости
+                case "tabPageAttendance": LoadAttendance(); break;
+            }
+        }
+
+        public void SetupAttendance()
+        {
+            dataGridViewPersonalAttendance.Rows.Clear();
+            dataGridViewPersonalAttendance.Columns.Clear();
+
+            dataGridViewPersonalAttendance.Columns.Add("AttendanceDate", "Дата");
+            dataGridViewPersonalAttendance.Columns.Add("SubjectName", "Предмет");
+            dataGridViewPersonalAttendance.Columns.Add("LessonDate", "Время");
+            dataGridViewPersonalAttendance.Columns.Add("Status", "Статус");
+            dataGridViewPersonalAttendance.Columns.Add("Comment", "Комментарий");
+
+            if (UserController.CurrentUser.PermissionID >= 2)
+            {
+                dataGridViewPersonalAttendance.ReadOnly = false;
+                dataGridViewPersonalAttendance.AllowUserToAddRows = true;
+                dataGridViewPersonalAttendance.AllowUserToDeleteRows = true;
+            }
+            else
+            {
+                dataGridViewPersonalAttendance.ReadOnly = true;
+            }
+        }
+
+        private void LoadAttendance()
+        {
+            if (dataGridViewPersonalAttendance.Columns.Count == 0)
+            {
+                SetupAttendance();
+            }
+
+            if (UserController.CurrentUser.PermissionID <= 1)
+            {
+                int userId = UserController.CurrentUser.UserID;
+
+                try
+                {
+                    var attendances = AtterdanceController.Instance.GetStudentAttendance(userId);
+
+                    foreach (var attendance in attendances)
+                    {
+                        dataGridViewPersonalAttendance.Rows.Add(
+                            string.Format("{0:dd.MM.yyyy}", attendance.AttendanceDate),
+                            attendance.SubjectName,  // ✅ ПРЕДМЕТ!
+                            attendance.LessonDate != DateTime.MinValue ?
+                                string.Format("{0:HH:mm}", attendance.LessonDate) : "",
+                            attendance.StatusDisplay,
+                            attendance.Comment
+                        );
+                    }
+                }
+                catch (Exception ex)
+                {
+                    FileLogger.logger.Error($"Ошибка LoadAttendance: {ex.Message}");
+                }
             }
         }
 
@@ -600,10 +664,8 @@ namespace school
                     RowHeadersVisible = false
                 };
 
-                // Настраиваем колонки как в основном гриде
                 SetupScheduleGridColumns(personalGrid);
 
-                // Загружаем личное расписание
                 LoadPersonalSchedule(personalGrid);
 
                 personalTab.Controls.Add(personalGrid);
@@ -657,28 +719,16 @@ namespace school
         {
             try
             {
-                // Отвязка данных, иначе нельзя будет редактировать
                 sheduleGridView.DataSource = null;
-
-                // Очистка от предущего мусора
-                sheduleGridView.Columns.Clear();
                 sheduleGridView.Rows.Clear();
 
-                // Если список для директора ещё не появился
-                if(directorComboBox == null)
-                {
-
-                    // Загрузить список с классами для расписания
-                    InitializeScheduleClassCombo();
-                }
-
-                // Текущее расписание которое есть в БД.
                 var scheduleList = SheduleController._controller.GetScheduleForClass(classId);
 
-                // Подготовить таблицу для расписания (внешний вид).
-                SetupScheduleGrid();
+                if(sheduleGridView.Columns.Count == 0)
+                {
+                    SetupScheduleGrid();
+                }
 
-                // Ручное заполнение таблицы.
                 foreach (var schedule in scheduleList)
                 {
                     sheduleGridView.Rows.Add(
@@ -693,7 +743,6 @@ namespace school
 
                 string className = classId == 1 ? "5А" : $"Класс {classId}";
 
-                // Текст для класса расписания - под таблицей
                 sheduleLabel.Text = $"Расписание класса {className} ({scheduleList.Count} уроков)";
             }
             catch (Exception ex)
@@ -723,71 +772,6 @@ namespace school
             sheduleGridView.EditMode = DataGridViewEditMode.EditOnKeystroke;
             sheduleGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             sheduleGridView.RowHeadersVisible = false;
-        }
-
-        // Получить текущий класс из выпадающего списка.
-        private int GetCurrentClassId()
-        {
-            try
-            {
-                FileLogger.logger.Info(
-                    $"GetCurrentClassId START. UserID={UserController.CurrentUser.UserID}, " +
-                    $"PermissionID={UserController.CurrentUser.PermissionID}, " +
-                    $"Role={UserController.CurrentUser.PermissionName}");
-
-                if (UserController.CurrentUser.PermissionID == 3)
-                {
-                    if (directorComboBox == null)
-                    {
-                        FileLogger.logger.Warn(
-                            "GetCurrentClassId: PermissionID=3 (директор), но comboBoxScheduleClass == null. " +
-                            "Возвращаем ClassID пользователя.");
-                    }
-                    else
-                    {
-                        if (directorComboBox.SelectedItem is ComboBoxItem selectedItem)
-                        {
-                            FileLogger.logger.Info(
-                                $"GetCurrentClassId: выбран класс из комбобокса: ClassID={selectedItem.ClassID}, Text='{selectedItem.Text}'");
-                            return selectedItem.ClassID;
-                        }
-                        else
-                        {
-                            FileLogger.logger.Warn(
-                                "GetCurrentClassId: comboBoxScheduleClass.SelectedItem НЕ ComboBoxItem или null. " +
-                                "Text='" + directorComboBox.Text + "'. Возвращаем ClassID пользователя.");
-                        }
-                    }
-                }
-
-                int fallbackClassId = (int)(UserController.CurrentUser.ClassID ?? 1);
-                FileLogger.logger.Info(
-                    $"GetCurrentClassId: используем ClassID пользователя: {fallbackClassId}");
-                return fallbackClassId;
-            }
-            catch (Exception ex)
-            {
-                FileLogger.logger.Error(
-                    "GetCurrentClassId: необработанное исключение. Возвращаем ClassID=1 по умолчанию.", ex);
-                return 1;
-            }
-        }
-
-        // Парсинг для недели
-        private byte GetDayNumber(string dayName)
-        {
-            var days = new Dictionary<string, byte>
-            {
-                ["Пн"] = 1,
-                ["Вт"] = 2,
-                ["Ср"] = 3,
-                ["Чт"] = 4,
-                ["Пт"] = 5,
-                ["Сб"] = 6,
-                ["Вс"] = 7
-            };
-
-            return days.TryGetValue(dayName, out byte num) ? num : (byte)1;
         }
 
         // Инициализация выпадающего списка с классами.
@@ -836,114 +820,75 @@ namespace school
         // Слушатель изменений (вставка) в расписании.
         private void DataGridViewSchedule_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            FileLogger.logger.Info($"🔍 CellEndEdit: Row={e.RowIndex}, Col={e.ColumnIndex}, Time={DateTime.Now:HH:mm:ss.fff}");
+            if (UserController.CurrentUser.PermissionID < 3) return;
 
-            if (UserController.CurrentUser.PermissionID != 3)
-            {
-                FileLogger.logger.Debug("👤 Нет прав (не директор)");
+            DataGridView grid = sender as DataGridView;
+            int rowIndex = e.RowIndex;
+
+            if (grid[1, rowIndex].Value == null || grid[1, rowIndex].Value.ToString().Trim() == "" ||  // День
+                grid[2, rowIndex].Value == null || grid[2, rowIndex].Value.ToString().Trim() == "" ||  // Урок  
+                grid[4, rowIndex].Value == null || grid[4, rowIndex].Value.ToString().Trim() == "" ||  // Предмет
+                grid[5, rowIndex].Value == null || grid[5, rowIndex].Value.ToString().Trim() == "")    // Учитель
                 return;
-            }
-            if (e.RowIndex < 0 || sheduleGridView.Rows[e.RowIndex].IsNewRow)
+
+            TimeSpan? lessonTime = null;
+            string timeText = grid[3, rowIndex]?.Value?.ToString()?.Trim();
+            FileLogger.logger.Debug($"Time text from grid: '{timeText}'");
+
+            if (!string.IsNullOrWhiteSpace(timeText))
             {
-                FileLogger.logger.Debug($"⏭️ Пропуск: RowIndex={e.RowIndex}, IsNewRow={sheduleGridView.Rows[e.RowIndex].IsNewRow}");
-                return;
+                TimeSpan tempTime;
+                // Форматы: "08:30", "8:30", "08:30:00"
+                string[] formats = { "hh:mm", "h:mm", "hh:mm:ss", "H:mm", "HH:mm" };
+                if (TimeSpan.TryParseExact(timeText, formats, null, out tempTime))
+                    lessonTime = tempTime;
+                else if (TimeSpan.TryParse(timeText, out tempTime))
+                    lessonTime = tempTime;
             }
 
-            var row = sheduleGridView.Rows[e.RowIndex];
-            FileLogger.logger.Info($"📊 Строка {e.RowIndex}: [{string.Join("|", row.Cells.Cast<DataGridViewCell>().Select(c => c.Value ?? "NULL"))}]");
+            int scheduleID = grid[0, rowIndex].Value?.ToString() == "" ? -1 : Convert.ToInt32(grid[0, rowIndex].Value);
+            byte dayOfWeek = ScheduleItem.GetDayNumber(grid[1, rowIndex].Value.ToString());
+            byte lessonNumber = Convert.ToByte(grid[2, rowIndex].Value);
 
-            try
+            int classID = ((ComboBoxItem)directorComboBox.SelectedItem).ClassID;
+            int subjectID = SubjectController._controller.GetSubjectIdByName(grid[4, rowIndex].Value.ToString());
+            int teacherID = TeacherController._controller.GetUserByNameAndPermissions(grid[5, rowIndex].Value.ToString(), new int[] { 2, 3 }).UserID;
+
+            FileLogger.logger.Debug($"DEBUG: ID={scheduleID}, Day={dayOfWeek}, Lesson={lessonNumber}, Class={classID}, Subject={subjectID}, Teacher={teacherID}, LessonTime={lessonTime}");
+
+            ScheduleItem schedule = new ScheduleItem
             {
-                string dayText = row.Cells[1].Value?.ToString()?.Trim() ?? "";
-                string lessonText = row.Cells[2].Value?.ToString()?.Trim() ?? "";
-                string timeText = row.Cells[3].Value?.ToString()?.Trim() ?? "";
-                string subjectName = row.Cells[4].Value?.ToString()?.Trim() ?? "";
-                string teacherName = row.Cells[5].Value?.ToString()?.Trim() ?? "";
+                ScheduleID = scheduleID,
+                DayOfWeek = dayOfWeek,
+                LessonNumber = lessonNumber,
+                LessonTime = lessonTime,
+                ClassID = classID,
+                SubjectID = subjectID,
+                TeacherID = teacherID
+            };
 
-                FileLogger.logger.Debug($"📝 Поля: День='{dayText}', Урок='{lessonText}', Время='{timeText}', Предмет='{subjectName}', Учитель='{teacherName}'");
-
-                if (string.IsNullOrWhiteSpace(dayText) ||
-                    string.IsNullOrWhiteSpace(lessonText) ||
-                    string.IsNullOrWhiteSpace(subjectName) ||
-                    string.IsNullOrWhiteSpace(teacherName))
-                {
-                    FileLogger.logger.Warn("⚠️ Недостаточно данных — пропуск");
-                    return;
-                }
-
-                int scheduleId = int.TryParse(row.Cells[0].Value?.ToString() ?? "0", out int id) ? id : 0;
-                byte dayOfWeek = GetDayNumber(dayText);
-                byte lessonNumber = byte.TryParse(lessonText, out byte ln) ? ln : (byte)1;
-
-                TimeSpan? lessonTime = null;
-                if (!string.IsNullOrWhiteSpace(timeText))
-                {
-                    if (TimeSpan.TryParse(timeText, out TimeSpan timeParsed))
-                    {
-                        lessonTime = timeParsed;
-                    }
-                }
-
-                int classId = GetCurrentClassId();
-                FileLogger.logger.Debug($"🔢 Парсинг: ID={scheduleId}, День={dayOfWeek}, Урок={lessonNumber}, Класс={classId}, Время={lessonTime}");
-
-                int subjectId = SubjectController._controller.GetSubjectIdByName(subjectName);
-                var teacher = TeacherController._controller.GetTeacherOrDirectorByName(teacherName);
-                int teacherId = teacher?.UserID ?? 0;
-
-                FileLogger.logger.Debug($"👨‍🏫‍ ПредметID={subjectId}, УчительID={teacherId}");
-
-                if (subjectId == 0 || teacherId == 0)
-                {
-                    FileLogger.logger.Warn($"❌ Предмет/учитель не найдены: {subjectName}/{teacherName}");
-                    MessageBox.Show($"❌ Предмет/учитель не найдены: {subjectName}/{teacherName}");
-                    return;
-                }
-
-                var schedule = new ScheduleItem
-                {
-                    ScheduleID = scheduleId,
-                    DayOfWeek = dayOfWeek,
-                    LessonNumber = lessonNumber,
-                    ClassID = classId,
-                    SubjectID = subjectId,
-                    TeacherID = teacherId,
-                    LessonTime = lessonTime
-                };
-
-                FileLogger.logger.Info($"➕ ScheduleItem готов: {schedule.ScheduleID} | {schedule.DayOfWeek} | {schedule.LessonNumber} | {schedule.SubjectID}/{schedule.TeacherID}");
-
-                string action = scheduleId > 0 ? "EDIT" : "ADD";
-
-                FileLogger.logger.Info($"📤 ДО AddScheduleChange: PendingCount={SheduleController._controller.PendingChangesCount}");
-                SheduleController._controller.AddScheduleChange(action, schedule);
-                FileLogger.logger.Info($"📤 ПОСЛЕ AddScheduleChange: PendingCount={SheduleController._controller.PendingChangesCount}");
-
-                MessageBox.Show($"✅ {action} урока в очереди ({SheduleController._controller.PendingChangesCount} всего)");
-                FileLogger.logger.Info($"✅ {action} ДОБАВЛЕНО! Итого в очереди: {SheduleController._controller.PendingChangesCount}");
-            }
-            catch (Exception ex)
-            {
-                FileLogger.logger.Error($"💥 ОШИБКА CellEndEdit: {ex}");
-                MessageBox.Show($"❌ Ошибка обработки строки: {ex.Message}");
-            }
+            // Добавляем в очередь
+            string action = schedule.ScheduleID > 0 ? "EDIT" : "ADD";
+            SheduleController._controller.AddScheduleChange(action, schedule);
         }
 
         // Слушатель изменений (удаление) в расписании.
-        // Меняет только флаг.
+        // Слушатель изменений (удаление) в расписании
         private void DataGridViewSchedule_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
         {
             if (UserController.CurrentUser.PermissionID != 3) return;
 
-            int scheduleId = int.TryParse(e.Row.Cells[0].Value?.ToString() ?? "0", out int id) ? id : 0;
+            DataGridView grid = sender as DataGridView;
 
-            if (scheduleId > 0)
+            int scheduleID = Convert.ToInt32(e.Row.Cells[0].Value); 
+
+            if (scheduleID > 0)
             {
-                // ✅ Добавляем удаление в очередь контроллера
-                var schedule = new ScheduleItem { ScheduleID = scheduleId };
-                SheduleController._controller.AddScheduleChange("DELETE", schedule);
+                ScheduleItem scheduleToDelete = new ScheduleItem { ScheduleID = scheduleID };
 
-                MessageBox.Show($"✅ Удаление урока #{scheduleId} в очереди ({SheduleController._controller.PendingChangesCount} всего)");
+                SheduleController._controller.AddScheduleChange("DELETE", scheduleToDelete);
+
+                FileLogger.logger.Info($"DELETE queued: ScheduleID={scheduleID}");
             }
         }
 
@@ -1276,7 +1221,6 @@ namespace school
 
             try
             {
-                // ✅ Очищаем грид
                 dataGridViewTeachers.Rows.Clear();
 
                 if (dataGridViewTeachers.Columns.Count == 0)
@@ -1288,8 +1232,7 @@ namespace school
                     FileLogger.logger.Debug("Колонки созданы");
                 }
 
-                // ✅ Получаем данные из контроллера/модели
-                var teachers = TeacherController._controller.GetAllTeachers();  // Твой метод List<User>
+                var teachers = TeacherController._controller.GetAllTeachers(); 
                 FileLogger.logger.Info($"📊 Получено {teachers.Count} сотрудников из БД");
 
                 if (teachers.Count == 0)
@@ -1298,7 +1241,6 @@ namespace school
                     return;
                 }
 
-                // ✅ Заполняем строки
                 foreach (var user in teachers)
                 {
                     dataGridViewTeachers.Rows.Add(
@@ -1317,7 +1259,6 @@ namespace school
 
                 FileLogger.logger.Debug("⚙️ Колонки настроены");
 
-                // ✅ Финальная настройка грида
                 dataGridViewTeachers.ReadOnly = true;
                 dataGridViewTeachers.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
                 dataGridViewTeachers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;

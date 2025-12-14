@@ -226,37 +226,11 @@ namespace school
                 connection = new SqlConnection(Form1.CONNECTION_STRING);
                 connection.Open();
 
-                // ✅ Проверяем существование по ключу (DayOfWeek + LessonNumber + ClassID)
-                SqlCommand checkCmd = new SqlCommand(@"
-            SELECT ScheduleID FROM Schedule 
-            WHERE DayOfWeek = @DayOfWeek AND LessonNumber = @LessonNumber AND ClassID = @ClassID", connection);
+                FileLogger.logger.Info($"InsertOrUpdateSchedulePart: ScheduleID={schedule.ScheduleID}, Day={schedule.DayOfWeek}, Lesson={schedule.LessonNumber}, Class={schedule.ClassID}");
 
-                checkCmd.Parameters.AddWithValue("@DayOfWeek", schedule.DayOfWeek);
-                checkCmd.Parameters.AddWithValue("@LessonNumber", schedule.LessonNumber);
-                checkCmd.Parameters.AddWithValue("@ClassID", schedule.ClassID);
-
-                object existingId = checkCmd.ExecuteScalar();
-
-                if (existingId != null)
+                if (schedule.ScheduleID == -1 || schedule.ScheduleID == 0)
                 {
-                    SqlCommand updateCmd = new SqlCommand(@"
-                UPDATE Schedule SET 
-                    SubjectID = @SubjectID, 
-                    TeacherID = @TeacherID,
-                    LessonTime = @LessonTime
-                WHERE ScheduleID = @ScheduleID", connection);
-
-                    updateCmd.Parameters.AddWithValue("@SubjectID", schedule.SubjectID);
-                    updateCmd.Parameters.AddWithValue("@TeacherID", schedule.TeacherID);
-                    updateCmd.Parameters.AddWithValue("@LessonTime",
-                        schedule.LessonTime.HasValue ? (object)schedule.LessonTime.Value : DBNull.Value);
-                    updateCmd.Parameters.AddWithValue("@ScheduleID", (int)existingId);
-
-                    updateCmd.ExecuteNonQuery();
-                    return (int)existingId;
-                }
-                else
-                {
+                    // ✅ НОВЫЙ урок - INSERT с IDENTITY
                     SqlCommand insertCmd = new SqlCommand(@"
                 INSERT INTO Schedule (DayOfWeek, LessonNumber, ClassID, SubjectID, TeacherID, LessonTime)
                 OUTPUT INSERTED.ScheduleID
@@ -270,15 +244,81 @@ namespace school
                     insertCmd.Parameters.AddWithValue("@LessonTime",
                         schedule.LessonTime.HasValue ? (object)schedule.LessonTime.Value : DBNull.Value);
 
-                    int newScheduleId = (int)insertCmd.ExecuteScalar();
-                    return newScheduleId; // ✅ Возвращаем ID из identity
+                    int newId = (int)insertCmd.ExecuteScalar();
+                    FileLogger.logger.Info($"INSERT success: new ScheduleID={newId}");
+                    return newId;
                 }
+                else
+                {
+                    // ✅ Проверяем существование записи
+                    SqlCommand checkCmd = new SqlCommand("SELECT COUNT(*) FROM Schedule WHERE ScheduleID = @ScheduleID", connection);
+                    checkCmd.Parameters.AddWithValue("@ScheduleID", schedule.ScheduleID);
+                    int exists = (int)checkCmd.ExecuteScalar();
+
+                    if (exists == 0)
+                    {
+                        FileLogger.logger.Warn($"UPDATE failed: ScheduleID={schedule.ScheduleID} not found. Doing INSERT instead.");
+                        // Fallback на INSERT
+                        SqlCommand insertCmd = new SqlCommand(@"
+                    INSERT INTO Schedule (DayOfWeek, LessonNumber, ClassID, SubjectID, TeacherID, LessonTime)
+                    OUTPUT INSERTED.ScheduleID
+                    VALUES (@DayOfWeek, @LessonNumber, @ClassID, @SubjectID, @TeacherID, @LessonTime)", connection);
+
+                        insertCmd.Parameters.AddWithValue("@DayOfWeek", schedule.DayOfWeek);
+                        insertCmd.Parameters.AddWithValue("@LessonNumber", schedule.LessonNumber);
+                        insertCmd.Parameters.AddWithValue("@ClassID", schedule.ClassID);
+                        insertCmd.Parameters.AddWithValue("@SubjectID", schedule.SubjectID);
+                        insertCmd.Parameters.AddWithValue("@TeacherID", schedule.TeacherID);
+                        insertCmd.Parameters.AddWithValue("@LessonTime",
+                            schedule.LessonTime.HasValue ? (object)schedule.LessonTime.Value : DBNull.Value);
+
+                        int newId = (int)insertCmd.ExecuteScalar();
+                        return newId;
+                    }
+
+                    // ✅ UPDATE по ID
+                    SqlCommand updateCmd = new SqlCommand(@"
+                    UPDATE Schedule SET 
+                        DayOfWeek = @DayOfWeek,
+                        LessonNumber = @LessonNumber,
+                        SubjectID = @SubjectID, 
+                        TeacherID = @TeacherID,
+                        LessonTime = @LessonTime
+                    WHERE ScheduleID = @ScheduleID", connection);
+
+                    updateCmd.Parameters.AddWithValue("@DayOfWeek", schedule.DayOfWeek);
+                    updateCmd.Parameters.AddWithValue("@LessonNumber", schedule.LessonNumber);
+                    updateCmd.Parameters.AddWithValue("@ScheduleID", schedule.ScheduleID);
+                    updateCmd.Parameters.AddWithValue("@SubjectID", schedule.SubjectID);
+                    updateCmd.Parameters.AddWithValue("@TeacherID", schedule.TeacherID);
+                    updateCmd.Parameters.AddWithValue("@LessonTime",
+                        schedule.LessonTime.HasValue ? (object)schedule.LessonTime.Value : DBNull.Value);
+
+                    int rowsAffected = updateCmd.ExecuteNonQuery();
+                    FileLogger.logger.Info($"UPDATE success: ScheduleID={schedule.ScheduleID}, rows={rowsAffected}");
+
+                    if (rowsAffected == 0)
+                        FileLogger.logger.Error($"UPDATE affected 0 rows for ScheduleID={schedule.ScheduleID}");
+
+                    return schedule.ScheduleID;
+                }
+            }
+            catch (SqlException ex)
+            {
+                FileLogger.logger.Error($"SQL Error in InsertOrUpdateSchedulePart: {ex.Message}", ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"Error in InsertOrUpdateSchedulePart: {ex.Message}", ex);
+                throw;
             }
             finally
             {
                 connection?.Dispose();
             }
         }
+
 
         /// <summary>
         /// Возвращает расписание для конкретного учителя/директора.

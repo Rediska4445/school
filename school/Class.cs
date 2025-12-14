@@ -126,7 +126,22 @@ namespace school.Models
         public string DayOfWeekDisplay => GetDayName(DayOfWeek);
         public string LessonTimeDisplay => LessonTime?.ToString(@"hh\:mm") ?? "";
 
-        private static string GetDayName(byte dayOfWeek)
+        public static byte GetDayNumber(string dayName)
+        {
+            switch (dayName)
+            {
+                case "Понедельник": return 1;
+                case "Вторник": return 2;
+                case "Среда": return 3;
+                case "Четверг": return 4;
+                case "Пятница": return 5;
+                case "Суббота": return 6;
+                case "Воскресенье": return 7;
+                default: return 0; 
+            }
+        }
+
+        public static string GetDayName(byte dayOfWeek)
         {
             switch (dayOfWeek)
             {
@@ -161,6 +176,9 @@ namespace school.Models
     /// <summary>
     /// Таблица посещаемости (расширенная)
     /// </summary>
+    /// <summary>
+    /// Таблица посещаемости (расширенная) - C# 7.3
+    /// </summary>
     public class Attendance
     {
         public int AttendanceID { get; set; }
@@ -178,15 +196,20 @@ namespace school.Models
         [Required]
         public bool ExcuseReason { get; set; } = false;  // Уважительная причина (true=да, false=нет)
 
-        public DateTime? LessonDate { get; set; }  // Время урока (nullable value type)
+        public DateTime LessonDate { get; set; } = DateTime.MinValue;  // Время урока
 
         [StringLength(200)]
-        public string Comment { get; set; } = "";  // ✅ string по умолчанию null-safe в C# 7.3
+        public string Comment { get; set; } = "";  // Примечание/оправдание
+
+        public int SubjectID { get; set; }
+        [StringLength(50)]
+        public string SubjectName { get; set; } = "";
+        [StringLength(20)]
+        public string StatusDisplay { get; set; } = "";
 
         public string StudentNameDisplay => Student != null ? Student.FullName : "";
         public string AttendanceDateDisplay => AttendanceDate.ToString("dd.MM.yyyy");
-        public string PresentDisplay => Present ? "Присутствует" : "Отсутствует";
-        public string ExcuseDisplay => ExcuseReason ? "Уважительная" : "Не уважительная";
-        public string StatusDisplay => Present ? "✓" : (ExcuseReason ? "⚠️" : "✗");
+        public string LessonTimeDisplay => LessonDate != DateTime.MinValue ? LessonDate.ToString("HH:mm") : "";
+        public string IconStatus => Present ? "✓" : (ExcuseReason ? "⚠️" : "✗");
     }
 }
