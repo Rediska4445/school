@@ -24,7 +24,7 @@ namespace school
 
         public LoginForm()
         {
-            Controller.sqlController.PrepareDatabase(Form1.CONNECTION_STRING);
+            Controller.sqlController.PrepareDatabase("Server=(localdb)\\MSSQLLocalDB;Database=master;Integrated Security=true;");
 
             InitializeComponent();
 
@@ -32,7 +32,7 @@ namespace school
             txtPassword.Text = "hashed_pass1";
         }
 
-        private void btnLogin_Click(object sender, EventArgs e)
+        private void btnLogin_Click_1(object sender, EventArgs e)
         {
             string login = txtLogin.Text.Trim();
             string password = txtPassword.Text;
@@ -82,33 +82,37 @@ namespace school
             }
         }
 
-        private void btnCancel_Click(object sender, EventArgs e)
+        private void btnRegister_Click(object sender, EventArgs e)
         {
-            
-        }
+            string fullName = txtFullName.Text.Trim();
+            string password = txtRegPassword.Text;
 
-        private void LoginForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (e.CloseReason == CloseReason.UserClosing && !IsLoggedIn)
+            if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(password))
             {
-                DialogResult result = MessageBox.Show("Выйти из приложения?",
-                    "Подтверждение", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (result == DialogResult.No)
-                {
-                    e.Cancel = true;
-                }
-                else
-                {
-                    Application.Exit();
-                }
+                MessageBox.Show("Заполните ФИО и пароль!", "Ошибка",
+                               MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
-        }
 
-        protected override void OnLoad(EventArgs e)
-        {
-            base.OnLoad(e);
-            txtLogin.Focus();
+            if (cmbPermission.SelectedIndex < 0)
+            {
+                MessageBox.Show("Выберите роль!", "Ошибка",
+                               MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int permissionID = cmbPermission.SelectedIndex + 1;
+            int? classID = cmbClass.SelectedIndex >= 0 ? cmbClass.SelectedIndex + 1 : (int?)null;
+
+            bool success = UserController._userController.RegisterUserWithMessage(fullName, password, permissionID, classID);
+
+            if (success)
+            {
+                txtFullName.Clear();
+                txtRegPassword.Clear();
+                cmbPermission.SelectedIndex = -1;
+                cmbClass.SelectedIndex = -1;
+            }
         }
     }
 }

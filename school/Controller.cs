@@ -9,16 +9,18 @@ namespace school
 {
     public class Controller
     {
+        public static string DATABASE_NAME = "SchoolSystemTest";
+
         public static Controller sqlController = new Controller();
 
         public List<string> Database = new List<string>()
         { 
             // 1. ✅ Создание БД
-            @"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'SchoolSystemTest')
-              CREATE DATABASE SchoolSystemTest COLLATE Cyrillic_General_CI_AS;",
+             $@"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{DATABASE_NAME}')
+                CREATE DATABASE {DATABASE_NAME} COLLATE Cyrillic_General_CI_AS;",
 
             // 2. ✅ USE БД
-            "USE SchoolSystemTest;",
+            $"USE {DATABASE_NAME};",
 
             // 3. ✅ Таблица Classes
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Classes' AND xtype='U')
@@ -147,6 +149,39 @@ namespace school
                     INDEX IX_Attendance_Present (Present),
                     INDEX IX_Attendance_Excuse (ExcuseReason)
                 );",
+                    @"IF OBJECT_ID('sp_RegisterUserSimple', 'P') IS NULL
+                    BEGIN
+                        EXEC('CREATE PROCEDURE sp_RegisterUserSimple
+                            @FullName NVARCHAR(100),
+                            @Password NVARCHAR(50),
+                            @PermissionID INT,
+                            @ClassID INT = NULL,
+                            @NewUserID INT OUTPUT
+                        AS
+                        BEGIN
+                            SET NOCOUNT ON;
+                            INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
+                            VALUES (@FullName, @Password, @PermissionID, @ClassID);
+                            SET @NewUserID = SCOPE_IDENTITY();
+                        END')
+                    END
+                    ELSE
+                    BEGIN
+                        EXEC sp_rename 'sp_RegisterUserSimple', 'sp_RegisterUserSimple_OLD';
+                        EXEC('CREATE PROCEDURE sp_RegisterUserSimple
+                            @FullName NVARCHAR(100),
+                            @Password NVARCHAR(50),
+                            @PermissionID INT,
+                            @ClassID INT = NULL,
+                            @NewUserID INT OUTPUT
+                        AS
+                        BEGIN
+                            SET NOCOUNT ON;
+                            INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
+                            VALUES (@FullName, @Password, @PermissionID, @ClassID);
+                            SET @NewUserID = SCOPE_IDENTITY();
+                        END')
+                    END;",
         };
 
         public void PrepareDatabase(string connectionString)

@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using school.Models;
 using System.Data;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace school.Controllers
 {
@@ -74,10 +75,10 @@ namespace school.Controllers
                 u.PermissionID, 
                 p.PermissionName, 
                 u.ClassID,
-                c.ClassName  -- ✅ Добавлено название класса
+                c.ClassName
             FROM Users u
             INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
-            LEFT JOIN Classes c ON u.ClassID = c.ClassID  -- ✅ LEFT JOIN для классов
+            LEFT JOIN Classes c ON u.ClassID = c.ClassID
             WHERE {whereCondition}
             ORDER BY u.FullName";
 
@@ -133,8 +134,7 @@ namespace school.Controllers
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-
-                // Проверка существования
+                
                 using (var checkCmd = new SqlCommand("SELECT COUNT(*) FROM Users WHERE UserID = @UserID", conn))
                 {
                     checkCmd.Parameters.AddWithValue("@UserID", user.UserID);
@@ -143,7 +143,6 @@ namespace school.Controllers
                     SqlCommand cmd;
                     if (exists == 0)
                     {
-                        // ✅ НОВЫЙ пользователь
                         cmd = new SqlCommand(@"
                             INSERT INTO Users (FullName, PermissionID, ClassID) 
                             OUTPUT INSERTED.UserID 
@@ -151,7 +150,6 @@ namespace school.Controllers
                     }
                     else
                     {
-                        // ✅ ОБНОВЛЕНИЕ
                         cmd = new SqlCommand(@"
                             UPDATE Users 
                             SET FullName = @FullName, PermissionID = @PermissionID, ClassID = @ClassID 
@@ -169,6 +167,74 @@ namespace school.Controllers
                     user.UserID = userId;
                     return userId;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Регистрирует нового пользователя через хранимую процедуру
+        /// </summary>
+        /// <param name="fullName">ФИО пользователя</param>
+        /// <param name="password">Пароль</param>
+        /// <param name="permissionID">1=Ученик, 2=Учитель, 3=Директор</param>
+        /// <param name="classID">ID класса (NULL для учителя/директора)</param>
+        /// <returns>Новый UserID или 0 при ошибке</returns>
+        public int RegisterUser(string fullName, string password, int permissionID, int? classID = null)
+        {
+            int newUserID = 0;
+
+            using (SqlConnection conn = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                using (SqlCommand cmd = new SqlCommand("sp_RegisterUserSimple", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@FullName", fullName ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Password", password ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PermissionID", permissionID);
+                    cmd.Parameters.AddWithValue("@ClassID", classID ?? (object)DBNull.Value);
+
+                    SqlParameter outParam = new SqlParameter("@NewUserID", SqlDbType.Int)
+                    {
+                        Direction = ParameterDirection.Output
+                    };
+                    cmd.Parameters.Add(outParam);
+
+                    try
+                    {
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                        newUserID = (int)outParam.Value;
+                    }
+                    catch (SqlException ex)
+                    {
+                        throw new Exception($"Ошибка базы данных: {ex.Message}", ex);
+                    }
+                }
+            }
+            return newUserID;
+        }
+
+        /// <summary>
+        /// Регистрирует пользователя с сообщением для UI
+        /// </summary>
+        public bool RegisterUserWithMessage(string fullName, string password, int permissionID, int? classID = null)
+        {
+            try
+            {
+                int userID = RegisterUser(fullName, password, permissionID, classID);
+                if (userID > 0)
+                {
+                    MessageBox.Show($"Пользователь '{fullName}' зарегистрирован! ID: {userID}",
+                                   "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка регистрации: {ex.Message}", "Ошибка",
+                               MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
