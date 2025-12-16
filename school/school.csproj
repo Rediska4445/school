@@ -233,6 +233,7 @@
     <Compile Include="ClassController.cs" />
     <Compile Include="ClassControllerTests.cs" />
     <Compile Include="ComboBoxItem.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="Controller.cs" />
     <Compile Include="DataGridViewPrinter.cs" />
     <Compile Include="EventsController.cs" />

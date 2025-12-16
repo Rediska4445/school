@@ -13,14 +13,18 @@ namespace school
 
         public static Controller sqlController = new Controller();
 
-        public List<string> Database = new List<string>()
-        { 
+        public static class DatabaseScripts
+        {
+            public static List<string> GenerateDatabaseScripts(string dbName)
+            {
+                return new List<string>()
+        {
             // 1. ✅ Создание БД
-             $@"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{DATABASE_NAME}')
-                CREATE DATABASE {DATABASE_NAME} COLLATE Cyrillic_General_CI_AS;",
+            $@"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'[{dbName}]')
+               CREATE DATABASE [{dbName}] COLLATE Cyrillic_General_CI_AS;",
 
             // 2. ✅ USE БД
-            $"USE {DATABASE_NAME};",
+            $"USE [{dbName}];",
 
             // 3. ✅ Таблица Classes
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Classes' AND xtype='U')
@@ -130,68 +134,74 @@ namespace school
                   INDEX IX_Events_EventTime (EventTime DESC),
                   INDEX IX_Events_EventName (EventName)
               );",
-            // 13. ✅ ТАБЛИЦА Attendance (посещаемость)
-            @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Attendance' AND xtype='U')
-                CREATE TABLE Attendance (
-                    AttendanceID INT IDENTITY(1,1) PRIMARY KEY,
-                    AttendanceDate DATE NOT NULL,
-                    UserID INT NOT NULL,
-                    Present BIT NOT NULL DEFAULT 1,
-                    ExcuseReason BIT NOT NULL DEFAULT 0,
-                    LessonDate DATETIME2 NULL,
-                    Comment NVARCHAR(200) COLLATE Cyrillic_General_CI_AS NULL,
-                    SubjectID INT NULL,  -- ✅ Сразу добавляем!
-                    CONSTRAINT FK_Attendance_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
-                    CONSTRAINT FK_Attendance_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
-                    UNIQUE (AttendanceDate, UserID),
-                    INDEX IX_Attendance_Date (AttendanceDate DESC),
-                    INDEX IX_Attendance_User (UserID),
-                    INDEX IX_Attendance_Present (Present),
-                    INDEX IX_Attendance_Excuse (ExcuseReason)
-                );",
-                    @"IF OBJECT_ID('sp_RegisterUserSimple', 'P') IS NULL
-                    BEGIN
-                        EXEC('CREATE PROCEDURE sp_RegisterUserSimple
-                            @FullName NVARCHAR(100),
-                            @Password NVARCHAR(50),
-                            @PermissionID INT,
-                            @ClassID INT = NULL,
-                            @NewUserID INT OUTPUT
-                        AS
-                        BEGIN
-                            SET NOCOUNT ON;
-                            INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
-                            VALUES (@FullName, @Password, @PermissionID, @ClassID);
-                            SET @NewUserID = SCOPE_IDENTITY();
-                        END')
-                    END
-                    ELSE
-                    BEGIN
-                        EXEC sp_rename 'sp_RegisterUserSimple', 'sp_RegisterUserSimple_OLD';
-                        EXEC('CREATE PROCEDURE sp_RegisterUserSimple
-                            @FullName NVARCHAR(100),
-                            @Password NVARCHAR(50),
-                            @PermissionID INT,
-                            @ClassID INT = NULL,
-                            @NewUserID INT OUTPUT
-                        AS
-                        BEGIN
-                            SET NOCOUNT ON;
-                            INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
-                            VALUES (@FullName, @Password, @PermissionID, @ClassID);
-                            SET @NewUserID = SCOPE_IDENTITY();
-                        END')
-                    END;",
-        };
 
-        public void PrepareDatabase(string connectionString)
+            // 13. ✅ Таблица Attendance
+            @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Attendance' AND xtype='U')
+              CREATE TABLE Attendance (
+                  AttendanceID INT IDENTITY(1,1) PRIMARY KEY,
+                  AttendanceDate DATE NOT NULL,
+                  UserID INT NOT NULL,
+                  Present BIT NOT NULL DEFAULT 1,
+                  ExcuseReason BIT NOT NULL DEFAULT 0,
+                  LessonDate DATETIME2 NULL,
+                  Comment NVARCHAR(200) COLLATE Cyrillic_General_CI_AS NULL,
+                  SubjectID INT NULL,
+                  CONSTRAINT FK_Attendance_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+                  CONSTRAINT FK_Attendance_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
+                  UNIQUE (AttendanceDate, UserID),
+                  INDEX IX_Attendance_Date (AttendanceDate DESC),
+                  INDEX IX_Attendance_User (UserID),
+                  INDEX IX_Attendance_Present (Present),
+                  INDEX IX_Attendance_Excuse (ExcuseReason)
+              );",
+
+            // 14. ✅ Stored Procedure sp_RegisterUserSimple
+            @"IF OBJECT_ID('sp_RegisterUserSimple', 'P') IS NULL
+            BEGIN
+                EXEC('CREATE PROCEDURE sp_RegisterUserSimple
+                    @FullName NVARCHAR(100),
+                    @Password NVARCHAR(50),
+                    @PermissionID INT,
+                    @ClassID INT = NULL,
+                    @NewUserID INT OUTPUT
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
+                    VALUES (@FullName, @Password, @PermissionID, @ClassID);
+                    SET @NewUserID = SCOPE_IDENTITY();
+                END')
+            END
+            ELSE
+            BEGIN
+                EXEC sp_rename 'sp_RegisterUserSimple', 'sp_RegisterUserSimple_OLD';
+                EXEC('CREATE PROCEDURE sp_RegisterUserSimple
+                    @FullName NVARCHAR(100),
+                    @Password NVARCHAR(50),
+                    @PermissionID INT,
+                    @ClassID INT = NULL,
+                    @NewUserID INT OUTPUT
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
+                    VALUES (@FullName, @Password, @PermissionID, @ClassID);
+                    SET @NewUserID = SCOPE_IDENTITY();
+                END')
+            END;"
+        };
+            }
+        }
+
+
+        public void PrepareDatabase(string connectionString, string dbName)
         {
             try
             {
                 using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
-                    foreach (var script in Database)
+                    foreach (var script in DatabaseScripts.GenerateDatabaseScripts(dbName))
                     {
                         using (var command = new SqlCommand(script, connection))
                         {

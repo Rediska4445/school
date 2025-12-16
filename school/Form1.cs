@@ -1,16 +1,10 @@
-﻿using RedSqlConnector;
-using school.Controllers;
+﻿using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Printing;
-using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Forms;
-using System.Xml.Linq;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
 using User = school.Models.User;
 

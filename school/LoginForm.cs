@@ -24,7 +24,11 @@ namespace school
 
         public LoginForm()
         {
-            Controller.sqlController.PrepareDatabase("Server=(localdb)\\MSSQLLocalDB;Database=master;Integrated Security=true;");
+            var settings = AppSettings.Load();
+            Form1.CONNECTION_STRING = settings.ConnectionString;
+            Controller.DATABASE_NAME = settings.DatabaseName;
+
+            Controller.sqlController.PrepareDatabase(settings.MasterConnectionString, Controller.DATABASE_NAME);
 
             InitializeComponent();
 
