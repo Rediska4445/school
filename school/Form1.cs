@@ -513,11 +513,12 @@ namespace school
             string attIdStr = row.Cells["AttendanceID"].Value?.ToString()?.Trim();
             string studentName = row.Cells["StudentName"].Value?.ToString()?.Trim();
             string subjectName = row.Cells["SubjectName"].Value?.ToString()?.Trim();
-            string lessonDateStr = row.Cells["LessonDate"].Value?.ToString()?.Trim();
+            string lessonDateStr = row.Cells["AttendanceDate"].Value?.ToString()?.Trim();
+            string lessonTimeStr = row.Cells["LessonDate"].Value?.ToString()?.Trim();
             string statusStr = row.Cells["Status"].Value?.ToString()?.Trim();
             string commentStr = row.Cells["Comment"].Value?.ToString()?.Trim();
 
-            FileLogger.logger.Debug($"dataGridViewClassAttendance_CellValueChanged - Изменена ячейка (Row={e.RowIndex}, Col={e.ColumnIndex}): Student='{studentName}', Status='{statusStr}'");
+            FileLogger.logger.Debug($"dataGridViewClassAttendance_CellValueChanged - Изменена ячейка (Row={e.RowIndex}, Col={e.ColumnIndex}, Val={row.Cells[e.ColumnIndex].Value}): Student='{studentName}', Status='{statusStr}'");
 
             if (string.IsNullOrEmpty(studentName) || string.IsNullOrEmpty(subjectName) ||
                 string.IsNullOrEmpty(lessonDateStr) || string.IsNullOrEmpty(statusStr))
@@ -544,10 +545,11 @@ namespace school
                 {
                     AttendanceID = attendanceId,
                     SubjectID = SubjectController._controller.GetSubjectIdByName(subjectName),
-                    LessonDate = DateTime.Parse(lessonDateStr),
+                    LessonDate = DateTime.Parse(lessonTimeStr),
+                    AttendanceDate = DateTime.Parse(lessonDateStr).Date,
+
                     UserID = UserController._userController.GetStudentIdByName(studentName),
-                    AttendanceDate = DateTime.Parse(lessonDateStr),
-                    Present = statusStr == "Присутствует",
+                    Present = statusStr.Contains("Присут"),
                     ExcuseReason = statusStr?.Contains("оправдание") ?? false,
                     Comment = commentStr ?? ""
                 };
@@ -1131,7 +1133,6 @@ namespace school
             if (!string.IsNullOrWhiteSpace(timeText))
             {
                 TimeSpan tempTime;
-                // Форматы: "08:30", "8:30", "08:30:00"
                 string[] formats = { "hh:mm", "h:mm", "hh:mm:ss", "H:mm", "HH:mm" };
                 if (TimeSpan.TryParseExact(timeText, formats, null, out tempTime))
                     lessonTime = tempTime;
@@ -1436,7 +1437,7 @@ namespace school
         /* Сегмент с вкладкой "Мероприятия" */
         private void LoadEventsGrid()
         {
-            FileLogger.logger.Info("🔄 LoadEventsGrid: загрузка мероприятий");
+            FileLogger.logger.Info("LoadEventsGrid: загрузка мероприятий");
 
             try
             {
@@ -1445,15 +1446,15 @@ namespace school
                 if (dataGridViewEvents.Columns.Count == 0)
                 {
                     CreateEventsColumns();
-                    FileLogger.logger.Debug("📐 Колонки мероприятий созданы");
+                    FileLogger.logger.Debug("LoadEventsGrid - Колонки мероприятий созданы");
                 }
 
                 var events = EventsController._controller.GetAllEvents(); 
-                FileLogger.logger.Info($"📊 Получено {events.Count} мероприятий");
+                FileLogger.logger.Info($"LoadEventsGrid - Получено {events.Count} мероприятий");
 
                 if (events.Count == 0)
                 {
-                    FileLogger.logger.Warn("⚠️ Мероприятия не найдены");
+                    FileLogger.logger.Warn("LoadEventsGrid - Мероприятия не найдены");
                     return;
                 }
 
@@ -1466,21 +1467,23 @@ namespace school
                         ev.Location
                     );
 
-                    FileLogger.logger.Debug($"➕ {ev.EventName} | {ev.EventTime:dd.MM HH:mm} | {ev.Location}");
+                    FileLogger.logger.Debug($"LoadEventsGrid - {ev.EventName} | {ev.EventTime:dd.MM HH:mm} | {ev.Location}");
                 }
 
                 bool isDirector = UserController.CurrentUser.PermissionID >= 3;
 
-                dataGridViewEvents.ReadOnly = !isDirector;  
+                dataGridViewEvents.ReadOnly = !isDirector;
+                dataGridViewEvents.AllowUserToAddRows = isDirector;
+                dataGridViewEvents.AllowUserToDeleteRows = isDirector;
                 dataGridViewEvents.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
                 dataGridViewEvents.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
-                FileLogger.logger.Info($"Загружено {dataGridViewEvents.Rows.Count} мероприятий");
+                FileLogger.logger.Info($"LoadEventsGrid - Загружено {dataGridViewEvents.Rows.Count} мероприятий");
             }
             catch (Exception ex)
             {
-                FileLogger.logger.Error($"LoadEventsGrid: {ex.Message}");
-                MessageBox.Show($"Ошибка загрузки мероприятий: {ex.Message}");
+                FileLogger.logger.Error($"LoadEventsGrid - {ex.Message}");
+                MessageBox.Show($"LoadEventsGrid - Ошибка загрузки мероприятий: {ex.Message}");
             }
         }
 
@@ -1500,7 +1503,9 @@ namespace school
             dataGridViewEvents.Columns["EventTime"].FillWeight = 30;
             dataGridViewEvents.Columns["Location"].FillWeight = 20;
 
-            FileLogger.logger.Debug("Колонки Events настроены");
+            dataGridViewEvents.MultiSelect = false;
+
+            FileLogger.logger.Debug("CreateEventsColumns - Колонки Events настроены");
         }
 
         /* Сегмент с вкладкой "Сотрудники" */

@@ -132,43 +132,83 @@ namespace school
             {
                 conn.Open();
 
-                string mergeQuery = @"
-                    MERGE Attendance AS target
-                    USING (VALUES (@AttendanceDate, @UserID, @SubjectID, CAST(@LessonDate AS DATE))) 
-                    AS source (AttendanceDate, UserID, SubjectID, LessonDate)
-                    ON target.AttendanceDate = source.AttendanceDate 
-                       AND target.UserID = source.UserID
-                       AND target.SubjectID = source.SubjectID
-                       AND CAST(target.LessonDate AS DATE) = source.LessonDate
-            
-                    WHEN MATCHED THEN
-                        UPDATE SET 
+                if (attendance.AttendanceID < 0) // ✅ НОВАЯ запись - всегда INSERT
+                {
+                    string insertQuery = @"
+                INSERT INTO Attendance (AttendanceDate, UserID, SubjectID, Present, ExcuseReason, LessonDate, Comment)
+                OUTPUT INSERTED.AttendanceID
+                VALUES (@AttendanceDate, @UserID, @SubjectID, @Present, @ExcuseReason, @LessonDate, @Comment)";
+
+                    using (SqlCommand cmd = new SqlCommand(insertQuery, conn))
+                    {
+                        AddAttendanceParams(cmd, attendance);
+                        int newId = (int)cmd.ExecuteScalar();
+                        attendance.AttendanceID = newId; // Обновляем объект
+                        return newId;
+                    }
+                }
+                else // ID >= 0 - проверяем по AttendanceID
+                {
+                    // 1. Проверяем существование по AttendanceID
+                    using (var checkCmd = new SqlCommand(
+                        "SELECT COUNT(*) FROM Attendance WHERE AttendanceID = @AttendanceID", conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@AttendanceID", attendance.AttendanceID);
+                        bool exists = (int)checkCmd.ExecuteScalar() > 0;
+
+                        if (exists)
+                        {
+                            // 2. UPDATE существующей
+                            string updateQuery = @"
+                        UPDATE Attendance SET 
+                            AttendanceDate = @AttendanceDate,
+                            UserID = @UserID,
+                            SubjectID = @SubjectID,
                             Present = @Present,
                             ExcuseReason = @ExcuseReason,
                             LessonDate = @LessonDate,
                             Comment = @Comment
-            
-                    WHEN NOT MATCHED THEN
-                        INSERT (AttendanceDate, UserID, SubjectID, Present, ExcuseReason, LessonDate, Comment)
-                        VALUES (@AttendanceDate, @UserID, @SubjectID, @Present, @ExcuseReason, @LessonDate, @Comment)
-                    OUTPUT ISNULL(INSERTED.AttendanceID, 0);";
+                        WHERE AttendanceID = @AttendanceID";
 
-                using (SqlCommand cmd = new SqlCommand(mergeQuery, conn))
-                {
-                    cmd.Parameters.AddWithValue("@AttendanceDate", attendance.AttendanceDate.Date);
-                    cmd.Parameters.AddWithValue("@UserID", attendance.UserID);
-                    cmd.Parameters.AddWithValue("@SubjectID", attendance.SubjectID);  // ✅ Новый ключ!
-                    cmd.Parameters.AddWithValue("@Present", attendance.Present);
-                    cmd.Parameters.AddWithValue("@ExcuseReason", attendance.ExcuseReason);
-                    cmd.Parameters.AddWithValue("@LessonDate",
-                        attendance.LessonDate == DateTime.MinValue ? (object)DBNull.Value : attendance.LessonDate);
-                    cmd.Parameters.AddWithValue("@Comment",
-                        string.IsNullOrEmpty(attendance.Comment) ? (object)DBNull.Value : attendance.Comment);
+                            using (SqlCommand cmd = new SqlCommand(updateQuery, conn))
+                            {
+                                AddAttendanceParams(cmd, attendance);
+                                cmd.Parameters.AddWithValue("@AttendanceID", attendance.AttendanceID);
+                                cmd.ExecuteNonQuery();
+                                return attendance.AttendanceID;
+                            }
+                        }
+                        else
+                        {
+                            // 3. INSERT новой (ID был "фальшивым")
+                            string insertQuery = @"
+                        INSERT INTO Attendance (AttendanceDate, UserID, SubjectID, Present, ExcuseReason, LessonDate, Comment)
+                        OUTPUT INSERTED.AttendanceID
+                        VALUES (@AttendanceDate, @UserID, @SubjectID, @Present, @ExcuseReason, @LessonDate, @Comment)";
 
-                    int resultId = (int)cmd.ExecuteScalar();
-                    return resultId;
+                            using (SqlCommand cmd = new SqlCommand(insertQuery, conn))
+                            {
+                                AddAttendanceParams(cmd, attendance);
+                                int newId = (int)cmd.ExecuteScalar();
+                                return newId;
+                            }
+                        }
+                    }
                 }
             }
+        }
+
+        private void AddAttendanceParams(SqlCommand cmd, Attendance attendance)
+        {
+            cmd.Parameters.AddWithValue("@AttendanceDate", attendance.AttendanceDate.Date);
+            cmd.Parameters.AddWithValue("@UserID", attendance.UserID);
+            cmd.Parameters.AddWithValue("@SubjectID", attendance.SubjectID);
+            cmd.Parameters.AddWithValue("@Present", attendance.Present);
+            cmd.Parameters.AddWithValue("@ExcuseReason", attendance.ExcuseReason);
+            cmd.Parameters.AddWithValue("@LessonDate",
+                attendance.LessonDate == DateTime.MinValue ? (object)DBNull.Value : attendance.LessonDate);
+            cmd.Parameters.AddWithValue("@Comment",
+                string.IsNullOrEmpty(attendance.Comment) ? (object)DBNull.Value : attendance.Comment);
         }
 
         public List<Attendance> GetClassAttendance(int classId, DateTime startDate, DateTime endDate)

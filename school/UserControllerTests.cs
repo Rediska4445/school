@@ -20,7 +20,7 @@ namespace school.Tests.Integration
             _connectionString = Form1.CONNECTION_STRING;
             _controller = new UserController(_connectionString);
             CleanupTestData();
-            SetupPermissionsAndClasses(); // ✅ Создаем Permissions и Classes
+            SetupPermissionsAndClasses(); 
         }
 
         [TearDown]
@@ -34,7 +34,6 @@ namespace school.Tests.Integration
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                // ✅ Создаем Permissions (если нет)
                 using (var cmd = new SqlCommand(@"
                     IF NOT EXISTS (SELECT 1 FROM Permissions WHERE PermissionID = 1)
                     INSERT INTO Permissions (PermissionName) VALUES (N'Обычный учитель');
@@ -45,7 +44,6 @@ namespace school.Tests.Integration
                     cmd.ExecuteNonQuery();
                 }
 
-                // ✅ Создаем класс
                 using (var cmd = new SqlCommand("INSERT INTO Classes (ClassName) OUTPUT INSERTED.ClassID VALUES (N'10А')", conn))
                 {
                     _testClassId = (int)cmd.ExecuteScalar();
@@ -63,7 +61,6 @@ namespace school.Tests.Integration
                 using (var cmd = new SqlCommand("DELETE FROM Grades", conn)) cmd.ExecuteNonQuery();
                 using (var cmd = new SqlCommand("DELETE FROM Homework", conn)) cmd.ExecuteNonQuery();
                 using (var cmd = new SqlCommand("DELETE FROM Users", conn)) cmd.ExecuteNonQuery();
-                // НЕ удаляем Permissions и Classes - используются в тестах
             }
         }
 
@@ -74,7 +71,7 @@ namespace school.Tests.Integration
             var teacher = new User
             {
                 FullName = "Иванов Иван Иванович",
-                PermissionID = 1  // ✅ Обычный учитель
+                PermissionID = 1
             };
 
             // Act
@@ -99,7 +96,7 @@ namespace school.Tests.Integration
             var student = new User
             {
                 FullName = "Петров Петр",
-                PermissionID = 5,  // ✅ Ученик
+                PermissionID = 5,  
                 ClassID = _testClassId
             };
 
@@ -120,13 +117,13 @@ namespace school.Tests.Integration
             var user = new User
             {
                 FullName = "Сидоров Сидор",
-                PermissionID = 5  // Ученик
+                PermissionID = 5
             };
             int id = _controller.InsertOrUpdateUser(user);
 
             // Act
             user.FullName = "Сидоров Сидорович";
-            user.PermissionID = 1;  // ✅ Стал учителем
+            user.PermissionID = 1; 
             _controller.InsertOrUpdateUser(user);
 
             // Assert
@@ -218,7 +215,7 @@ namespace school.Tests.Integration
         [Test]
         public void InsertOrUpdateUser_InvalidPermissionID_ThrowsArgumentException()
         {
-            var invalidUser = new User { FullName = "Тест", PermissionID = 999 }; // ❌ Неверный ID
+            var invalidUser = new User { FullName = "Тест", PermissionID = 999 }; 
             Assert.Throws<ArgumentException>(() => _controller.InsertOrUpdateUser(invalidUser));
         }
 
