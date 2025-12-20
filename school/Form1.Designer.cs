@@ -830,7 +830,7 @@ namespace school
             this.dataGridViewTeachers.RowHeadersVisible = false;
             this.dataGridViewTeachers.RowTemplate.Height = 25;
             this.dataGridViewTeachers.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewTeachers.Size = new System.Drawing.Size(1214, 780);
+            this.dataGridViewTeachers.Size = new System.Drawing.Size(1185, 780);
             this.dataGridViewTeachers.TabIndex = 2;
             // 
             // tabPageStudents

@@ -1,10 +1,12 @@
-﻿using school.Controllers;
+﻿using RedSqlConnector;
+using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
 using User = school.Models.User;
 
@@ -145,14 +147,24 @@ namespace school
                 return;
             }
 
+            foreach (DataGridViewColumn col in dataGridViewStudents.Columns)
+            {
+                FileLogger.logger.Debug($"Колонка: {col.Name}, Индекс: {col.Index}, Ширина: {col.Width}");
+            }
+
+            int userId = int.Parse(userIdCell.Value.ToString());
+            string fullName = row.Cells["FullName"].Value?.ToString() ?? "";
+            int permissionId = 1;
+            Class cl = ClassController._controller.GetClassById(int.Parse(row.Cells["ClassName"].Value.ToString()));
+
             var userModel = new User
             {
-                UserID = int.Parse(userIdCell.Value.ToString()),
-                FullName = row.Cells["FullName"].Value?.ToString() ?? "",
-                PermissionID = 1,
-                ClassID = row.Cells["ClassID"].Value?.ToString() == ""
-                ? (int?)null
-                : int.Parse(row.Cells["ClassID"].Value.ToString())
+                UserID = userId,
+                FullName = fullName,
+                Password = row.Cells["Password"].Value.ToString(),
+                PermissionID = permissionId,
+                ClassID = cl.ClassID,
+                Class = cl
             };
 
             string action = userModel.UserID > 0 ? "EDIT" : "ADD";
@@ -446,13 +458,11 @@ namespace school
                 TeacherID = UserController.CurrentUser.UserID
             };
 
-            // Для учителя - StudentID из colPerson (индекс 4)
             if (UserController.CurrentUser.PermissionID > 1)
             {
                 grade.StudentID = UserController._userController.GetStudentIdByName(row.Cells[4].Value.ToString());
             }
 
-            // ✅ Проверка: ID найдены
             if (grade.SubjectID == 0)
             {
                 MessageBox.Show("❌ Предмет не найден в БД!");
@@ -541,6 +551,22 @@ namespace school
                 int saved = ClassController._controller.CommitClassChanges();
                 if (saved > 0)
                     MessageBox.Show($"✅ Сохранено {saved} классов!");
+            }
+
+            // Создание учеников
+            if(previousTabName != "tabPageStudents")
+            {
+                int saved = UserController._userController.CommitUserChanges();
+                if (saved > 0)
+                    MessageBox.Show($"✅ Сохранено {saved} учеников!");
+            }
+
+            // Создание сотрудников
+            if (previousTabName != "tabPageTeachers")
+            {
+                int saved = UserController._userController.CommitUserChanges();
+                if (saved > 0)
+                    MessageBox.Show($"✅ Сохранено {saved} сотрудников!");
             }
 
             // Сохранение классов
@@ -1824,7 +1850,10 @@ namespace school
             {
                 dataGridViewStudents.Rows.Clear();
 
-                SetupStudentsColumns();
+                if(dataGridViewStudents.Columns.Count == 0)
+                {
+                    SetupStudentsColumns();
+                }
 
                 var students = TeacherController._controller.GetAllStudents();
                 FileLogger.logger.Info($"Получено {students.Count} учеников");
@@ -1836,12 +1865,13 @@ namespace school
                     dataGridViewStudents.Rows[row.Index].Cells["UserID"].Value = student.UserID;
                     dataGridViewStudents.Rows[row.Index].Cells["FullName"].Value = student.FullName;
                     dataGridViewStudents.Rows[row.Index].Cells["PermissionName"].Value = student.PermissionName;
+                    dataGridViewStudents.Rows[row.Index].Cells["Password"].Value = student.Password;
                     dataGridViewStudents.Rows[row.Index].Cells["ClassID"].Value = student.ClassID?.ToString() ?? "";
 
                     dataGridViewStudents.Rows[row.Index].Cells["ClassName"].Value =
                         student.Class?.ClassName ?? "-";  
 
-                    FileLogger.logger.Debug($"➕ {student.FullName} | Класс: {student.Class?.ClassName ?? "нет класса"}");
+                    FileLogger.logger.Debug($"Form1.LoadStudentsGrid - {student.FullName} | Класс: {student.Class?.ClassName ?? "нет класса"}");
                 }
 
 
@@ -1851,6 +1881,11 @@ namespace school
             {
                 FileLogger.logger.Error($"LoadStudentsGrid: {ex.Message}\n{ex.StackTrace}");
             }
+        }
+
+        private void dataGridViewStudents_DefaultValuesNeeded(object sender, DataGridViewRowEventArgs e)
+        {
+            e.Row.Cells["PermissionName"].Value = "Ученик";
         }
 
         private void SetupStudentsColumns()
@@ -1880,6 +1915,10 @@ namespace school
             dataGridViewStudents.ReadOnly = !(UserController.CurrentUser.PermissionID >= 3);
             dataGridViewStudents.AllowUserToAddRows = UserController.CurrentUser.PermissionID >= 3;
             dataGridViewStudents.AllowUserToDeleteRows = UserController.CurrentUser.PermissionID >= 3;
+
+            dataGridViewStudents.Columns["PermissionName"].ReadOnly = true;
+
+            dataGridViewStudents.DefaultValuesNeeded += dataGridViewStudents_DefaultValuesNeeded;
         }
 
         private void exitBtnm_Click(object sender, EventArgs e)

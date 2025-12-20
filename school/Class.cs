@@ -46,6 +46,7 @@ namespace school.Models
 
         public int? ClassID { get; set; }  // Nullable int для учителей
         public Class Class { get; set; }   // Navigation property
+        public string Password { get; set; }   // Navigation property
     }
 
     /// <summary>

@@ -129,6 +129,7 @@ namespace school.Controllers
                     var updateQuery = @"
                 UPDATE Users 
                 SET FullName = @FullName, 
+                    PasswordHash = @PasswordHash,  -- ✅ ДОБАВЛЕНО!
                     PermissionID = @PermissionID, 
                     ClassID = @ClassID
                 WHERE UserID = @UserID";
@@ -136,6 +137,7 @@ namespace school.Controllers
                     using (var updateCmd = new SqlCommand(updateQuery, connection))
                     {
                         updateCmd.Parameters.AddWithValue("@FullName", userModel.FullName);
+                        updateCmd.Parameters.AddWithValue("@PasswordHash", userModel.Password ?? "default_hash_" + Guid.NewGuid().ToString("N").Substring(0, 32));  // ✅ ДОБАВЛЕНО!
                         updateCmd.Parameters.AddWithValue("@PermissionID", userModel.PermissionID);
                         updateCmd.Parameters.AddWithValue("@ClassID", userModel.ClassID ?? (object)DBNull.Value);
                         updateCmd.Parameters.AddWithValue("@UserID", userModel.UserID);
@@ -147,6 +149,7 @@ namespace school.Controllers
                 }
                 else
                 {
+                    // INSERT остается без изменений
                     var insertQuery = @"
                 INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
                 OUTPUT INSERTED.UserID
@@ -155,13 +158,12 @@ namespace school.Controllers
                     using (var insertCmd = new SqlCommand(insertQuery, connection))
                     {
                         insertCmd.Parameters.AddWithValue("@FullName", userModel.FullName);
-                        insertCmd.Parameters.AddWithValue("@PasswordHash", "default_hash_" + Guid.NewGuid().ToString("N").Substring(0, 32));
+                        insertCmd.Parameters.AddWithValue("@PasswordHash", userModel.Password ?? "default_hash_" + Guid.NewGuid().ToString("N").Substring(0, 32));
                         insertCmd.Parameters.AddWithValue("@PermissionID", userModel.PermissionID);
                         insertCmd.Parameters.AddWithValue("@ClassID", userModel.ClassID ?? (object)DBNull.Value);
 
                         int newId = (int)insertCmd.ExecuteScalar();
                         userModel.UserID = newId;
-
                         FileLogger.logger.Info($"Создан новый пользователь ID={newId}: {userModel.FullName}");
                         return newId;
                     }
@@ -217,6 +219,7 @@ namespace school.Controllers
             SELECT 
                 u.UserID, 
                 u.FullName, 
+                u.PasswordHash,  -- ✅ ДОБАВЛЕНО!
                 u.PermissionID, 
                 p.PermissionName, 
                 u.ClassID,
@@ -235,21 +238,22 @@ namespace school.Controllers
                     {
                         while (reader.Read())
                         {
-                            int? classId = reader.IsDBNull(4) ? (int?)null : reader.GetInt32(4);
-                            string className = reader.IsDBNull(5) ? null : reader.GetString(5);  // ✅ Индекс 5 = ClassName
+                            int? classId = reader.IsDBNull(5) ? (int?)null : reader.GetInt32(5);  // ✅ Сдвинут индекс
+                            string className = reader.IsDBNull(6) ? null : reader.GetString(6);   // ✅ Сдвинут индекс
 
                             var user = new User
                             {
                                 UserID = reader.GetInt32(0),
                                 FullName = reader.GetString(1),
-                                PermissionID = reader.GetInt32(2),
-                                PermissionName = reader.GetString(3),
+                                Password = reader.IsDBNull(2) ? null : reader.GetString(2),  // ✅ ДОБАВЛЕНО!
+                                PermissionID = reader.GetInt32(3),
+                                PermissionName = reader.GetString(4),
                                 ClassID = classId,
                                 Class = className != null ? new Class
                                 {
                                     ClassID = classId ?? 0,
                                     ClassName = className
-                                } : null 
+                                } : null
                             };
 
                             users.Add(user);
@@ -261,6 +265,7 @@ namespace school.Controllers
             }
             catch (Exception ex)
             {
+                FileLogger.logger.Error($"GetAllOfPredicate ошибка: {ex.Message}");
                 return new List<User>();
             }
         }
