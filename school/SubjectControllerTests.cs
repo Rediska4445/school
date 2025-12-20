@@ -9,7 +9,7 @@ using System;
 namespace school.Tests.Integration
 {
     [TestFixture]
-    public class SubjectControllerTests
+    public class SubjectControllerTests : Test
     {
         private SubjectController _controller;
         private string _connectionString;

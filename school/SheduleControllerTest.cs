@@ -10,14 +10,13 @@ using System.Threading.Tasks;
 namespace school.Tests.Integration
 {
     [TestFixture]
-    public class SheduleControllerTests
+    public class SheduleControllerTests : Test
     {
         private string ConnectionString = Form1.CONNECTION_STRING;
         private SheduleController _controller;
 
-        // ✅ ТЕСТОВЫЕ ДАННЫЕ
         private const int TestClassId = 1;
-        private const byte TestDayOfWeek = 1; // Понедельник
+        private const byte TestDayOfWeek = 1; 
         private const byte TestLessonNumber = 1;
         private const int TestSubjectId = 1;
         private const int TestTeacherId = 1;

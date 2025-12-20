@@ -19,40 +19,33 @@ namespace school
             {
                 return new List<string>()
         {
-            // 1. ✅ Создание БД
             $@"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'[{dbName}]')
                CREATE DATABASE [{dbName}] COLLATE Cyrillic_General_CI_AS;",
 
-            // 2. ✅ USE БД
             $"USE [{dbName}];",
 
-            // 3. ✅ Таблица Classes
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Classes' AND xtype='U')
               CREATE TABLE Classes (
                   ClassID INT IDENTITY(1,1) PRIMARY KEY,
                   ClassName NVARCHAR(10) COLLATE Cyrillic_General_CI_AS NOT NULL
               );",
 
-            // 4. ✅ Таблица Subjects
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Subjects' AND xtype='U')
               CREATE TABLE Subjects (
                   SubjectID INT IDENTITY(1,1) PRIMARY KEY,
                   SubjectName NVARCHAR(50) COLLATE Cyrillic_General_CI_AS NOT NULL
               );",
 
-            // 5. ✅ Таблица Permissions
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Permissions' AND xtype='U')
               CREATE TABLE Permissions (
                   PermissionID INT IDENTITY(1,1) PRIMARY KEY,
                   PermissionName NVARCHAR(50) COLLATE Cyrillic_General_CI_AS NOT NULL UNIQUE
               );",
 
-            // 6. ✅ INSERT Permissions (если пусто)
             @"IF NOT EXISTS (SELECT TOP 1 * FROM Permissions)
               INSERT INTO Permissions (PermissionName) VALUES
               (N'Ученик'), (N'Учитель'), (N'Директор');",
 
-            // 7. ✅ Таблица Users
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Users' AND xtype='U')
               CREATE TABLE Users (
                   UserID INT IDENTITY(1,1) PRIMARY KEY,
@@ -64,7 +57,6 @@ namespace school
                   CONSTRAINT FK_Users_Classes FOREIGN KEY (ClassID) REFERENCES Classes(ClassID)
               );",
 
-            // 8. ✅ Таблица Homework
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Homework' AND xtype='U')
               CREATE TABLE Homework (
                   HomeworkID INT IDENTITY(1,1) PRIMARY KEY,
@@ -78,7 +70,6 @@ namespace school
                   CONSTRAINT FK_Homework_Teachers FOREIGN KEY (TeacherID) REFERENCES Users(UserID)
               );",
 
-            // 9. ✅ Таблица Grades
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Grades' AND xtype='U')
               CREATE TABLE Grades (
                   GradeID INT IDENTITY(1,1) PRIMARY KEY,
@@ -92,7 +83,6 @@ namespace school
                   CONSTRAINT FK_Grades_Teachers FOREIGN KEY (TeacherID) REFERENCES Users(UserID)
               );",
 
-            // 10. ✅ Таблица Schedule
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Schedule' AND xtype='U')
               CREATE TABLE Schedule (
                   ScheduleID INT IDENTITY(1,1) PRIMARY KEY,
@@ -109,7 +99,6 @@ namespace school
                   INDEX IX_Schedule_Class_Day (ClassID, DayOfWeek)
               );",
 
-            // 11. ✅ Таблица TeacherSubjects
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TeacherSubjects' AND xtype='U')
               CREATE TABLE TeacherSubjects (
                   TeacherSubjectID INT IDENTITY(1,1) PRIMARY KEY,
@@ -124,7 +113,6 @@ namespace school
                   INDEX IX_TeacherSubjects_Subject_Class (SubjectID, ClassID)
               );",
 
-            // 12. ✅ Таблица Events
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Events' AND xtype='U')
               CREATE TABLE Events (
                   EventID INT IDENTITY(1,1) PRIMARY KEY,
@@ -135,7 +123,6 @@ namespace school
                   INDEX IX_Events_EventName (EventName)
               );",
 
-            // 13. ✅ Таблица Attendance
             @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Attendance' AND xtype='U')
               CREATE TABLE Attendance (
                   AttendanceID INT IDENTITY(1,1) PRIMARY KEY,
@@ -155,7 +142,6 @@ namespace school
                   INDEX IX_Attendance_Excuse (ExcuseReason)
               );",
 
-            // 14. ✅ Stored Procedure sp_RegisterUserSimple
             @"IF OBJECT_ID('sp_RegisterUserSimple', 'P') IS NULL
             BEGIN
                 EXEC('CREATE PROCEDURE sp_RegisterUserSimple
@@ -192,7 +178,6 @@ namespace school
         };
             }
         }
-
 
         public void PrepareDatabase(string connectionString, string dbName)
         {

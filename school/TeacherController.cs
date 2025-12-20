@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.SqlClient;
-using RedSqlConnector;
 using school.Controllers;
 using school.Models;
 using System;

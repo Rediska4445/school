@@ -13,14 +13,160 @@ namespace school.Controllers
     /// </summary>
     public class UserController
     {
+        /// <summary>
+        /// Модель изменения пользователя
+        /// </summary>
+        public class UserChange
+        {
+            public string Action { get; set; } // "EDIT", "ADD", "DELETE"
+            public User User { get; set; } = new User();
+        }
+
         private readonly string _connectionString;
 
         public static UserController _userController = new UserController(Form1.CONNECTION_STRING);
         public static User CurrentUser { get; set; }
 
+        private List<UserChange> pendingChanges = new List<UserChange>();
+
         public UserController(string connectionString)
         {
             _connectionString = connectionString ?? Form1.CONNECTION_STRING;
+        }
+
+        /// <summary>
+        /// Добавляет изменение пользователя в очередь
+        /// </summary>
+        public void AddUserChange(string action, User userModel)
+        {
+            pendingChanges.Add(new UserChange
+            {
+                Action = action.ToUpper(),
+                User = userModel
+            });
+
+            FileLogger.logger.Info($"Добавлено изменение пользователя: {action} (ID: {userModel.UserID}, {userModel.FullName})");
+        }
+
+        /// <summary>
+        /// Выполняет все изменения пользователей и очищает очередь
+        /// </summary>
+        public int CommitUserChanges()
+        {
+            if (pendingChanges.Count == 0) return 0;
+
+            int processed = 0;
+            try
+            {
+                using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+                {
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            foreach (var change in pendingChanges)
+                            {
+                                switch (change.Action)
+                                {
+                                    case "EDIT":
+                                    case "ADD":
+                                        UpsertUser(change.User);
+                                        processed++;
+                                        break;
+                                    case "DELETE":
+                                        // DeleteUserInTransaction(change.User.UserID, connection, transaction);
+                                        // Add "isActive" to User model
+                                        processed++;
+                                        break;
+                                }
+                            }
+                            transaction.Commit();
+                        }
+                        catch
+                        {
+                            transaction.Rollback();
+                            throw;
+                        }
+                    }
+                }
+                pendingChanges.Clear();
+                FileLogger.logger.Info($"Сохранено {processed} изменений пользователей");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"Ошибка сохранения пользователей: {ex.Message}");
+                throw;
+            }
+            return processed;
+        }
+
+        /// <summary>
+        /// Вставляет или обновляет пользователя по логике UPSERT
+        /// 1) Если ID >= 0 и существует → UPDATE
+        /// 2) Если ID >= 0 но не существует → INSERT (новый ID)
+        /// 3) Если ID < 0 → INSERT с автоинкрементом IDENTITY(1,1)
+        /// </summary>
+        public int UpsertUser(User userModel)
+        {
+            using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                connection.Open();
+
+                bool exists = false;
+                if (userModel.UserID >= 0)
+                {
+                    var existsQuery = "SELECT COUNT(*) FROM Users WHERE UserID = @UserID";
+                    using (var checkCmd = new SqlCommand(existsQuery, connection))
+                    {
+                        checkCmd.Parameters.AddWithValue("@UserID", userModel.UserID);
+                        exists = (int)checkCmd.ExecuteScalar() > 0;
+                    }
+                }
+
+                if (exists)
+                {
+                    var updateQuery = @"
+                UPDATE Users 
+                SET FullName = @FullName, 
+                    PermissionID = @PermissionID, 
+                    ClassID = @ClassID
+                WHERE UserID = @UserID";
+
+                    using (var updateCmd = new SqlCommand(updateQuery, connection))
+                    {
+                        updateCmd.Parameters.AddWithValue("@FullName", userModel.FullName);
+                        updateCmd.Parameters.AddWithValue("@PermissionID", userModel.PermissionID);
+                        updateCmd.Parameters.AddWithValue("@ClassID", userModel.ClassID ?? (object)DBNull.Value);
+                        updateCmd.Parameters.AddWithValue("@UserID", userModel.UserID);
+
+                        updateCmd.ExecuteNonQuery();
+                        FileLogger.logger.Info($"Обновлен пользователь ID={userModel.UserID}: {userModel.FullName}");
+                        return userModel.UserID;
+                    }
+                }
+                else
+                {
+                    var insertQuery = @"
+                INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
+                OUTPUT INSERTED.UserID
+                VALUES (@FullName, @PasswordHash, @PermissionID, @ClassID)";
+
+                    using (var insertCmd = new SqlCommand(insertQuery, connection))
+                    {
+                        insertCmd.Parameters.AddWithValue("@FullName", userModel.FullName);
+                        insertCmd.Parameters.AddWithValue("@PasswordHash", "default_hash_" + Guid.NewGuid().ToString("N").Substring(0, 32));
+                        insertCmd.Parameters.AddWithValue("@PermissionID", userModel.PermissionID);
+                        insertCmd.Parameters.AddWithValue("@ClassID", userModel.ClassID ?? (object)DBNull.Value);
+
+                        int newId = (int)insertCmd.ExecuteScalar();
+                        userModel.UserID = newId;
+
+                        FileLogger.logger.Info($"Создан новый пользователь ID={newId}: {userModel.FullName}");
+                        return newId;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -35,7 +181,6 @@ namespace school.Controllers
             {
                 conn.Open();
 
-                // ✅ ПРОВЕРКА FK зависимостей
                 int homeworkCount = 0, gradesCount = 0;
                 using (var hwCmd = new SqlCommand("SELECT COUNT(*) FROM Homework WHERE TeacherID = @UserID", conn))
                 {

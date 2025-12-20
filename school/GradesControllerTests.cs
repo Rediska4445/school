@@ -7,7 +7,7 @@ using NUnit.Framework;
 namespace school.Tests.Integration
 {
     [TestFixture]
-    public class GradesControllerTests
+    public class GradesControllerTests : Test
     {
         private string _connectionString;
         private GradesController _controller;

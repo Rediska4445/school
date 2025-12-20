@@ -11,7 +11,6 @@ namespace school
 {
     public class SheduleController
     {
-        // ✅ КОЛЛЕКЦИЯ ИЗМЕНЕНИЙ РАСПИСАНИЯ
         public class ScheduleChange
         {
             public string Action { get; set; } // "EDIT", "ADD", "DELETE"

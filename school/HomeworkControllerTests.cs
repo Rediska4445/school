@@ -21,7 +21,7 @@ namespace school.Tests.Integration
     //| GetHomeworkForPeriod_MultipleHomework             | ✅ Несколько записей, сортировка    | ✅            |    |
 
     [TestFixture]
-    public class HomeworkControllerTests
+    public class HomeworkControllerTests : Test
     {
         private HomeworkController _controller;
         private string _connectionString;

@@ -28,7 +28,7 @@ namespace school
     {
         public CalendarCell() : base()
         {
-            Style.Format = "d"; // Короткая дата
+            Style.Format = "d";
         }
 
         public override void InitializeEditingControl(int rowIndex, object initialFormattedValue, DataGridViewCellStyle dataGridViewCellStyle)
@@ -38,11 +38,10 @@ namespace school
             var ctl = DataGridView.EditingControl as CalendarEditingControl;
             if (ctl != null)
             {
-                // ✅ БЕЗОПАСНОЕ приведение
                 DateTime dateValue;
                 if (Value == null || Value == DBNull.Value)
                 {
-                    dateValue = DateTime.Today; // Сегодня по умолчанию
+                    dateValue = DateTime.Today;
                 }
                 else if (Value is DateTime dt)
                 {
@@ -50,11 +49,11 @@ namespace school
                 }
                 else if (DateTime.TryParse(Value.ToString(), out dateValue))
                 {
-                    dateValue = dateValue.Date; // Только дата
+                    dateValue = dateValue.Date;
                 }
                 else
                 {
-                    dateValue = DateTime.Today; // Fallback
+                    dateValue = DateTime.Today;
                 }
 
                 ctl.Value = dateValue;

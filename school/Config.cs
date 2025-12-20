@@ -36,6 +36,9 @@ namespace school
 
                 Directory.CreateDirectory(settings.LogPath);
 
+                FileLogger.logger.Info("AppSettings Load: " + configPath);
+                FileLogger.logger.Info("AppSettings Load: " + json + " " + configPath);
+
                 Console.WriteLine($"✅ Настройки загружены:");
                 Console.WriteLine($"   DB: {settings.DatabaseName}");
                 Console.WriteLine($"   Connection: {settings.ConnectionString.Substring(0, Math.Min(30, settings.ConnectionString.Length))}...");

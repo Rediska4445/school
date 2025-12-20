@@ -8,7 +8,7 @@ using System.Linq;
 namespace school.Tests.Integration
 {
     [TestFixture]
-    public class TeacherControllerTests
+    public class TeacherControllerTests : Test
     {
         private TeacherController _controller;
         private string TEST_CONNECTION_STRING = Form1.CONNECTION_STRING;

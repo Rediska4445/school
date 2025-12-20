@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace school.Tests.Integration
 {
     [TestFixture]
-    public class ClassControllerTests
+    public class ClassControllerTests : Test
     {
         private ClassController _controller;
         private string _connectionString = Form1.CONNECTION_STRING;

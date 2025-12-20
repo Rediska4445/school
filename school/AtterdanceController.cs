@@ -12,9 +12,9 @@ namespace school
 
         public class AttendanceChange
         {
-            public string Action { get; set; } // "EDIT", "ADD", "DELETE"
+            public string Action { get; set; } 
             public Attendance Attendance { get; set; } = new Attendance();
-            public int OriginalAttendanceID { get; set; } = 0; // Для новых строк
+            public int OriginalAttendanceID { get; set; } = 0;
         }
 
         private List<AttendanceChange> pendingChanges = new List<AttendanceChange>();
@@ -24,15 +24,13 @@ namespace school
         /// </summary>
         public void AddAttendanceChange(string action, Attendance attendance)
         {
-            if (UserController.CurrentUser.PermissionID <= 1) return; // Только учителя
-
             pendingChanges.Add(new AttendanceChange
             {
                 Action = action.ToUpper(),
                 Attendance = attendance
             });
 
-            FileLogger.logger.Info($"📝 Добавлено изменение посещаемости: {action} (ID: {attendance.AttendanceID})");
+            FileLogger.logger.Info($"AtterdanceController.AddAttendanceChange - Добавлено изменение посещаемости: {action} (ID: {attendance.AttendanceID})");
         }
 
         /// <summary>
@@ -77,11 +75,11 @@ namespace school
                     }
                 }
                 pendingChanges.Clear();
-                FileLogger.logger.Info($"✅ Сохранено {processed} изменений посещаемости");
+                FileLogger.logger.Info($"AtterdanceController.AddAttendanceChange - Сохранено {processed} изменений посещаемости");
             }
             catch (Exception ex)
             {
-                FileLogger.logger.Error($"❌ Ошибка сохранения: {ex.Message}");
+                FileLogger.logger.Error($"AtterdanceController.AddAttendanceChange - Ошибка сохранения: {ex.Message}");
                 throw;
             }
             return processed;
@@ -96,7 +94,7 @@ namespace school
         {
             if (attendanceId <= 0)
             {
-                FileLogger.logger.Warn("Попытка удалить несуществующую запись посещаемости (ID <= 0)");
+                FileLogger.logger.Warn("AtterdanceController.DeleteAttendance - Попытка удалить несуществующую запись посещаемости (ID <= 0)");
                 return;
             }
 
@@ -116,11 +114,11 @@ namespace school
 
                     if (rowsAffected > 0)
                     {
-                        FileLogger.logger.Info($"✅ Удалена запись посещаемости ID={attendanceId}");
+                        FileLogger.logger.Info($"AtterdanceController.DeleteAttendance - Удалена запись посещаемости ID={attendanceId}");
                     }
                     else
                     {
-                        FileLogger.logger.Warn($"⚠️ Запись посещаемости ID={attendanceId} не найдена");
+                        FileLogger.logger.Warn($"AtterdanceController.DeleteAttendance - Запись посещаемости ID={attendanceId} не найдена");
                     }
                 }
             }
@@ -132,7 +130,7 @@ namespace school
             {
                 conn.Open();
 
-                if (attendance.AttendanceID < 0) // ✅ НОВАЯ запись - всегда INSERT
+                if (attendance.AttendanceID < 0)
                 {
                     string insertQuery = @"
                 INSERT INTO Attendance (AttendanceDate, UserID, SubjectID, Present, ExcuseReason, LessonDate, Comment)
@@ -143,13 +141,12 @@ namespace school
                     {
                         AddAttendanceParams(cmd, attendance);
                         int newId = (int)cmd.ExecuteScalar();
-                        attendance.AttendanceID = newId; // Обновляем объект
+                        attendance.AttendanceID = newId; 
                         return newId;
                     }
                 }
-                else // ID >= 0 - проверяем по AttendanceID
+                else 
                 {
-                    // 1. Проверяем существование по AttendanceID
                     using (var checkCmd = new SqlCommand(
                         "SELECT COUNT(*) FROM Attendance WHERE AttendanceID = @AttendanceID", conn))
                     {
@@ -158,7 +155,6 @@ namespace school
 
                         if (exists)
                         {
-                            // 2. UPDATE существующей
                             string updateQuery = @"
                         UPDATE Attendance SET 
                             AttendanceDate = @AttendanceDate,
@@ -180,7 +176,6 @@ namespace school
                         }
                         else
                         {
-                            // 3. INSERT новой (ID был "фальшивым")
                             string insertQuery = @"
                         INSERT INTO Attendance (AttendanceDate, UserID, SubjectID, Present, ExcuseReason, LessonDate, Comment)
                         OUTPUT INSERTED.AttendanceID
