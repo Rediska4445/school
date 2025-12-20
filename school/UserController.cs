@@ -76,7 +76,7 @@ namespace school.Controllers
                                         break;
                                     case "DELETE":
                                         // DeleteUserInTransaction(change.User.UserID, connection, transaction);
-                                        // Add "isActive" to User model
+                                        // TODO: Add "isActive" to User model
                                         processed++;
                                         break;
                                 }

@@ -22,13 +22,15 @@ namespace school
         private ComboBox directorComboBox;
 
         // Хуйня для подключения к БД
+        // Может меняться для тестов
         public static string CONNECTION_STRING
-              //            = "Server=(localdb)\\MSSQLLocalDB;Database=" + Controller.DATABASE_NAME + ";Integrated Security=true;";
-              = "Server=localhost\\SQLEXPRESS;Database=SchoolSystemTest3;Integrated Security=true;Encrypt=false;TrustServerCertificate=true;";
+                          = "Server=(localdb)\\MSSQLLocalDB;Database=" + Controller.DATABASE_NAME + ";Integrated Security=true;";
+              //            = "Server=localhost\\SQLEXPRESS;Database=SchoolSystemTest3;Integrated Security=true;Encrypt=false;TrustServerCertificate=true;";
 
         // Конструктор формы
         public Form1()
         {
+            // Понятно, инициализация элементов
             InitializeComponent();
 
             // Текст с ролью и именем
@@ -38,12 +40,14 @@ namespace school
             PrepareRole();
         }
 
+        // Подговтока ролевых ограничений
         private void PrepareRole()
         {
-            if (UserController.CurrentUser.PermissionID == 1) // Только ученик
+            // Роль ученика
+            if (UserController.CurrentUser.PermissionID == 1) 
             {
                 // Статистика 
-                // У ученика прав мало, обязанностей дохуя, поэтому удалить вкладку с статистикой класса
+                // У ученика удалить вкладку со статистикой класса
                 tabControlStatistic.TabPages.RemoveByKey("tabPageClass");
                 tabControlStatistic.SelectedTab = tabControlStatistic.TabPages["tabPersonalStats"];
 
@@ -56,62 +60,72 @@ namespace school
                 // Удалить предметы нахуй
                 tabControl.TabPages.RemoveByKey("tabPageSubjects");
 
-                FileLogger.logger.Info("Ученик - показываем только 'Личное'");
+                // Посещаемость класса - нахуй
                 tabControlAttendance.TabPages.RemoveByKey("tabPage7");
             }
             // Учитель может смотреть статистику своего класса.
             // Директор может менять класс с помощью comboBox.
             else if (UserController.CurrentUser.PermissionID >= 2)
             {
+                // У учителя не может быть личной статистики
                 tabControlStatistic.TabPages.RemoveByKey("tabPagePersonal");
 
+                // Слушатель на отображение статистики определённого ученика
                 dataGridViewClassStatistics.SelectionChanged += dataGridViewClassStatistics_SelectionChanged;
 
+                // Подготовка внешнего вида ебанной таблицы со статистикой
                 SetupStatisticsGrid(dataGridViewClassStatistics);
 
+                // Роль: Директор
                 if (UserController.CurrentUser.PermissionID >= 3)
                 {
+                    // У директора есть всплывающий список, который позволяет менять класс
                     InitializeScheduleClassCombo();
+
+                    // Слушатели на мероприятия
+                    // Только у директора - но это с-с-порно!
+                    dataGridViewEvents.CellEndEdit += DataGridViewEvents_CellEndEdit;
+                    dataGridViewEvents.UserDeletingRow += DataGridViewEvents_UserDeletingRow;
                 }
 
+                // Личная посещаемость есть только у ученика
                 tabControlAttendance.TabPages.RemoveByKey("tabPage8");
 
-                dataGridViewEvents.CellEndEdit += DataGridViewEvents_CellEndEdit;
-                dataGridViewEvents.UserDeletingRow += DataGridViewEvents_UserDeletingRow;
+                // Хандлеры таблицы с домашкой
+                dataGridViewHomework.CellEndEdit += DataGridViewHomework_CellEndEdit;
+                dataGridViewHomework.UserDeletedRow += DataGridViewHomework_UserDeletedRow;
+
+                // Хандлеры таблицы с оценками
+                dataGridViewGrades.CellEndEdit += DataGridViewGrades_CellEndEdit;
+                dataGridViewGrades.UserDeletedRow += DataGridViewGrades_UserDeletedRow;
+
+                // Хандлеры таблицы с расписанием
+                sheduleGridView.CellEndEdit += DataGridViewSchedule_CellEndEdit;
+                sheduleGridView.UserDeletedRow += DataGridViewSchedule_UserDeletedRow;
+
+                // Хандлеры таблицы с учениками
+                dataGridViewStudents.CellEndEdit += DataGridViewStudents_CellEndEdit;
+                dataGridViewStudents.UserDeletingRow += DataGridViewStudents_UserDeletingRow;
+
+                // Хандлеры таблицы с учителями
+                dataGridViewTeachers.CellEndEdit += DataGridViewTeachers_CellEndEdit;
+                dataGridViewTeachers.UserDeletingRow += DataGridViewTeachers_UserDeletingRow;
             }
-
-            // Хандлеры таблицы с домашкой
-            dataGridViewHomework.CellEndEdit += DataGridViewHomework_CellEndEdit;
-            dataGridViewHomework.UserDeletedRow += DataGridViewHomework_UserDeletedRow;
-
-            // Хандлеры таблицы с оценками
-            dataGridViewGrades.CellEndEdit += DataGridViewGrades_CellEndEdit;
-            dataGridViewGrades.UserDeletedRow += DataGridViewGrades_UserDeletedRow;
-
-            // Хандлеры таблицы с расписанием
-            sheduleGridView.CellEndEdit += DataGridViewSchedule_CellEndEdit;
-            sheduleGridView.UserDeletedRow += DataGridViewSchedule_UserDeletedRow;
-
-            dataGridViewStudents.CellEndEdit += DataGridViewStudents_CellEndEdit;
-            dataGridViewStudents.UserDeletingRow += DataGridViewStudents_UserDeletingRow; ;
-
-            dataGridViewTeachers.CellEndEdit += DataGridViewTeachers_CellEndEdit;
-            dataGridViewTeachers.UserDeletingRow += DataGridViewTeachers_UserDeletingRow; ;
         }
 
         private void DataGridViewStudents_UserDeletingRow(object sender, DataGridViewRowCancelEventArgs e)
         {
-            throw new NotImplementedException();
+
         }
 
         private void DataGridViewTeachers_UserDeletingRow(object sender, DataGridViewRowCancelEventArgs e)
         {
-            throw new NotImplementedException();
+
         }
 
         private void DataGridViewTeachers_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            throw new NotImplementedException();
+
         }
 
         private void DataGridViewStudents_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -1356,7 +1370,8 @@ namespace school
         // Слушатель изменений (вставка) ячеек таблицы с домашкой
         private void DataGridViewHomework_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            if (UserController.CurrentUser.PermissionID <= 1) return;
+            if (UserController.CurrentUser.PermissionID <= 1) 
+                return;
 
             var row = dataGridViewHomework.Rows[e.RowIndex];
 
@@ -1376,12 +1391,12 @@ namespace school
 
                 if (homework.ClassID == 0 || homework.SubjectID == 0)
                 {
-                    MessageBox.Show("❌ Класс или предмет не найден в БД!");
+                    MessageBox.Show("Класс или предмет не найден в БД!");
                     return;
                 }
 
                 _homeworkController.AddHomeworkChange("EDIT", homework);
-                MessageBox.Show("✅ Добавлено в очередь");
+                MessageBox.Show("Добавлено в очередь");
             }
         }
 
@@ -1410,8 +1425,8 @@ namespace school
         {
             try
             {
-                DateTime startDate = dateTimePickerHomework.Value.AddDays(-7);
-                DateTime endDate = dateTimePickerHomework.Value;
+                DateTime startDate = dateTimePickerHomework.Value;
+                DateTime endDate = dateTimePickerHomework1.Value;
 
                 List<Homework> homeworkList;
                 if (UserController.CurrentUser.PermissionID > 1)
@@ -1423,7 +1438,10 @@ namespace school
                 dataGridViewHomework.Columns.Clear();
                 dataGridViewHomework.Rows.Clear();
 
-                SetupHomeworkGrid();
+                if(dataGridViewHomework.Columns.Count == 0)
+                {
+                    SetupHomeworkGrid();
+                }
 
                 foreach (var hw in homeworkList)
                 {
@@ -1765,7 +1783,7 @@ namespace school
             dataGridViewTeachers.Columns.Add("FullName", "ФИО");
             dataGridViewTeachers.Columns.Add("PermissionName", "Роль");
             dataGridViewTeachers.Columns.Add("PermissionID", "Роль ID");
-            dataGridViewStudents.Columns.Add("Password", "Пароль");
+            dataGridViewTeachers.Columns.Add("Password", "Пароль");
             dataGridViewTeachers.Columns.Add("ClassID", "Класс ID");
             dataGridViewTeachers.Columns.Add("ClassName", "Руководство классом");
 
@@ -1806,7 +1824,7 @@ namespace school
             {
                 dataGridViewStudents.Rows.Clear();
 
-                CreateStudentsColumns();
+                SetupStudentsColumns();
 
                 var students = TeacherController._controller.GetAllStudents();
                 FileLogger.logger.Info($"Получено {students.Count} учеников");
@@ -1835,7 +1853,7 @@ namespace school
             }
         }
 
-        private void CreateStudentsColumns()
+        private void SetupStudentsColumns()
         {
             if (dataGridViewStudents.Columns.Count > 0)
                 dataGridViewStudents.Columns.Clear();
