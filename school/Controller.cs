@@ -240,16 +240,14 @@ namespace school
                         PRINT '✅ Добавлены 6 учителей';
                     END",
 
-                    // ✅ ДИРЕКТОР (PermissionID=3)
-                    @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Смирнова Елена Александровна')
+                    @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Лютый директор')
                     BEGIN
                         INSERT INTO Users (FullName, PasswordHash, PermissionID) VALUES
-                        (N'Смирнова Елена Александровна', 'director1', 3);
+                        (N'Лютый директор', 'director1', 3);
             
                         PRINT '✅ Добавлен директор';
                     END",
 
-                    // ✅ УЧЕНИКИ ПО ВСЕМ КЛАССАМ (по 4 на класс)
                     @"DECLARE @ClassID INT;
                     DECLARE @ClassName NVARCHAR(10);
                     DECLARE @StudentCount INT = 0;
@@ -528,45 +526,24 @@ namespace school
                 {
                     $"USE [{dbName}];",
 
-                    @"DECLARE @Today DATETIME2 = SYSDATETIME();
-                    DECLARE @BaseDateTime DATETIME2 = CAST(CAST(@Today AS DATE) AS DATETIME2);
-
-                    -- ✅ Школьные мероприятия (ВСЕ DATETIME2)
-                    IF NOT EXISTS (SELECT * FROM Events WHERE EventName = N'Линейка 1 сентября')
-                    BEGIN
-                        INSERT INTO Events (EventName, EventTime, Location) VALUES
-                        -- ✅ Понедельник 09:00 (прямое создание DATETIME2)
-                        (N'Линейка 1 сентября', 
-                         CAST(CAST(DATEADD(DAY, 8 - DATEPART(WEEKDAY, @Today), CAST(@Today AS DATE)) AS DATETIME2) AS DATETIME2) + CAST('09:00:00' AS DATETIME2), 
-                         N'Школьный двор'),
-            
-                        -- ✅ Завтра 18:00
-                        (N'Родительское собрание 1А', 
-                         DATEADD(DAY, 1, @BaseDateTime) + CAST('18:00:00' AS DATETIME2), 
-                         N'Кабинет 101'),
-            
-                        -- ✅ Послезавтра 18:30
-                        (N'Родительское собрание 5Б', 
-                         DATEADD(DAY, 2, @BaseDateTime) + CAST('18:30:00' AS DATETIME2), 
-                         N'Кабинет 205'),
-            
-                        -- ✅ Простые события (без времени)
-                        (N'Контрольная по математике (1-5 кл)', DATEADD(WEEK, 1, @Today), N'Акт. зал'),
-                        (N'Спортивный час', DATEADD(DAY, 7, @Today), N'Спортзал'),
-                        (N'Осенний бал', DATEADD(DAY, 14, @Today), N'Актовый зал'),
-                        (N'Единый урок безопасности', DATEADD(DAY, 21, @Today), N'Все кабинеты'),
-                        (N'Новогодний утренник', DATEADD(MONTH, 1, @Today), N'Актовый зал'),
-            
-                        -- ✅ Прошедшие
-                        (N'Последний звонок', DATEADD(MONTH, -2, @Today), N'Школьный двор'),
-                        (N'Выпускной вечер', DATEADD(MONTH, -2, @Today) + CAST('18:00:00' AS DATETIME2), N'Актовый зал');
-            
-                        PRINT '✅ 10 школьных мероприятий добавлено';
-                    END;",
+                    @"IF NOT EXISTS (SELECT * FROM Events WHERE EventName = N'Линейка 1 сентября')
+                    INSERT INTO Events (EventName, EventTime, Location) VALUES
+                    (N'Линейка 1 сентября', '2025-12-23 09:00:00', N'Школьный двор'),
+                    (N'Родительское собрание 1А', '2025-12-24 18:00:00', N'Кабинет 101'),
+                    (N'Родительское собрание 5Б', '2025-12-25 18:30:00', N'Кабинет 205'),
+                    (N'Контрольная по математике', '2025-12-28 10:00:00', N'Акт. зал'),
+                    (N'Спортивный час', '2025-12-29 14:00:00', N'Спортзал'),
+                    (N'Осенний бал', '2026-01-04 17:00:00', N'Актовый зал'),
+                    (N'Новогодний утренник', '2026-01-07 10:00:00', N'Актовый зал'),
+                    (N'Последний звонок', '2025-10-21 09:00:00', N'Школьный двор'),
+                    (N'Выпускной вечер', '2025-10-21 18:00:00', N'Актовый зал');
+        
+                    PRINT '✅ 9 школьных мероприятий добавлено (строки DATETIME2)';",
 
                     @"SELECT COUNT(*) AS EventCount FROM Events;"
                 };
             }
+
         }
 
         public void ExecuteScripts(string connectionString, List<string> scripts, string operationName = "скрипты")

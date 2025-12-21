@@ -35,8 +35,8 @@ namespace school
 
             InitializeComponent();
 
-            txtLogin.Text = "Иванов Иван Иванович";
-            txtPassword.Text = "hashed_pass1";
+            txtLogin.Text = "Лютый директор";
+            txtPassword.Text = "director1";
         }
 
         private void btnLogin_Click_1(object sender, EventArgs e)

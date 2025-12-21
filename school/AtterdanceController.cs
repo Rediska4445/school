@@ -134,9 +134,9 @@ namespace school
                 if (attendance.AttendanceID < 0)
                 {
                     string insertQuery = @"
-                INSERT INTO Attendance (AttendanceDate, UserID, SubjectID, Present, ExcuseReason, LessonDate, Comment)
-                OUTPUT INSERTED.AttendanceID
-                VALUES (@AttendanceDate, @UserID, @SubjectID, @Present, @ExcuseReason, @LessonDate, @Comment)";
+                        INSERT INTO Attendance (AttendanceDate, UserID, SubjectID, Present, ExcuseReason, LessonDate, Comment)
+                        OUTPUT INSERTED.AttendanceID
+                        VALUES (@AttendanceDate, @UserID, @SubjectID, @Present, @ExcuseReason, @LessonDate, @Comment)";
 
                     using (SqlCommand cmd = new SqlCommand(insertQuery, conn))
                     {

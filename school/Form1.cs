@@ -383,7 +383,7 @@ namespace school
             int userId = int.Parse(userIdCell.Value.ToString());
             string fullName = row.Cells["FullName"].Value?.ToString() ?? "";
             int permissionId = 1;
-            Class cl = ClassController._controller.GetClassById(int.Parse(row.Cells["ClassID"].Value.ToString()));
+            Class cl = ClassController._controller.GetClassByName(row.Cells["ClassName"].Value.ToString());
 
             var userModel = new User
             {
