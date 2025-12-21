@@ -28,7 +28,10 @@ namespace school
             Form1.CONNECTION_STRING = settings.ConnectionString;
             Controller.DATABASE_NAME = settings.DatabaseName;
 
+            FileLogger.logger.Debug("DB: " + Controller.DATABASE_NAME);
+
             Controller.sqlController.PrepareDatabase(settings.MasterConnectionString, Controller.DATABASE_NAME);
+            Controller.sqlController.PrepareTestData(settings.MasterConnectionString, Controller.DATABASE_NAME);
 
             InitializeComponent();
 

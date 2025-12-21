@@ -127,17 +127,17 @@ namespace school.Controllers
                 if (exists)
                 {
                     var updateQuery = @"
-                UPDATE Users 
-                SET FullName = @FullName, 
-                    PasswordHash = @PasswordHash,  -- ✅ ДОБАВЛЕНО!
-                    PermissionID = @PermissionID, 
-                    ClassID = @ClassID
-                WHERE UserID = @UserID";
+                        UPDATE Users 
+                        SET FullName = @FullName, 
+                            PasswordHash = @PasswordHash,
+                            PermissionID = @PermissionID, 
+                            ClassID = @ClassID
+                        WHERE UserID = @UserID";
 
                     using (var updateCmd = new SqlCommand(updateQuery, connection))
                     {
                         updateCmd.Parameters.AddWithValue("@FullName", userModel.FullName);
-                        updateCmd.Parameters.AddWithValue("@PasswordHash", userModel.Password ?? "default_hash_" + Guid.NewGuid().ToString("N").Substring(0, 32));  // ✅ ДОБАВЛЕНО!
+                        updateCmd.Parameters.AddWithValue("@PasswordHash", userModel.Password ?? "default_hash_" + Guid.NewGuid().ToString("N").Substring(0, 32));
                         updateCmd.Parameters.AddWithValue("@PermissionID", userModel.PermissionID);
                         updateCmd.Parameters.AddWithValue("@ClassID", userModel.ClassID ?? (object)DBNull.Value);
                         updateCmd.Parameters.AddWithValue("@UserID", userModel.UserID);
@@ -149,11 +149,10 @@ namespace school.Controllers
                 }
                 else
                 {
-                    // INSERT остается без изменений
                     var insertQuery = @"
-                INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
-                OUTPUT INSERTED.UserID
-                VALUES (@FullName, @PasswordHash, @PermissionID, @ClassID)";
+                        INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID)
+                        OUTPUT INSERTED.UserID
+                        VALUES (@FullName, @PasswordHash, @PermissionID, @ClassID)";
 
                     using (var insertCmd = new SqlCommand(insertQuery, connection))
                     {
@@ -501,6 +500,22 @@ namespace school.Controllers
                 }
             }
             return null;
+        }
+
+        public int GetPermission(string v)
+        {
+            if(v.Contains("Директор"))
+            {
+                return 3;
+            }
+            else if (v.Contains("Учитель"))
+            {
+                return 2;
+            } 
+            else
+            {
+                return 1;
+            }
         }
     }
 }

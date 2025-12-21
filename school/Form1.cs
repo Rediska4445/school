@@ -112,22 +112,250 @@ namespace school
                 // Хандлеры таблицы с учителями
                 dataGridViewTeachers.CellEndEdit += DataGridViewTeachers_CellEndEdit;
                 dataGridViewTeachers.UserDeletingRow += DataGridViewTeachers_UserDeletingRow;
+
+                dataGridViewClassAtterdance.UserDeletingRow += DataGridViewClassAtterdance_UserDeletingRow;
+            }
+        }
+
+        private void DataGridViewClassAtterdance_UserDeletingRow(object sender, DataGridViewRowCancelEventArgs e)
+        {
+            var row = e.Row;
+
+            string attIdStr = row.Cells["AttendanceID"].Value?.ToString()?.Trim();
+            string studentName = row.Cells["StudentName"].Value?.ToString()?.Trim();
+            string subjectName = row.Cells["SubjectName"].Value?.ToString()?.Trim();
+            string lessonDateStr = row.Cells["AttendanceDate"].Value?.ToString()?.Trim();
+            string lessonTimeStr = row.Cells["LessonDate"].Value?.ToString()?.Trim();
+            string statusStr = row.Cells["Status"].Value?.ToString()?.Trim();
+            string commentStr = row.Cells["Comment"].Value?.ToString()?.Trim();
+
+            if (string.IsNullOrEmpty(studentName) || string.IsNullOrEmpty(subjectName) ||
+                string.IsNullOrEmpty(lessonDateStr) || string.IsNullOrEmpty(statusStr))
+            {
+                FileLogger.logger.Warn($"dataGridViewClassAttendance_CellValueChanged - Пропускаем - пустые обязательные поля (Row={e.Row.Index}): Student={studentName?.Length ?? 0}, Subject={subjectName?.Length ?? 0}, Date={lessonDateStr?.Length ?? 0}, Status={statusStr?.Length ?? 0}");
+                return;
+            }
+
+            int attendanceId = -1;
+            if (!string.IsNullOrEmpty(attIdStr) && int.TryParse(attIdStr, out int parsedId))
+            {
+                attendanceId = parsedId;
+                FileLogger.logger.Debug($"dataGridViewClassAttendance_CellValueChanged - ID посещения распарсен: {attendanceId}");
+            }
+            else
+            {
+                FileLogger.logger.Debug($"dataGridViewClassAttendance_CellValueChanged - Новый запись посещения (Row={e.Row.Index})");
+            }
+
+            Attendance attendance;
+            try
+            {
+                attendance = new Attendance
+                {
+                    AttendanceID = attendanceId,
+                    SubjectID = SubjectController._controller.GetSubjectIdByName(subjectName),
+                    LessonDate = DateTime.Parse(lessonTimeStr),
+                    AttendanceDate = DateTime.Parse(lessonDateStr).Date,
+
+                    UserID = UserController._userController.GetStudentIdByName(studentName),
+                    Present = statusStr.Contains("Присут"),
+                    ExcuseReason = statusStr?.Contains("оправдание") ?? false,
+                    Comment = commentStr ?? ""
+                };
+
+                FileLogger.logger.Info($"dataGridViewClassAttendance_CellValueChanged - Сформирован объект Attendance: ID={attendance.AttendanceID}, StudentID={attendance.UserID}, SubjectID={attendance.SubjectID}, Present={attendance.Present}, Date={attendance.LessonDate:yyyy-MM-dd}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"dataGridViewClassAttendance_CellValueChanged - Ошибка создания Attendance (Row={e.Row.Index}): {ex.Message}\nStudent='{studentName}', Date='{lessonDateStr}', Status='{statusStr}'");
+                return;
+            }
+
+            try
+            {
+                FileLogger.logger.Info($"dataGridViewClassAttendance_CellValueChanged - Очередь ДО добавления: {AtterdanceController.Instance.PendingChangesCount} изменений");
+
+                AtterdanceController.Instance.AddAttendanceChange("DELETE", attendance);
+
+                FileLogger.logger.Info($"dataGridViewClassAttendance_CellValueChanged - Очередь ПОСЛЕ добавления: {AtterdanceController.Instance.PendingChangesCount} изменений");
+                FileLogger.logger.Info($"dataGridViewClassAttendance_CellValueChanged - Изменения сохранены: {attendance.AttendanceID} ({(attendanceId == -1 ? "NEW" : "EDIT")})");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"dataGridViewClassAttendance_CellValueChanged - Ошибка сохранения (Row={e.Row.Index}): {ex.Message}");
             }
         }
 
         private void DataGridViewStudents_UserDeletingRow(object sender, DataGridViewRowCancelEventArgs e)
         {
+            if (e.Row.Index < 0 || e.Row.Index >= dataGridViewStudents.Rows.Count) return;
 
+            var row = dataGridViewStudents.Rows[e.Row.Index];
+
+            var userIdCell = row.Cells["UserID"];
+            if (userIdCell.Value == null || string.IsNullOrWhiteSpace(userIdCell.Value.ToString()))
+            {
+                userIdCell.Value = -1;
+            }
+
+            if (HasEmptyVisibleCellsInRow(row))
+            {
+                return;
+            }
+
+            foreach (DataGridViewColumn col in dataGridViewStudents.Columns)
+            {
+                FileLogger.logger.Debug($"Колонка: {col.Name}, Индекс: {col.Index}, Ширина: {col.Width}");
+            }
+
+            int userId = int.Parse(userIdCell.Value.ToString());
+            string fullName = row.Cells["FullName"].Value?.ToString() ?? "";
+            int permissionId = 1;
+            Class cl = ClassController._controller.GetClassById(int.Parse(row.Cells["ClassID"].Value.ToString()));
+
+            var userModel = new User
+            {
+                UserID = userId,
+                FullName = fullName,
+                Password = row.Cells["Password"].Value.ToString(),
+                PermissionID = permissionId,
+                ClassID = cl.ClassID,
+                Class = cl
+            };
+
+            string action = "DELETE";
+            UserController._userController.AddUserChange(action, userModel);
+
+            FileLogger.logger.Info($"СТУДЕНТЫ: {action} - {userModel.FullName} (ID: {userModel.UserID})");
         }
 
         private void DataGridViewTeachers_UserDeletingRow(object sender, DataGridViewRowCancelEventArgs e)
         {
+            var eventIdCell = e.Row.Cells["EventID"];
 
+            if (eventIdCell.Value == null || !int.TryParse(eventIdCell.Value.ToString(), out int eventId))
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            if (eventId <= 0)
+            {
+                e.Cancel = true;
+                FileLogger.logger.Warn("Попытка удалить новую строку - отменено");
+                return;
+            }
+
+            var eventModel = new Event { EventID = eventId };
+            EventsController._controller.AddEventChange("DELETE", eventModel);
+
+            FileLogger.logger.Info($"Очередь: DELETE событие ID={eventId}");
+
+            var result = MessageBox.Show(
+                $"Удалить событие ID {eventId}?\nЭто добавит удаление в очередь изменений.",
+                "Подтверждение удаления",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.No)
+            {
+                e.Cancel = true;
+            }
         }
 
         private void DataGridViewTeachers_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
+            FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - Событие: Row={e.RowIndex}, Col={e.ColumnIndex}");
 
+            if (e.RowIndex < 0 || e.RowIndex >= dataGridViewTeachers.Rows.Count)
+            {
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - Игнорируем невалидный индекс (Row={e.RowIndex})");
+                return;
+            }
+
+            var row = dataGridViewTeachers.Rows[e.RowIndex];
+            FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - Обрабатываем строку {e.RowIndex}");
+
+            var userIdCell = row.Cells["UserID"];
+            FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - UserID cell value: '{userIdCell.Value}'");
+
+            if (userIdCell.Value == null || string.IsNullOrWhiteSpace(userIdCell.Value.ToString()))
+            {
+                userIdCell.Value = -1;
+                FileLogger.logger.Debug("DataGridViewTeachers_CellEndEdit - UserID установлен в -1 (новая запись)");
+            }
+
+            if (HasEmptyVisibleCellsInRow(row))
+            {
+                FileLogger.logger.Warn($"DataGridViewTeachers_CellEndEdit - Пропускаем - пустые видимые ячейки (Row={e.RowIndex})");
+                return;
+            }
+
+            FileLogger.logger.Debug("DataGridViewTeachers_CellEndEdit - Логируем колонки:");
+            foreach (DataGridViewColumn col in dataGridViewTeachers.Columns)
+            {
+                FileLogger.logger.Debug($"  Колонка: {col.Name}, Индекс: {col.Index}, Ширина: {col.Width}");
+            }
+
+            try
+            {
+                int userId = int.Parse(userIdCell.Value.ToString());
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - UserID распарсен: {userId}");
+
+                string fullName = row.Cells["FullName"].Value?.ToString() ?? "";
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - FullName: '{fullName}'");
+
+                int permissionId = UserController._userController.GetPermission(row.Cells["PermissionName"].Value.ToString()); 
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - PermissionID: {permissionId}");
+
+                string classNameStr = row.Cells["ClassName"].Value?.ToString();
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - ClassName строка: '{classNameStr}'");
+
+                if (string.IsNullOrWhiteSpace(classNameStr))
+                {
+                    FileLogger.logger.Warn("DataGridViewTeachers_CellEndEdit - ClassName пустой - пропускаем");
+                    return;
+                }
+
+                Class cl = ClassController._controller.GetClassByName(classNameStr);
+
+                if (cl == null)
+                {
+                    FileLogger.logger.Error($"DataGridViewTeachers_CellEndEdit - Класс '{classNameStr}' НЕ НАЙДЕН!");
+                    return;
+                }
+
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - Класс найден: {cl.ClassName} (ID={cl.ClassID})");
+
+                var userModel = new User
+                {
+                    UserID = userId,
+                    FullName = fullName,
+                    Password = row.Cells["Password"].Value?.ToString() ?? "",
+                    PermissionID = permissionId,
+                    ClassID = cl.ClassID,
+                    Class = cl
+                };
+
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - 📦 userModel СОДЕРЖИМОЕ:");
+                FileLogger.logger.Debug($"  UserID: {userModel.UserID} ({(userModel.UserID > 0 ? "СУЩЕСТВУЕТ" : "НОВЫЙ")})");
+                FileLogger.logger.Debug($"  FullName: '{userModel.FullName}' (длина: {userModel.FullName?.Length ?? 0})");
+                FileLogger.logger.Debug($"  Password: '{(string.IsNullOrEmpty(userModel.Password) ? "<ПУСТОЙ>" : userModel.Password)}'");
+                FileLogger.logger.Debug($"  PermissionID: {userModel.PermissionID}");
+                FileLogger.logger.Debug($"  ClassID: {userModel.ClassID ?? 0} {(userModel.ClassID.HasValue ? "" : "(NULL)")}");
+                FileLogger.logger.Debug($"  Class: {(userModel.Class != null ? $"{userModel.Class.ClassName} (ID={userModel.Class.ClassID})" : "NULL")}");
+
+                FileLogger.logger.Debug($"DataGridViewTeachers_CellEndEdit - Создан UserModel: ID={userModel.UserID}, Name='{userModel.FullName}', ClassID={userModel.ClassID}");
+
+                string action = userModel.UserID > 0 ? "EDIT" : "ADD";
+                UserController._userController.AddUserChange(action, userModel);
+
+                FileLogger.logger.Info($"Teachers: {action} - {userModel.FullName} (ID: {userModel.UserID}, Class: {cl.ClassName})");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"DataGridViewTeachers_CellEndEdit - ОШИБКА (Row={e.RowIndex}): {ex.Message}\n{ex.StackTrace}");
+            }
         }
 
         private void DataGridViewStudents_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -155,7 +383,7 @@ namespace school
             int userId = int.Parse(userIdCell.Value.ToString());
             string fullName = row.Cells["FullName"].Value?.ToString() ?? "";
             int permissionId = 1;
-            Class cl = ClassController._controller.GetClassById(int.Parse(row.Cells["ClassName"].Value.ToString()));
+            Class cl = ClassController._controller.GetClassById(int.Parse(row.Cells["ClassID"].Value.ToString()));
 
             var userModel = new User
             {
@@ -465,19 +693,19 @@ namespace school
 
             if (grade.SubjectID == 0)
             {
-                MessageBox.Show("❌ Предмет не найден в БД!");
+                MessageBox.Show("Предмет не найден в БД!");
                 return;
             }
             if (UserController.CurrentUser.PermissionID > 1 && grade.StudentID == 0)
             {
-                MessageBox.Show("❌ Ученик не найден в БД!");
+                MessageBox.Show("Ученик не найден в БД!");
                 return;
             }
 
             string action = gradeId > 0 ? "EDIT" : "ADD";
             GradesController._controller.AddGradeChange(action, grade);
 
-            MessageBox.Show($"✅ {action} оценка #{gradeId}");
+            MessageBox.Show($"{action} оценка #{gradeId}");
         }
 
         // Слушатель удаления оценок.
@@ -1219,12 +1447,12 @@ namespace school
                 foreach (var schedule in scheduleList)
                 {
                     sheduleGridView.Rows.Add(
-                        schedule.ScheduleID, // Идентификатор расписания
-                        schedule.DayOfWeekDisplay, // День недели
-                        schedule.LessonNumber, // Номер урока
-                        schedule.LessonTimeDisplay ?? "", // Время начала
-                        schedule.SubjectName, // Предмет
-                        schedule.TeacherName // Учитель
+                        schedule.ScheduleID,
+                        schedule.DayOfWeekDisplay,
+                        schedule.LessonNumber,
+                        schedule.LessonTimeDisplay ?? "",
+                        schedule.SubjectName,
+                        schedule.TeacherName
                     );
                 }
 
@@ -1246,6 +1474,7 @@ namespace school
 
             sheduleGridView.Columns.Add("colScheduleID", "ID");
             sheduleGridView.Columns["colScheduleID"].Visible = false;
+
             sheduleGridView.Columns.Add("colDay", "День");
             sheduleGridView.Columns.Add("colLesson", "Урок");
             sheduleGridView.Columns.Add("colTime", "Время");
@@ -1527,8 +1756,8 @@ namespace school
                 dataGridViewGrades.Columns.Clear();
                 dataGridViewGrades.Rows.Clear();
 
-                DateTime startDate = dateTimePickerGrades.Value.AddDays(-7);
-                DateTime endDate = dateTimePickerGrades.Value;
+                DateTime startDate = dateTimePickerGrades.Value;
+                DateTime endDate = dateTimePickerGrades1.Value;
 
                 List<Grade> gradesList;
                 if (UserController.CurrentUser.PermissionID > 1)
@@ -1779,6 +2008,7 @@ namespace school
                         user.FullName,
                         user.PermissionName,
                         user.PermissionID,
+                        user.Password,
                         user.ClassID?.ToString() ?? "",
                         user.Class?.ClassName ?? "-"  
                     );
@@ -1806,33 +2036,18 @@ namespace school
                 dataGridViewTeachers.Columns.Clear();
 
             dataGridViewTeachers.Columns.Add("UserID", "ID");
+            dataGridViewTeachers.Columns[0].Visible = false;
+
             dataGridViewTeachers.Columns.Add("FullName", "ФИО");
             dataGridViewTeachers.Columns.Add("PermissionName", "Роль");
             dataGridViewTeachers.Columns.Add("PermissionID", "Роль ID");
-            dataGridViewTeachers.Columns.Add("Password", "Пароль");
-            dataGridViewTeachers.Columns.Add("ClassID", "Класс ID");
-            dataGridViewTeachers.Columns.Add("ClassName", "Руководство классом");
-
-            dataGridViewTeachers.Columns[0].HeaderText = "ID";
-            dataGridViewTeachers.Columns[0].Visible = false;  
-
-            dataGridViewTeachers.Columns[1].HeaderText = "ФИО";
-            dataGridViewTeachers.Columns[1].FillWeight = 40;
-
-            dataGridViewTeachers.Columns[2].HeaderText = "Роль";
-            dataGridViewTeachers.Columns[2].FillWeight = 25;
-
-            dataGridViewTeachers.Columns[3].HeaderText = "Роль ID";
             dataGridViewTeachers.Columns[3].Visible = false;
 
-            dataGridViewTeachers.Columns[4].HeaderText = "Класс ID";
-            dataGridViewTeachers.Columns[4].Visible = false;
+            dataGridViewTeachers.Columns.Add("Password", "Пароль");
+            dataGridViewTeachers.Columns.Add("ClassID", "Класс ID");
+            dataGridViewTeachers.Columns[5].Visible = false;
 
-            if (dataGridViewTeachers.Columns.Count > 5)
-            {
-                dataGridViewTeachers.Columns[5].HeaderText = "Класс";
-                dataGridViewTeachers.Columns[5].FillWeight = 35;
-            }
+            dataGridViewTeachers.Columns.Add("ClassName", "Руководство классом");
 
             dataGridViewTeachers.ReadOnly = !(UserController.CurrentUser.PermissionID >= 3);
             dataGridViewTeachers.AllowUserToAddRows = UserController.CurrentUser.PermissionID >= 3;
@@ -1873,7 +2088,6 @@ namespace school
 
                     FileLogger.logger.Debug($"Form1.LoadStudentsGrid - {student.FullName} | Класс: {student.Class?.ClassName ?? "нет класса"}");
                 }
-
 
                 FileLogger.logger.Info($"Загружено {dataGridViewStudents.Rows.Count} учеников");
             }
@@ -2008,11 +2222,11 @@ namespace school
             List<DataGridView> grids = new List<DataGridView>();
             Control currentTab = tabControl.SelectedTab;
 
-            FileLogger.logger.Debug($"🔍 Печать вкладки: '{currentTab?.Name}' (Controls: {currentTab?.Controls.Count ?? 0})");
+            FileLogger.logger.Debug($"Печать вкладки: '{currentTab?.Name}' (Controls: {currentTab?.Controls.Count ?? 0})");
 
             FindDataGridViewsRecursive(currentTab, grids);
 
-            FileLogger.logger.Debug($"📊 ИТОГО таблиц для печати: {grids.Count}");
+            FileLogger.logger.Debug($"ИТОГО таблиц для печати: {grids.Count}");
             return grids;
         }
 
@@ -2026,22 +2240,22 @@ namespace school
 
                 if (control is DataGridView dgv)
                 {
-                    FileLogger.logger.Debug($"    ✅ НАЙДЕН DataGridView: '{dgv.Name}' Rows: {dgv.RowCount}");
+                    FileLogger.logger.Debug($"    НАЙДЕН DataGridView: '{dgv.Name}' Rows: {dgv.RowCount}");
 
                     if (dgv.RowCount > 0 && dgv.Visible)
                     {
                         grids.Add(dgv);
-                        FileLogger.logger.Debug($"    ✅ ДОБАВЛЕН в печать: '{dgv.Name}'");
+                        FileLogger.logger.Debug($"    ДОБАВЛЕН в печать: '{dgv.Name}'");
                     }
                     else
                     {
-                        FileLogger.logger.Debug($"    ❌ ПРОПУЩЕН (пустой/невидимый): Rows={dgv.RowCount}, Visible={dgv.Visible}");
+                        FileLogger.logger.Debug($"    ПРОПУЩЕН (пустой/невидимый): Rows={dgv.RowCount}, Visible={dgv.Visible}");
                     }
                 }
 
                 if (control.HasChildren)
                 {
-                    FileLogger.logger.Debug($"    📂 ИДЕМ ВГЛУБЬ: {control.Name} (Children: {control.Controls.Count})");
+                    FileLogger.logger.Debug($"    ИДЕМ ВГЛУБЬ: {control.Name} (Children: {control.Controls.Count})");
                     FindDataGridViewsRecursive(control, grids);
                 }
             }
@@ -2082,6 +2296,16 @@ namespace school
         private void dateTimePickerAttendanceEnd_ValueChanged(object sender, EventArgs e)
         {
             LoadAttendance();
+        }
+
+        private void dateTimePickerHomework1_ValueChanged(object sender, EventArgs e)
+        {
+            LoadHomeworkGrid();
+        }
+
+        private void dateTimePickerGrades1_ValueChanged(object sender, EventArgs e)
+        {
+            LoadGradesGrid();
         }
     }
 }

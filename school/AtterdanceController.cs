@@ -82,6 +82,7 @@ namespace school
                 FileLogger.logger.Error($"AtterdanceController.AddAttendanceChange - Ошибка сохранения: {ex.Message}");
                 throw;
             }
+
             return processed;
         }
 

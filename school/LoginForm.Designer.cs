@@ -29,7 +29,6 @@ namespace school
         private ComboBox cmbPermission;
         private ComboBox cmbClass;
         private Button btnRegister;
-        private Button btnToLogin;
 
         protected override void Dispose(bool disposing)
         {
@@ -63,7 +62,6 @@ namespace school
             this.cmbPermission = new System.Windows.Forms.ComboBox();
             this.cmbClass = new System.Windows.Forms.ComboBox();
             this.btnRegister = new System.Windows.Forms.Button();
-            this.btnToLogin = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPageLogin.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -182,7 +180,6 @@ namespace school
             this.tabPageRegister.Controls.Add(this.cmbPermission);
             this.tabPageRegister.Controls.Add(this.cmbClass);
             this.tabPageRegister.Controls.Add(this.btnRegister);
-            this.tabPageRegister.Controls.Add(this.btnToLogin);
             this.tabPageRegister.Location = new System.Drawing.Point(4, 22);
             this.tabPageRegister.Name = "tabPageRegister";
             this.tabPageRegister.Padding = new System.Windows.Forms.Padding(3);
@@ -276,20 +273,11 @@ namespace school
             // 
             this.btnRegister.Location = new System.Drawing.Point(100, 190);
             this.btnRegister.Name = "btnRegister";
-            this.btnRegister.Size = new System.Drawing.Size(75, 27);
+            this.btnRegister.Size = new System.Drawing.Size(160, 27);
             this.btnRegister.TabIndex = 9;
             this.btnRegister.Text = "Зарегистрировать";
             this.btnRegister.UseVisualStyleBackColor = true;
             this.btnRegister.Click += new System.EventHandler(this.btnRegister_Click);
-            // 
-            // btnToLogin
-            // 
-            this.btnToLogin.Location = new System.Drawing.Point(185, 190);
-            this.btnToLogin.Name = "btnToLogin";
-            this.btnToLogin.Size = new System.Drawing.Size(75, 27);
-            this.btnToLogin.TabIndex = 10;
-            this.btnToLogin.Text = "Вход";
-            this.btnToLogin.UseVisualStyleBackColor = true;
             // 
             // LoginForm
             // 
