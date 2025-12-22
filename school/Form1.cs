@@ -2583,14 +2583,67 @@ namespace school
             LoadGradesGrid();
         }
 
+        private DataGridView GetFirstDataGridView()
+        {
+            return FindFirstDataGridView(this);
+        }
+
+        private DataGridView FindFirstDataGridView(Control parent)
+        {
+            foreach (Control control in parent.Controls)
+            {
+                if (control is DataGridView dgv && dgv.Visible && dgv.Enabled)
+                    return dgv;
+
+                if (control.HasChildren)
+                {
+                    DataGridView found = FindFirstDataGridView(control);
+                    if (found != null)
+                        return found;
+                }
+            }
+            return null;
+        }
+
         private void addButton_Click(object sender, EventArgs e)
         {
+            var dgv = GetFirstDataGridView();
+            if (dgv == null) return;
 
+            int rowIndex = dgv.Rows.Add();
+            var newRow = dgv.Rows[rowIndex];
+
+            DataGridViewCell firstVisibleCell = null;
+            foreach (DataGridViewColumn col in dgv.Columns)
+            {
+                if (col.Visible && col.Index < dgv.Columns.Count)
+                {
+                    firstVisibleCell = dgv.Rows[rowIndex].Cells[col.Index];
+                    break;
+                }
+            }
+
+            if (firstVisibleCell != null)
+            {
+                dgv.CurrentCell = firstVisibleCell;
+                dgv.Rows[rowIndex].Selected = true;
+                dgv.FirstDisplayedScrollingRowIndex = rowIndex;
+            }
         }
 
         private void deleteButton_Click(object sender, EventArgs e)
         {
+            var dgv = GetFirstDataGridView();
+            if (dgv == null) return;
 
+            if (dgv.CurrentRow != null && dgv.CurrentRow.Index >= 0)
+            {
+                if (MessageBox.Show("Удалить выбранную строку?", "Подтверждение",
+                    MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    dgv.Rows.RemoveAt(dgv.CurrentRow.Index);
+                }
+            }
         }
     }
 }
