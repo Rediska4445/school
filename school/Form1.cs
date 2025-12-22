@@ -2416,16 +2416,7 @@ namespace school
             new LoginForm().Show();
         }
 
-        private void buttonPrintShedule_Click(object sender, EventArgs e)
-        {
-            printDocument1.PrintPage += printDocument1_PrintPage;
-            printDocumentDialog1.Document = printDocument1;
-
-            if (printDocumentDialog1.ShowDialog() == DialogResult.OK)
-            {
-                printDocument1.Print();
-            }
-        }
+        private PrintPreviewDialog printPreviewDialog1;
 
         private void printDocument1_PrintPage(object sender, PrintPageEventArgs e)
         {
@@ -2465,6 +2456,27 @@ namespace school
 
                 _gridsToPrint = null;
                 _currentGridIndex = 0;
+            }
+        }
+
+        private void buttonPreview_Click(object sender, EventArgs e)
+        {
+            _gridsToPrint = GetCurrentGridViews();
+            _currentGridIndex = 0;
+            _currentPrintTitle = GetCurrentGridTitle();
+
+            if (_gridsToPrint != null && _gridsToPrint.Count > 0)
+            {
+                printPreviewDialog1 = new PrintPreviewDialog
+                {
+                    Document = printDocument1,
+                    ShowIcon = false,
+                    WindowState = FormWindowState.Maximized
+                };
+
+                printDocument1.PrintPage += printDocument2_PrintPage;
+                printPreviewDialog1.ShowDialog();
+                printDocument1.PrintPage -= printDocument2_PrintPage;
             }
         }
 
