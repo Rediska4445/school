@@ -1072,7 +1072,20 @@ namespace school
             }
             else if (UserController.CurrentUser.PermissionID >= 2)
             {
-                dataGridView.Columns.Add("StudentName", "Ученик");
+                DataGridViewComboBoxColumn comboStudentCol = new DataGridViewComboBoxColumn();
+                comboStudentCol.Name = "StudentName";
+                comboStudentCol.HeaderText = "Ученик";
+                comboStudentCol.DisplayMember = "FullName";
+                comboStudentCol.ValueMember = "FullName";
+                comboStudentCol.ValueType = typeof(string);
+                comboStudentCol.Width = 120;
+
+                foreach (User sub in UserController._userController.GetAllOfPredicate("u.PermissionID <= 1"))
+                {
+                    comboStudentCol.Items.Add(sub.FullName);
+                }
+
+                dataGridView.Columns.Add(comboStudentCol);
 
                 var dateCol = new CalendarColumn();
                 dateCol.Name = "AttendanceDate";
@@ -1092,6 +1105,7 @@ namespace school
                 {
                     comboSubjectCol.Items.Add(sub);
                 }
+
                 comboSubjectCol.Items.Insert(0, "");
                 dataGridView.Columns.Add(comboSubjectCol);
 
