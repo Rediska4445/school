@@ -157,7 +157,7 @@ namespace school
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelTop.Location = new System.Drawing.Point(0, 0);
             this.panelTop.Name = "panelTop";
-            this.panelTop.Size = new System.Drawing.Size(1205, 52);
+            this.panelTop.Size = new System.Drawing.Size(1205, 46);
             this.panelTop.TabIndex = 0;
             // 
             // buttonPrint
@@ -198,9 +198,9 @@ namespace school
             // 
             this.panelMain.Controls.Add(this.tabControl);
             this.panelMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelMain.Location = new System.Drawing.Point(0, 52);
+            this.panelMain.Location = new System.Drawing.Point(0, 46);
             this.panelMain.Name = "panelMain";
-            this.panelMain.Size = new System.Drawing.Size(1205, 828);
+            this.panelMain.Size = new System.Drawing.Size(1205, 834);
             this.panelMain.TabIndex = 1;
             // 
             // tabControl
@@ -222,7 +222,7 @@ namespace school
             this.tabControl.Name = "tabControl";
             this.tabControl.Padding = new System.Drawing.Point(20, 5);
             this.tabControl.SelectedIndex = 0;
-            this.tabControl.Size = new System.Drawing.Size(1205, 828);
+            this.tabControl.Size = new System.Drawing.Size(1205, 834);
             this.tabControl.TabIndex = 0;
             this.tabControl.SelectedIndexChanged += new System.EventHandler(this.tabControl_SelectedIndexChanged);
             // 
@@ -232,7 +232,7 @@ namespace school
             this.tabHomework.Location = new System.Drawing.Point(4, 30);
             this.tabHomework.Name = "tabHomework";
             this.tabHomework.Padding = new System.Windows.Forms.Padding(9);
-            this.tabHomework.Size = new System.Drawing.Size(1197, 794);
+            this.tabHomework.Size = new System.Drawing.Size(1197, 800);
             this.tabHomework.TabIndex = 0;
             this.tabHomework.Text = "Д/З";
             this.tabHomework.UseVisualStyleBackColor = true;
@@ -244,7 +244,7 @@ namespace school
             this.panelHomework.Location = new System.Drawing.Point(9, 9);
             this.panelHomework.Name = "panelHomework";
             this.panelHomework.Padding = new System.Windows.Forms.Padding(9);
-            this.panelHomework.Size = new System.Drawing.Size(1179, 776);
+            this.panelHomework.Size = new System.Drawing.Size(1179, 782);
             this.panelHomework.TabIndex = 0;
             // 
             // homeworkTabControl
@@ -257,7 +257,7 @@ namespace school
             this.homeworkTabControl.Location = new System.Drawing.Point(3, 3);
             this.homeworkTabControl.Name = "homeworkTabControl";
             this.homeworkTabControl.SelectedIndex = 0;
-            this.homeworkTabControl.Size = new System.Drawing.Size(1164, 770);
+            this.homeworkTabControl.Size = new System.Drawing.Size(1164, 776);
             this.homeworkTabControl.TabIndex = 3;
             // 
             // tabPage2
@@ -269,7 +269,7 @@ namespace school
             this.tabPage2.Location = new System.Drawing.Point(4, 26);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(1156, 740);
+            this.tabPage2.Size = new System.Drawing.Size(1156, 746);
             this.tabPage2.TabIndex = 0;
             this.tabPage2.Text = "Период";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -300,7 +300,7 @@ namespace school
             // 
             this.labelHomeworkPeriod.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.labelHomeworkPeriod.AutoSize = true;
-            this.labelHomeworkPeriod.Location = new System.Drawing.Point(557, 718);
+            this.labelHomeworkPeriod.Location = new System.Drawing.Point(557, 724);
             this.labelHomeworkPeriod.Name = "labelHomeworkPeriod";
             this.labelHomeworkPeriod.Size = new System.Drawing.Size(45, 19);
             this.labelHomeworkPeriod.TabIndex = 2;
@@ -320,7 +320,7 @@ namespace school
             this.dataGridViewHomework.RowHeadersVisible = false;
             this.dataGridViewHomework.RowTemplate.Height = 25;
             this.dataGridViewHomework.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewHomework.Size = new System.Drawing.Size(1144, 678);
+            this.dataGridViewHomework.Size = new System.Drawing.Size(1144, 684);
             this.dataGridViewHomework.TabIndex = 1;
             // 
             // tabPage3
@@ -339,7 +339,7 @@ namespace school
             this.labelHomeworkAll.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.labelHomeworkAll.AutoSize = true;
-            this.labelHomeworkAll.Location = new System.Drawing.Point(347, 751);
+            this.labelHomeworkAll.Location = new System.Drawing.Point(347, 759);
             this.labelHomeworkAll.Name = "labelHomeworkAll";
             this.labelHomeworkAll.Size = new System.Drawing.Size(45, 19);
             this.labelHomeworkAll.TabIndex = 3;
@@ -359,7 +359,7 @@ namespace school
             this.datagridviewHomeworkAll.RowHeadersVisible = false;
             this.datagridviewHomeworkAll.RowTemplate.Height = 25;
             this.datagridviewHomeworkAll.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.datagridviewHomeworkAll.Size = new System.Drawing.Size(1148, 745);
+            this.datagridviewHomeworkAll.Size = new System.Drawing.Size(1148, 753);
             this.datagridviewHomeworkAll.TabIndex = 2;
             // 
             // tabGrades
@@ -484,7 +484,7 @@ namespace school
             this.dataGridViewGradesAll.RowHeadersVisible = false;
             this.dataGridViewGradesAll.RowTemplate.Height = 25;
             this.dataGridViewGradesAll.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewGradesAll.Size = new System.Drawing.Size(1144, 760);
+            this.dataGridViewGradesAll.Size = new System.Drawing.Size(1144, 768);
             this.dataGridViewGradesAll.TabIndex = 2;
             // 
             // tabShedule
@@ -665,7 +665,7 @@ namespace school
             this.dataGridViewStatisticsClass2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewStatisticsClass2.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewStatisticsClass2.Location = new System.Drawing.Point(5, 400);
+            this.dataGridViewStatisticsClass2.Location = new System.Drawing.Point(5, 408);
             this.dataGridViewStatisticsClass2.Name = "dataGridViewStatisticsClass2";
             this.dataGridViewStatisticsClass2.ReadOnly = true;
             this.dataGridViewStatisticsClass2.RowHeadersVisible = false;
@@ -688,7 +688,7 @@ namespace school
             this.dataGridViewClassStatistics1.RowHeadersVisible = false;
             this.dataGridViewClassStatistics1.RowTemplate.Height = 25;
             this.dataGridViewClassStatistics1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewClassStatistics1.Size = new System.Drawing.Size(582, 389);
+            this.dataGridViewClassStatistics1.Size = new System.Drawing.Size(582, 397);
             this.dataGridViewClassStatistics1.TabIndex = 3;
             // 
             // dataGridViewClassStatistics
@@ -705,7 +705,7 @@ namespace school
             this.dataGridViewClassStatistics.RowHeadersVisible = false;
             this.dataGridViewClassStatistics.RowTemplate.Height = 25;
             this.dataGridViewClassStatistics.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewClassStatistics.Size = new System.Drawing.Size(562, 389);
+            this.dataGridViewClassStatistics.Size = new System.Drawing.Size(562, 397);
             this.dataGridViewClassStatistics.TabIndex = 2;
             // 
             // tabPageEvents
@@ -938,7 +938,7 @@ namespace school
             this.dataGridViewClassAtterdance.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewClassAtterdance.Location = new System.Drawing.Point(6, 34);
             this.dataGridViewClassAtterdance.Name = "dataGridViewClassAtterdance";
-            this.dataGridViewClassAtterdance.Size = new System.Drawing.Size(1171, 738);
+            this.dataGridViewClassAtterdance.Size = new System.Drawing.Size(1171, 746);
             this.dataGridViewClassAtterdance.TabIndex = 1;
             // 
             // tabPageClasses

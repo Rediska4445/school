@@ -47,6 +47,11 @@ namespace school.Models
         public int? ClassID { get; set; }  // Nullable int для учителей
         public Class Class { get; set; }   // Navigation property
         public string Password { get; set; }   // Navigation property
+
+        public override string ToString()
+        {
+            return FullName.ToString();
+        }
     }
 
     /// <summary>
@@ -109,6 +114,11 @@ namespace school.Models
         public string SubjectNameDisplay => Subject?.SubjectName ?? "";
         public string TeacherNameDisplay => Teacher?.FullName ?? "";
         public string StudentNameDisplay => Student?.FullName ?? "";
+
+        public override string ToString()
+        {
+            return GradeValue.ToString();
+        }
     }
 
     public class ScheduleItem

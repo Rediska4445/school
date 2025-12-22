@@ -22,15 +22,50 @@ namespace school
         /// <summary>
         /// Добавляет изменение посещаемости в очередь
         /// </summary>
-        public void AddAttendanceChange(string action, Attendance attendance)
+        public void AddAttendanceChange(string action, Attendance newAttendance)
         {
+            var changesToRemove = new List<AttendanceChange>();
+
+            foreach (var change in pendingChanges)
+            {
+                var existingAttendance = change.Attendance;
+
+                bool fieldsMatch = existingAttendance.AttendanceDate == newAttendance.AttendanceDate &&
+                                  existingAttendance.UserID == newAttendance.UserID &&
+                                  existingAttendance.SubjectID == newAttendance.SubjectID &&
+                                  existingAttendance.LessonDate == newAttendance.LessonDate &&
+                                  existingAttendance.Present == newAttendance.Present;
+
+                if (fieldsMatch)
+                {
+                    bool existingCommentEmpty = string.IsNullOrEmpty(existingAttendance.Comment);
+                    bool newCommentEmpty = string.IsNullOrEmpty(newAttendance.Comment);
+
+                    if (existingCommentEmpty && !newCommentEmpty)
+                    {
+                        changesToRemove.Add(change);
+                        FileLogger.logger.Debug($"Найден пустой комментарий для удаления (ID: {existingAttendance.AttendanceID})");
+                    }
+                    else if (!existingCommentEmpty && newCommentEmpty)
+                    {
+                        FileLogger.logger.Debug($"Игнорируем пустой комментарий (ID: {newAttendance.AttendanceID})");
+                        return;
+                    }
+                }
+            }
+
+            foreach (var changeToRemove in changesToRemove)
+            {
+                pendingChanges.Remove(changeToRemove);
+            }
+
             pendingChanges.Add(new AttendanceChange
             {
                 Action = action.ToUpper(),
-                Attendance = attendance
+                Attendance = newAttendance
             });
 
-            FileLogger.logger.Info($"AtterdanceController.AddAttendanceChange - Добавлено изменение посещаемости: {action} (ID: {attendance.AttendanceID})");
+            FileLogger.logger.Info($"AtterdanceController.AddAttendanceChange - Добавлено изменение посещаемости: {action} (ID: {newAttendance.AttendanceID})");
         }
 
         /// <summary>

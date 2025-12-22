@@ -12,7 +12,7 @@ namespace school
 
         public static GradesController _controller = new GradesController(Form1.CONNECTION_STRING);
 
-        // ✅ КОЛЛЕКЦИЯ ИЗМЕНЕНИЙ ОЦЕНОК
+        // KОЛЛЕКЦИЯ ИЗМЕНЕНИЙ ОЦЕНОК
         public class GradeChange
         {
             public string Action { get; set; } // "EDIT", "ADD", "DELETE"
@@ -77,6 +77,32 @@ namespace school
         public GradesController(string connectionString)
         {
             _connectionString = connectionString;
+        }
+
+        public Grade[] GetAvailableGrades()
+        {
+            return new Grade[] {
+                new Grade()
+                {
+                    GradeValue = 1,
+                },
+                new Grade()
+                {
+                    GradeValue = 2,
+                },
+                new Grade()
+                {
+                    GradeValue = 3,
+                },
+                new Grade()
+                {
+                    GradeValue = 4,
+                },
+                new Grade()
+                {
+                    GradeValue = 5,
+                }
+            };
         }
 
         // Вставка или обновление оценки

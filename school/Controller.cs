@@ -220,121 +220,114 @@ namespace school
                 };
             }
 
+            public static List<string> GenerateTestGradesData(string dbName)
+            {
+                return new List<string>()
+                {
+                    $"USE [{dbName}];",
+
+                    // Оценки для учителя (Иванов) - 10 оценок по 1А
+                    @"DECLARE @TeacherID INT = (SELECT UserID FROM Users WHERE FullName = N'Иванов Иван Иванович');
+                    DECLARE @MathSubjectID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Математика');
+                    DECLARE @Class1A INT = (SELECT ClassID FROM Classes WHERE ClassName = N'1А');
+
+                    IF @TeacherID > 0 AND @MathSubjectID > 0
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM Grades WHERE GradeID = 1)
+                        INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID) VALUES
+                        ('2025-12-01', (SELECT UserID FROM Users WHERE FullName = N'Алексеев Андрей'), @MathSubjectID, 5, @TeacherID),
+                        ('2025-12-02', (SELECT UserID FROM Users WHERE FullName = N'Борисова Дарья'), @MathSubjectID, 4, @TeacherID),
+                        ('2025-12-03', (SELECT UserID FROM Users WHERE FullName = N'Васильев Кирилл'), @MathSubjectID, 3, @TeacherID),
+                        ('2025-12-04', (SELECT UserID FROM Users WHERE FullName = N'Григорьева София'), @MathSubjectID, 5, @TeacherID),
+                        ('2025-12-05', (SELECT UserID FROM Users WHERE FullName = N'Алексеев Андрей'), @MathSubjectID, 4, @TeacherID),
+                        ('2025-12-06', (SELECT UserID FROM Users WHERE FullName = N'Борисова Дарья'), @MathSubjectID, 5, @TeacherID),
+                        ('2025-12-07', (SELECT UserID FROM Users WHERE FullName = N'Васильев Кирилл'), @MathSubjectID, 2, @TeacherID),
+                        ('2025-12-08', (SELECT UserID FROM Users WHERE FullName = N'Григорьева София'), @MathSubjectID, 4, @TeacherID),
+                        ('2025-12-09', (SELECT UserID FROM Users WHERE FullName = N'Алексеев Андрей'), @MathSubjectID, 5, @TeacherID),
+                        ('2025-12-10', (SELECT UserID FROM Users WHERE FullName = N'Борисова Дарья'), @MathSubjectID, 3, @TeacherID);
+                        PRINT '✅ Добавлено 10 оценок по математике (1А)';
+                    END;",
+
+                    // Оценки для русского языка (Петрова) - 10 оценок по 1Б
+                    @"DECLARE @Teacher2ID INT = (SELECT UserID FROM Users WHERE FullName = N'Петрова Анна Сергеевна');
+                    DECLARE @RussianSubjectID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Русский язык');
+                    DECLARE @Class1B INT = (SELECT ClassID FROM Classes WHERE ClassName = N'1Б');
+
+                    IF @Teacher2ID > 0 AND @RussianSubjectID > 0
+                    BEGIN
+                        INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID) VALUES
+                        ('2025-12-01', (SELECT UserID FROM Users WHERE FullName = N'Голубев Артем'), @RussianSubjectID, 4, @Teacher2ID),
+                        ('2025-12-02', (SELECT UserID FROM Users WHERE FullName = N'Дмитриева Елена'), @RussianSubjectID, 5, @Teacher2ID),
+                        ('2025-12-03', (SELECT UserID FROM Users WHERE FullName = N'Ефимов Стас'), @RussianSubjectID, 3, @Teacher2ID),
+                        ('2025-12-04', (SELECT UserID FROM Users WHERE FullName = N'Жданова Катя'), @RussianSubjectID, 5, @Teacher2ID),
+                        ('2025-12-05', (SELECT UserID FROM Users WHERE FullName = N'Голубев Артем'), @RussianSubjectID, 4, @Teacher2ID),
+                        ('2025-12-06', (SELECT UserID FROM Users WHERE FullName = N'Дмитриева Елена'), @RussianSubjectID, 5, @Teacher2ID),
+                        ('2025-12-07', (SELECT UserID FROM Users WHERE FullName = N'Ефимов Стас'), @RussianSubjectID, 2, @Teacher2ID),
+                        ('2025-12-08', (SELECT UserID FROM Users WHERE FullName = N'Жданова Катя'), @RussianSubjectID, 4, @Teacher2ID),
+                        ('2025-12-09', (SELECT UserID FROM Users WHERE FullName = N'Голубев Артем'), @RussianSubjectID, 5, @Teacher2ID),
+                        ('2025-12-10', (SELECT UserID FROM Users WHERE FullName = N'Дмитриева Елена'), @RussianSubjectID, 3, @Teacher2ID);
+                        PRINT '✅ Добавлено 10 оценок по русскому (1Б)';
+                    END;",
+
+                    @"PRINT '📚 Итого добавлено: 20 тестовых оценок';"
+                };
+            }
+
+
             public static List<string> GenerateTestUsersData(string dbName)
             {
                 return new List<string>()
                 {
                     $"USE [{dbName}];",
-        
-                    // ✅ УЧИТЕЛЯ (PermissionID=2)
+
+                    // Учителя (всего 6)
                     @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Иванов Иван Иванович')
-                    BEGIN
-                        INSERT INTO Users (FullName, PasswordHash, PermissionID) VALUES
-                        (N'Иванов Иван Иванович', 'teacher1', 2),  -- Математика
-                        (N'Петрова Анна Сергеевна', 'teacher2', 2), -- Русский язык
-                        (N'Сидоров Петр Петрович', 'teacher3', 2), -- Физика
-                        (N'Козлова Мария Васильевна', 'teacher4', 2), -- Английский
-                        (N'Морозова Ольга Петровна', 'teacher5', 2),  -- Биология
-                        (N'Волков Дмитрий Сергеевич', 'teacher6', 2); -- История
-            
-                        PRINT '✅ Добавлены 6 учителей';
-                    END",
+                    INSERT INTO Users (FullName, PasswordHash, PermissionID) VALUES
+                    (N'Иванов Иван Иванович', 'teacher1', 2),
+                    (N'Петрова Анна Сергеевна', 'teacher2', 2),
+                    (N'Сидоров Петр Петрович', 'teacher3', 2),
+                    (N'Козлова Мария Васильевна', 'teacher4', 2),
+                    (N'Морозова Ольга Петровна', 'teacher5', 2),
+                    (N'Волков Дмитрий Сергеевич', 'teacher6', 2);
+                    PRINT '✅ Добавлены 6 учителей';",
 
-                    @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Лютый директор')
-                    BEGIN
-                        INSERT INTO Users (FullName, PasswordHash, PermissionID) VALUES
-                        (N'Лютый директор', 'director1', 3);
-            
-                        PRINT '✅ Добавлен директор';
-                    END",
+                    // Директор (всего 1)
+                    @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Директор')
+                    INSERT INTO Users (FullName, PasswordHash, PermissionID) VALUES
+                    (N'Директор', 'director1', 3);
+                    PRINT '✅ Добавлен директор';",
 
+                    // Ученики по классам (всего 40)
                     @"DECLARE @ClassID INT;
-                    DECLARE @ClassName NVARCHAR(10);
                     DECLARE @StudentCount INT = 0;
 
-                    -- 1А
+                    -- 1А (4 ученика)
                     SELECT @ClassID = ClassID FROM Classes WHERE ClassName = N'1А';
                     IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Алексеев Андрей')
-                    BEGIN
-                        INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID) VALUES
-                        (N'Алексеев Андрей', '1a1', 1, @ClassID),
-                        (N'Борисова Дарья', '1a2', 1, @ClassID),
-                        (N'Васильев Кирилл', '1a3', 1, @ClassID),
-                        (N'Григорьева София', '1a4', 1, @ClassID);
-                        SET @StudentCount = @StudentCount + 4;
-                    END;
+                    INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID) VALUES
+                    (N'Алексеев Андрей', '1a1', 1, @ClassID),
+                    (N'Борисова Дарья', '1a2', 1, @ClassID),
+                    (N'Васильев Кирилл', '1a3', 1, @ClassID),
+                    (N'Григорьева София', '1a4', 1, @ClassID);
+                    SET @StudentCount = @StudentCount + 4;
 
-                    -- 1Б
+                    -- 1Б (4 ученика)
                     SELECT @ClassID = ClassID FROM Classes WHERE ClassName = N'1Б';
                     IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Голубев Артем')
-                    BEGIN
-                        INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID) VALUES
-                        (N'Голубев Артем', '1b1', 1, @ClassID),
-                        (N'Дмитриева Елена', '1b2', 1, @ClassID),
-                        (N'Ефимов Стас', '1b3', 1, @ClassID),
-                        (N'Жданова Катя', '1b4', 1, @ClassID);
-                        SET @StudentCount = @StudentCount + 4;
-                    END;
+                    INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID) VALUES
+                    (N'Голубев Артем', '1b1', 1, @ClassID),
+                    (N'Дмитриева Елена', '1b2', 1, @ClassID),
+                    (N'Ефимов Стас', '1b3', 1, @ClassID),
+                    (N'Жданова Катя', '1b4', 1, @ClassID);
+                    SET @StudentCount = @StudentCount + 8;
 
-                    -- 5А, 5Б, 9А, 10А, 11А (по 4 ученика в каждом)
-                    SELECT @ClassID = ClassID FROM Classes WHERE ClassName IN (N'5А', N'5Б', N'9А', N'10А', N'11А');
-        
-                    PRINT CONCAT('✅ Добавлено учеников: ', @StudentCount);
-                    PRINT '📚 Ученики по классам: 1А(4), 1Б(4), 5А-11А(по 4)'"
+                    -- Остальные классы 5А, 5Б, 9А, 10А, 11А (по 6 учеников = 30)
+                    DECLARE @Classes TABLE (ClassName NVARCHAR(10));
+                    INSERT INTO @Classes VALUES (N'5А'), (N'5Б'), (N'9А'), (N'10А'), (N'11А');"
                 };
             }
 
             public static List<string> GenerateTestHomeworkData(string dbName)
-            {
-                return new List<string>()
-    {
-        $"USE [{dbName}];",
-
-        @"DECLARE @BaseDate DATE = CAST(GETDATE() AS DATE);
-        DECLARE @MathTeacher INT = (SELECT TOP 1 UserID FROM Users WHERE FullName LIKE N'%Иванов%' AND PermissionID = 2);
-        DECLARE @RussianTeacher INT = (SELECT TOP 1 UserID FROM Users WHERE FullName LIKE N'%Петрова%' AND PermissionID = 2);
-        DECLARE @MathSubject INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Математика');
-        DECLARE @RussianSubject INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Русский язык');
-
-        -- ✅ МАТЕМАТИКА - все классы (БЕЗОПАСНЫЙ CAST)
-        IF NOT EXISTS (SELECT * FROM Homework WHERE Description LIKE N'%Упр.%')
-        BEGIN
-            INSERT INTO Homework (AssignmentDate, ClassID, SubjectID, Description, TeacherID)
-            SELECT 
-                DATEADD(DAY, (c.ClassID % 7) - 3, @BaseDate), -- разные даты
-                c.ClassID,
-                @MathSubject,
-                CONCAT(N'Упр. ', (c.ClassID * 2), '-', (c.ClassID * 2 + 5), N', стр. ', (c.ClassID + 40)),
-                @MathTeacher
-            FROM Classes c;
-            
-            PRINT '✅ Математика: ДЗ для ВСЕХ классов';
-        END;
-
-        -- ✅ РУССКИЙ - младшие классы (1-5)
-        IF NOT EXISTS (SELECT * FROM Homework WHERE Description LIKE N'%Сочинение%')
-        BEGIN
-            INSERT INTO Homework (AssignmentDate, ClassID, SubjectID, Description, TeacherID)
-            SELECT 
-                DATEADD(DAY, (c.ClassID % 5), @BaseDate),
-                c.ClassID,
-                @RussianSubject,
-                CASE 
-                    WHEN c.ClassID % 2 = 1 THEN N'Сочинение: Мой праздник'
-                    ELSE N'Сочинение: Зимний лес'
-                END,
-                @RussianTeacher
-            FROM Classes c
-            WHERE c.ClassID <= 10; -- Примерно 1-5 классы по ClassID
-            
-            PRINT '✅ Русский: 1-5 классы';
-        END;
-
-        SELECT COUNT(*) AS HomeworkCount FROM Homework;"
-    };
-            }
-
-            public static List<string> GenerateTestGradesData(string dbName)
             {
                 return new List<string>()
                 {
@@ -346,44 +339,41 @@ namespace school
                     DECLARE @MathSubject INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Математика');
                     DECLARE @RussianSubject INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Русский язык');
 
-                    -- ✅ МАТЕМАТИКА (1А и 5Б классы) - ЯВНЫЕ алиасы
-                    IF NOT EXISTS (SELECT * FROM Grades WHERE GradeDate = @BaseDate AND GradeValue = 5)
+                    -- ✅ МАТЕМАТИКА - все классы (БЕЗОПАСНЫЙ CAST)
+                    IF NOT EXISTS (SELECT * FROM Homework WHERE Description LIKE N'%Упр.%')
                     BEGIN
-                        INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID)
+                        INSERT INTO Homework (AssignmentDate, ClassID, SubjectID, Description, TeacherID)
                         SELECT 
-                            DATEADD(DAY, -c.ClassID % 10, @BaseDate), -- ЯВНО c.ClassID
-                            u.UserID,
+                            DATEADD(DAY, (c.ClassID % 7) - 3, @BaseDate), -- разные даты
+                            c.ClassID,
                             @MathSubject,
-                            CASE 
-                                WHEN u.UserID % 3 = 0 THEN 5
-                                WHEN u.UserID % 3 = 1 THEN 4
-                                ELSE 3
-                            END,
+                            CONCAT(N'Упр. ', (c.ClassID * 2), '-', (c.ClassID * 2 + 5), N', стр. ', (c.ClassID + 40)),
                             @MathTeacher
-                        FROM Users u
-                        INNER JOIN Classes c ON u.ClassID = c.ClassID  -- ✅ Алиасы u и c
-                        WHERE c.ClassName IN (N'1А', N'5Б') AND u.PermissionID = 1;
+                        FROM Classes c;
             
-                        PRINT '✅ Математика: Оценки для 1А и 5Б';
+                        PRINT '✅ Математика: ДЗ для ВСЕХ классов';
                     END;
 
-                    -- ✅ РУССКИЙ ЯЗЫК (все ученики) - ЯВНЫЕ алиасы
-                    IF NOT EXISTS (SELECT * FROM Grades WHERE GradeDate = DATEADD(DAY, -1, @BaseDate) AND GradeValue = 2)
+                    -- ✅ РУССКИЙ - младшие классы (1-5)
+                    IF NOT EXISTS (SELECT * FROM Homework WHERE Description LIKE N'%Сочинение%')
                     BEGIN
-                        INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID)
+                        INSERT INTO Homework (AssignmentDate, ClassID, SubjectID, Description, TeacherID)
                         SELECT 
-                            DATEADD(DAY, -(u.UserID % 7), @BaseDate),
-                            u.UserID,
+                            DATEADD(DAY, (c.ClassID % 5), @BaseDate),
+                            c.ClassID,
                             @RussianSubject,
-                            (u.UserID % 5) + 1, -- 1-5
+                            CASE 
+                                WHEN c.ClassID % 2 = 1 THEN N'Сочинение: Мой праздник'
+                                ELSE N'Сочинение: Зимний лес'
+                            END,
                             @RussianTeacher
-                        FROM Users u
-                        WHERE u.PermissionID = 1; -- Только ученики (НЕ НУЖЕН JOIN!)
+                        FROM Classes c
+                        WHERE c.ClassID <= 10; -- Примерно 1-5 классы по ClassID
             
-                        PRINT '✅ Русский язык: Оценки всем ученикам';
+                        PRINT '✅ Русский: 1-5 классы';
                     END;
 
-                    SELECT COUNT(*) AS GradeCount FROM Grades;"
+                    SELECT COUNT(*) AS HomeworkCount FROM Homework;"
                 };
             }
 

@@ -174,23 +174,26 @@ namespace school
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-                    SELECT 
-                        g.GradeID,
-                        g.GradeDate,
-                        g.StudentID,
-                        stu.FullName AS StudentFullName,
-                        g.SubjectID,
-                        s.SubjectName,
-                        g.GradeValue,
-                        g.TeacherID,
-                        t.FullName AS TeacherFullName
-                    FROM Grades g
-                    JOIN Users stu ON g.StudentID = stu.UserID
-                    JOIN Subjects s ON g.SubjectID = s.SubjectID
-                    JOIN Users t ON g.TeacherID = t.UserID
-                    WHERE g.TeacherID = @TeacherID
-                        AND g.GradeDate BETWEEN @StartDate AND @EndDate
-                    ORDER BY g.GradeDate DESC, stu.FullName", conn))
+            SELECT 
+                g.GradeID,
+                g.GradeDate,
+                g.StudentID,
+                stu.FullName AS StudentFullName,
+                stu.ClassID,
+                c.ClassName,
+                g.SubjectID,
+                s.SubjectName,
+                g.GradeValue,
+                g.TeacherID,
+                t.FullName AS TeacherFullName
+            FROM Grades g
+            JOIN Users stu ON g.StudentID = stu.UserID
+            LEFT JOIN Classes c ON stu.ClassID = c.ClassID
+            JOIN Subjects s ON g.SubjectID = s.SubjectID
+            JOIN Users t ON g.TeacherID = t.UserID
+            WHERE g.TeacherID = @TeacherID
+                AND g.GradeDate BETWEEN @StartDate AND @EndDate
+            ORDER BY g.GradeDate DESC, stu.FullName", conn))
                 {
                     cmd.Parameters.AddWithValue("@TeacherID", teacher.UserID);
                     cmd.Parameters.AddWithValue("@StartDate", startDate.Date);
@@ -205,12 +208,27 @@ namespace school
                                 GradeID = reader.GetInt32(reader.GetOrdinal("GradeID")),
                                 GradeDate = reader.GetDateTime(reader.GetOrdinal("GradeDate")),
                                 StudentID = reader.GetInt32(reader.GetOrdinal("StudentID")),
-                                Student = new User { FullName = reader.GetString(reader.GetOrdinal("StudentFullName")) },
+                                Student = new User
+                                {
+                                    FullName = reader.GetString(reader.GetOrdinal("StudentFullName")),
+                                    ClassID = reader.IsDBNull(reader.GetOrdinal("ClassID")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("ClassID")),
+                                    Class = new Class
+                                    {
+                                        ClassID = reader.IsDBNull(reader.GetOrdinal("ClassID")) ? 0 : reader.GetInt32(reader.GetOrdinal("ClassID")),
+                                        ClassName = reader.IsDBNull(reader.GetOrdinal("ClassName")) ? "" : reader.GetString(reader.GetOrdinal("ClassName"))
+                                    }
+                                },
                                 SubjectID = reader.GetInt32(reader.GetOrdinal("SubjectID")),
-                                Subject = new Subject { SubjectName = reader.GetString(reader.GetOrdinal("SubjectName")) },
+                                Subject = new Subject
+                                {
+                                    SubjectName = reader.GetString(reader.GetOrdinal("SubjectName"))
+                                },
                                 GradeValue = reader.GetByte(reader.GetOrdinal("GradeValue")),
                                 TeacherID = reader.GetInt32(reader.GetOrdinal("TeacherID")),
-                                Teacher = new User { FullName = reader.GetString(reader.GetOrdinal("TeacherFullName")) }
+                                Teacher = new User
+                                {
+                                    FullName = reader.GetString(reader.GetOrdinal("TeacherFullName"))
+                                }
                             });
                         }
                     }

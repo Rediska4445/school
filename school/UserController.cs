@@ -198,7 +198,6 @@ namespace school.Controllers
                     throw new InvalidOperationException(
                         $"Нельзя удалить пользователя {user.FullName}. Есть ДЗ ({homeworkCount}) и оценки ({gradesCount})");
 
-                // Удаление
                 using (var cmd = new SqlCommand("DELETE FROM Users WHERE UserID = @UserID", conn))
                 {
                     cmd.Parameters.AddWithValue("@UserID", user.UserID);
@@ -207,6 +206,57 @@ namespace school.Controllers
                 }
             }
         }
+
+        public List<User> GetClassStudents(int classId)
+        {
+            var studentsList = new List<User>();
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(@"
+            SELECT 
+                u.UserID,
+                u.FullName,
+                u.PasswordHash,
+                u.PermissionID,
+                u.ClassID,
+                c.ClassName,
+                p.PermissionName
+            FROM Users u
+            JOIN Classes c ON u.ClassID = c.ClassID
+            JOIN Permissions p ON u.PermissionID = p.PermissionID
+            WHERE u.ClassID = @ClassID 
+                AND u.PermissionID = 1  -- Только ученики
+            ORDER BY u.FullName", conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            studentsList.Add(new User
+                            {
+                                UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                                FullName = reader.GetString(reader.GetOrdinal("FullName")),
+                                Password = reader.GetString(reader.GetOrdinal("PasswordHash")),
+                                PermissionID = reader.GetInt32(reader.GetOrdinal("PermissionID")),
+                                PermissionName = reader.GetString(reader.GetOrdinal("PermissionName")),
+                                ClassID = reader.GetInt32(reader.GetOrdinal("ClassID")),
+                                Class = new Class
+                                {
+                                    ClassID = reader.GetInt32(reader.GetOrdinal("ClassID")),
+                                    ClassName = reader.GetString(reader.GetOrdinal("ClassName"))
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            return studentsList;
+        }
+
 
         public List<User> GetAllOfPredicate(string whereCondition)
         {
@@ -218,7 +268,7 @@ namespace school.Controllers
             SELECT 
                 u.UserID, 
                 u.FullName, 
-                u.PasswordHash,  -- ✅ ДОБАВЛЕНО!
+                u.PasswordHash,
                 u.PermissionID, 
                 p.PermissionName, 
                 u.ClassID,
@@ -237,14 +287,14 @@ namespace school.Controllers
                     {
                         while (reader.Read())
                         {
-                            int? classId = reader.IsDBNull(5) ? (int?)null : reader.GetInt32(5);  // ✅ Сдвинут индекс
-                            string className = reader.IsDBNull(6) ? null : reader.GetString(6);   // ✅ Сдвинут индекс
+                            int? classId = reader.IsDBNull(5) ? (int?)null : reader.GetInt32(5);
+                            string className = reader.IsDBNull(6) ? null : reader.GetString(6);
 
                             var user = new User
                             {
                                 UserID = reader.GetInt32(0),
                                 FullName = reader.GetString(1),
-                                Password = reader.IsDBNull(2) ? null : reader.GetString(2),  // ✅ ДОБАВЛЕНО!
+                                Password = reader.IsDBNull(2) ? null : reader.GetString(2),
                                 PermissionID = reader.GetInt32(3),
                                 PermissionName = reader.GetString(4),
                                 ClassID = classId,
@@ -410,12 +460,12 @@ namespace school.Controllers
                         {
                             return new User
                             {
-                                UserID = reader.GetInt32(0),           // ✅ UserID (индекс 0)
-                                FullName = reader.GetString(1),        // ✅ FullName (индекс 1)
-                                PermissionID = reader.GetInt32(2),     // ✅ PermissionID (индекс 2)
-                                PermissionName = reader.IsDBNull(3) ?  // ✅ PermissionName (индекс 3)
+                                UserID = reader.GetInt32(0),
+                                FullName = reader.GetString(1),
+                                PermissionID = reader.GetInt32(2),
+                                PermissionName = reader.IsDBNull(3) ?
                                     "Неизвестно" : reader.GetString(3),
-                                ClassID = reader.IsDBNull(4) ?         // ✅ ClassID (индекс 4)
+                                ClassID = reader.IsDBNull(4) ?
                                     (int?)null : reader.GetInt32(4)
                             };
                         }

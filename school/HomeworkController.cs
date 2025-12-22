@@ -259,68 +259,112 @@ namespace school.Controllers
         /// <returns>Список ДЗ с полными названиями</returns>
         public List<Homework> GetHomeworkForClassPeriod(int classId, DateTime startDate, DateTime endDate)
         {
+            FileLogger.logger.Debug($"GetHomeworkForClassPeriod: classId={classId}, start={startDate:yyyy-MM-dd}, end={endDate:yyyy-MM-dd}");
+
             var homeworkList = new List<Homework>();
+            int recordCount = 0;
 
-            using (var conn = new SqlConnection(_connectionString))
+            try
             {
-                conn.Open();
-                using (var cmd = new SqlCommand(@"
-                    SELECT 
-                        h.HomeworkID,
-                        h.AssignmentDate,
-                        h.ClassID,
-                        c.ClassName,
-                        h.SubjectID,
-                        s.SubjectName,
-                        h.Description,
-                        h.TeacherID,
-                        t.FullName AS TeacherName
-                    FROM Homework h
-                    JOIN Classes c ON h.ClassID = c.ClassID
-                    JOIN Subjects s ON h.SubjectID = s.SubjectID
-                    JOIN Users t ON h.TeacherID = t.UserID
-                    WHERE h.ClassID = @ClassID
-                    AND h.AssignmentDate BETWEEN @StartDate AND @EndDate
-                    ORDER BY h.AssignmentDate, s.SubjectName", conn))
+                using (var conn = new SqlConnection(_connectionString))
                 {
-                    cmd.Parameters.AddWithValue("@ClassID", classId);
-                    cmd.Parameters.AddWithValue("@StartDate", startDate.Date);
-                    cmd.Parameters.AddWithValue("@EndDate", endDate.Date);
+                    FileLogger.logger.Debug("Connection created");
+                    conn.Open();
+                    FileLogger.logger.Debug("Connection opened");
 
-                    using (var reader = cmd.ExecuteReader())
+                    using (var cmd = new SqlCommand(@"
+                SELECT 
+                    h.HomeworkID,
+                    h.AssignmentDate,
+                    h.ClassID,
+                    c.ClassName,
+                    h.SubjectID,
+                    s.SubjectName,
+                    h.Description,
+                    h.TeacherID,
+                    t.FullName AS TeacherName
+                FROM Homework h
+                JOIN Classes c ON h.ClassID = c.ClassID
+                JOIN Subjects s ON h.SubjectID = s.SubjectID
+                JOIN Users t ON h.TeacherID = t.UserID
+                WHERE h.ClassID = @ClassID
+                AND h.AssignmentDate BETWEEN @StartDate AND @EndDate
+                ORDER BY h.AssignmentDate, s.SubjectName", conn))
                     {
-                        while (reader.Read())
+                        FileLogger.logger.Debug("Command created");
+
+                        cmd.Parameters.AddWithValue("@ClassID", classId);
+                        cmd.Parameters.AddWithValue("@StartDate", startDate.Date);
+                        cmd.Parameters.AddWithValue("@EndDate", endDate.Date);
+                        FileLogger.logger.Debug($"Parameters set: ClassID={classId}");
+
+                        using (var reader = cmd.ExecuteReader())
                         {
-                            var homework = new Homework
+                            FileLogger.logger.Debug("Reader created");
+
+                            while (reader.Read())
                             {
-                                HomeworkID = reader.GetInt32(reader.GetOrdinal("HomeworkID")),
-                                AssignmentDate = reader.GetDateTime(reader.GetOrdinal("AssignmentDate")),
-                                ClassID = reader.GetInt32(reader.GetOrdinal("ClassID")),
-                                Class = new Class
+                                recordCount++;
+                                FileLogger.logger.Debug($"Processing record #{recordCount}");
+
+                                int homeworkIDIdx = reader.GetOrdinal("HomeworkID");
+                                int assignmentDateIdx = reader.GetOrdinal("AssignmentDate");
+                                int classIDIdx = reader.GetOrdinal("ClassID");
+                                int classNameIdx = reader.GetOrdinal("ClassName");
+                                int subjectIDIdx = reader.GetOrdinal("SubjectID");
+                                int subjectNameIdx = reader.GetOrdinal("SubjectName");
+                                int descriptionIdx = reader.GetOrdinal("Description");
+                                int teacherIDIdx = reader.GetOrdinal("TeacherID");
+                                int teacherNameIdx = reader.GetOrdinal("TeacherName");
+
+                                FileLogger.logger.Debug($"HomeworkID[{homeworkIDIdx}]: {reader.GetInt32(homeworkIDIdx)}");
+                                FileLogger.logger.Debug($"ClassName[{classNameIdx}]: DBNull={reader.IsDBNull(classNameIdx)}");
+                                FileLogger.logger.Debug($"SubjectName[{subjectNameIdx}]: DBNull={reader.IsDBNull(subjectNameIdx)}");
+                                FileLogger.logger.Debug($"TeacherName[{teacherNameIdx}]: DBNull={reader.IsDBNull(teacherNameIdx)}");
+                                FileLogger.logger.Debug($"Description[{descriptionIdx}]: DBNull={reader.IsDBNull(descriptionIdx)}");
+
+                                var homework = new Homework
                                 {
-                                    ClassID = reader.GetInt32(reader.GetOrdinal("ClassID")),
-                                    ClassName = reader.GetString(reader.GetOrdinal("ClassName"))
-                                },
-                                SubjectID = reader.GetInt32(reader.GetOrdinal("SubjectID")),
-                                Subject = new Subject
-                                {
-                                    SubjectID = reader.GetInt32(reader.GetOrdinal("SubjectID")),
-                                    SubjectName = reader.GetString(reader.GetOrdinal("SubjectName"))
-                                },
-                                Description = reader.GetString(reader.GetOrdinal("Description")),
-                                TeacherID = reader.GetInt32(reader.GetOrdinal("TeacherID")),
-                                Teacher = new User
-                                {
-                                    UserID = reader.GetInt32(reader.GetOrdinal("TeacherID")),
-                                    FullName = reader.GetString(reader.GetOrdinal("TeacherName"))
-                                }
-                            };
-                            homeworkList.Add(homework);
+                                    HomeworkID = reader.GetInt32(homeworkIDIdx),
+                                    AssignmentDate = reader.GetDateTime(assignmentDateIdx),
+                                    ClassID = reader.GetInt32(classIDIdx),
+                                    Class = new Class
+                                    {
+                                        ClassID = reader.GetInt32(classIDIdx),
+                                        ClassName = reader.IsDBNull(classNameIdx) ? "" : reader.GetString(classNameIdx)
+                                    },
+                                    SubjectID = reader.GetInt32(subjectIDIdx),
+                                    Subject = new Subject
+                                    {
+                                        SubjectID = reader.GetInt32(subjectIDIdx),
+                                        SubjectName = reader.IsDBNull(subjectNameIdx) ? "" : reader.GetString(subjectNameIdx)
+                                    },
+                                    Description = reader.IsDBNull(descriptionIdx) ? "" : reader.GetString(descriptionIdx),
+                                    TeacherID = reader.GetInt32(teacherIDIdx),
+                                    Teacher = new User
+                                    {
+                                        UserID = reader.GetInt32(teacherIDIdx),
+                                        FullName = reader.IsDBNull(teacherNameIdx) ? "" : reader.GetString(teacherNameIdx)
+                                    }
+                                };
+
+                                FileLogger.logger.Debug("Homework created OK");
+                                homeworkList.Add(homework);
+                            }
+
+                            FileLogger.logger.Debug($"Reader completed. Processed {recordCount} records");
                         }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"GetHomeworkForClassPeriod FAILED: {ex.Message}");
+                FileLogger.logger.Error($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
 
+            FileLogger.logger.Debug($"Method completed. Returned {homeworkList.Count} records");
             return homeworkList;
         }
 

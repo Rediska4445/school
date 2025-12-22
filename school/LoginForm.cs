@@ -35,7 +35,7 @@ namespace school
 
             InitializeComponent();
 
-            txtLogin.Text = "Лютый директор";
+            txtLogin.Text = "Директор";
             txtPassword.Text = "director1";
         }
 
