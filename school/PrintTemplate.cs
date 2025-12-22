@@ -36,7 +36,8 @@ namespace school
         public static float MinRowHeight => _config?.Row.MinHeight ?? 24f;
         public static float MaxPageY => _config?.Page.MaxY ?? 1050f;
 
-        // ✅ Загрузка при первом обращении
+        public static sbyte MinColWidth { get; internal set; }
+
         static PrintConfig()
         {
             LoadConfig();

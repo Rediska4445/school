@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
@@ -63,6 +64,9 @@ namespace school
 
                 // Посещаемость класса - нахуй
                 tabControlAttendance.TabPages.RemoveByKey("tabPage7");
+
+                // Интрига
+                sheduleTabControl.TabPages.RemoveByKey("tabPageSheduleAll");
             }
             // Учитель может смотреть статистику своего класса.
             // Директор может менять класс с помощью comboBox.
@@ -99,6 +103,8 @@ namespace school
                 // Хандлеры таблицы с оценками
                 dataGridViewGrades.CellEndEdit += DataGridViewGrades_CellEndEdit;
                 dataGridViewGrades.UserDeletedRow += DataGridViewGrades_UserDeletedRow;
+                dataGridViewGradesAll.CellEndEdit += DataGridViewGradesAll_CellEndEdit;
+                dataGridViewGradesAll.UserDeletedRow += DataGridViewGradesAll_UserDeletedRow;
 
                 // Хандлеры таблицы с расписанием
                 sheduleGridView.CellEndEdit += DataGridViewSchedule_CellEndEdit;
@@ -113,7 +119,88 @@ namespace school
                 dataGridViewTeachers.UserDeletingRow += DataGridViewTeachers_UserDeletingRow;
 
                 dataGridViewClassAtterdance.UserDeletingRow += DataGridViewClassAtterdance_UserDeletingRow;
+
+                CreateSheduleAllTable();
             }
+        }
+
+        private void CreateSheduleAllTable()
+        {
+            dataGridViewSheduleAll.Columns.Clear();
+            dataGridViewSheduleAll.Rows.Clear();
+            dataGridViewSheduleAll.AutoGenerateColumns = false;
+
+            dataGridViewSheduleAll.Columns.Add("colDayOfWeek", "День недели");
+            dataGridViewSheduleAll.Columns["colDayOfWeek"].Width = 100;
+
+            dataGridViewSheduleAll.Columns.Add("colLessonNumber", "#");
+            dataGridViewSheduleAll.Columns["colLessonNumber"].Width = 40;
+
+            var allClasses = ClassController._controller.GetAllClasses();
+            foreach (var classItem in allClasses)
+            {
+                DataGridViewTextBoxColumn classCol = new DataGridViewTextBoxColumn();
+                classCol.Name = $"col{classItem.ClassID}";
+                classCol.HeaderText = classItem.ClassName;
+                classCol.Width = 110;
+                classCol.ReadOnly = true;
+                dataGridViewSheduleAll.Columns.Add(classCol);
+            }
+
+            string[] days = { "Понедельник", "Вторник", "Среда", "Четверг", "Пятница" };
+            for (int dayIndex = 0; dayIndex < days.Length; dayIndex++)
+            {
+                for (int lessonNum = 1; lessonNum <= 8; lessonNum++)
+                {
+                    int rowIndex = dataGridViewSheduleAll.Rows.Add();
+                    var row = dataGridViewSheduleAll.Rows[rowIndex];
+
+                    row.Cells["colDayOfWeek"].Value = (lessonNum == 1) ? days[dayIndex] : "";
+                    row.Cells["colLessonNumber"].Value = lessonNum;
+                    row.Height = 35;
+                }
+            }
+
+            FillAllClassesSchedule();
+
+            dataGridViewSheduleAll.RowHeadersVisible = false;
+            dataGridViewSheduleAll.ReadOnly = true;
+            dataGridViewSheduleAll.AllowUserToAddRows = false;
+            dataGridViewSheduleAll.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dataGridViewSheduleAll.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+        }
+
+        private void FillAllClassesSchedule()
+        {
+            var allClasses = ClassController._controller.GetAllClasses();
+
+            foreach (var classItem in allClasses)
+            {
+                var classSchedule = SheduleController._controller.GetScheduleForClass(classItem.ClassID);
+                int classColIndex = GetClassColumnIndex(classItem.ClassID);
+
+                foreach (var lesson in classSchedule)
+                {
+                    int rowIndex = ((lesson.DayOfWeek - 1) * 8) + (lesson.LessonNumber - 1);
+                    if (rowIndex >= 0 && rowIndex < dataGridViewSheduleAll.Rows.Count)
+                    {
+                        var cell = dataGridViewSheduleAll.Rows[rowIndex].Cells[classColIndex];
+                        cell.Value = lesson.SubjectName;
+                        cell.Style.ForeColor = Color.DarkBlue;
+                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                    }
+                }
+            }
+        }
+
+        private int GetClassColumnIndex(int classId)
+        {
+            for (int i = 2; i < dataGridViewSheduleAll.Columns.Count; i++) // Пропускаем День+# 
+            {
+                if (dataGridViewSheduleAll.Columns[i].Name == $"col{classId}")
+                    return i;
+            }
+            return -1;
         }
 
         private void DataGridViewClassAtterdance_UserDeletingRow(object sender, DataGridViewRowCancelEventArgs e)
@@ -728,9 +815,93 @@ namespace school
             }
         }
 
+        private void DataGridViewGradesAll_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            var row = dataGridViewGradesAll.Rows[e.RowIndex];
+            int columnIndex = e.ColumnIndex;
+
+            if (columnIndex < 1 || !IsGradeRowComplete(row)) return;
+
+            try
+            {
+                int gradeId = row.Cells["colGrade"].Value?.ToString() == "" ? 0 : int.Parse(row.Cells["colGrade"].Value.ToString());
+
+                var grade = new Grade
+                {
+                    GradeID = gradeId,
+                    GradeDate = DateTime.Parse(row.Cells["colDate"].Value?.ToString() ?? DateTime.Now.ToShortDateString()),
+                    TeacherID = UserController.CurrentUser.UserID
+                };
+
+                var subjectValue = row.Cells["colSubject"].Value;
+                if (subjectValue is Subject subjectObj)
+                {
+                    grade.SubjectID = subjectObj.SubjectID;
+                }
+                else
+                {
+                    grade.SubjectID = SubjectController._controller.GetSubjectIdByName(subjectValue?.ToString() ?? "");
+                }
+
+                var gradeValue = row.Cells["colGrade"].Value;
+                if (gradeValue is Grade gradeObj)
+                {
+                    grade.GradeValue = gradeObj.GradeValue;
+                }
+                else
+                {
+                    grade.GradeValue = byte.Parse(gradeValue?.ToString() ?? "0");
+                }
+
+                var studentValue = row.Cells["colPerson"].Value;
+                if (studentValue is User studentObj)
+                {
+                    grade.StudentID = studentObj.UserID;
+                }
+                else
+                {
+                    grade.StudentID = UserController._userController.GetStudentIdByName(studentValue?.ToString() ?? "");
+                }
+
+                if (grade.SubjectID == 0)
+                {
+                    MessageBox.Show("Предмет не найден в БД!");
+                    return;
+                }
+                if (grade.StudentID == 0)
+                {
+                    MessageBox.Show("Ученик не найден в БД!");
+                    return;
+                }
+
+                string action = gradeId > 0 ? "EDIT" : "ADD";
+                GradesController._controller.AddGradeChange(action, grade);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка сохранения: {ex.Message}\nStack: " + ex.StackTrace);
+            }
+        }
+
         // Слушатель удаления оценок.
         // Нужен для добавления ячеек на изменение (удаление) - отправку в БД.
         private void DataGridViewGrades_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
+        {
+            if (UserController.CurrentUser.PermissionID <= 1) return;
+
+            var row = e.Row;
+            int gradeId = int.Parse(row.Cells[0].Value?.ToString() ?? "0"); // Индекс 0 = GradeID
+
+            if (gradeId > 0)
+            {
+                var grade = new Grade { GradeID = gradeId };
+                GradesController._controller.AddGradeChange("DELETE", grade);
+            }
+        }
+
+        private void DataGridViewGradesAll_UserDeletedRow(object sender, DataGridViewRowEventArgs e)
         {
             if (UserController.CurrentUser.PermissionID <= 1) return;
 
@@ -1509,17 +1680,6 @@ namespace school
             }
         }
 
-        private void NumberTextBox_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            // Только цифры 0-9, Backspace, Delete
-            if (!char.IsDigit(e.KeyChar) &&
-                e.KeyChar != (char)Keys.Back &&
-                e.KeyChar != (char)Keys.Delete)
-            {
-                e.Handled = true;  // Запрет ввода
-            }
-        }
-
         // Подготовка (визуально) таблицы расписания.
         private void SetupScheduleGrid()
         {
@@ -1967,6 +2127,31 @@ namespace school
                     newRow.Tag = grade; 
                 }
 
+                if(UserController.CurrentUser.PermissionID > 1)
+                {
+
+                    List<Grade> gradesListAll;
+                    gradesListAll = TeacherController._controller.GetClassGrades(startDate, endDate, ((ComboBoxItem)directorComboBox.SelectedItem).ClassID);
+
+                    foreach (var grade in gradesListAll)
+                    {
+                        int rowIndex = dataGridViewGradesAll.Rows.Add();
+                        var newRow = dataGridViewGradesAll.Rows[rowIndex];
+
+                        newRow.Cells["colGradeID"].Value = grade.GradeID;
+                        newRow.Cells["colDate"].Value = grade.GradeDate;
+                        newRow.Cells["colSubject"].Value = grade.SubjectNameDisplay ?? "";
+                        newRow.Cells["colGrade"].Value = grade.GradeValue.ToString();
+
+                        newRow.Cells["colTeacher"].Value = grade.Teacher.FullName;
+
+                        newRow.Cells["colPerson"].Value = grade.StudentNameDisplay ?? "👤";
+                        newRow.Cells["colClass"].Value = grade.Student?.Class?.ClassName ?? "";
+
+                        newRow.Tag = grade;
+                    }
+                }
+
                 string labelText = UserController.CurrentUser.PermissionID > 1
                     ? $"Мои оценки: {startDate:dd.MM} - {endDate:dd.MM}"
                     : $"Оценки: {startDate:dd.MM} - {endDate:dd.MM}";
@@ -1982,84 +2167,84 @@ namespace school
         // Подготовка таблицы для оценок
         private void SetupGradesGrid()
         {
-            dataGridViewGrades.Columns.Clear();
+            DataGridView[] views = new DataGridView[] { dataGridViewGrades, dataGridViewGradesAll};
 
-            bool isTeacher = UserController.CurrentUser.PermissionID > 1;
-
-            if (isTeacher)
-            {
-                dataGridViewGrades.Columns.Add("colGradeID", "ID");
-                dataGridViewGrades.Columns["colGradeID"].Visible = false;
-
-                var dateCol = new CalendarColumn();
-                dateCol.Name = "colDate";
-                dateCol.HeaderText = "Дата";
-                dateCol.Width = 100;
-                dataGridViewGrades.Columns.Add(dateCol);
-
-                DataGridViewComboBoxColumn comboSubjectCol = new DataGridViewComboBoxColumn();
-                comboSubjectCol.Name = "colSubject";
-                comboSubjectCol.HeaderText = "Предмет";
-                comboSubjectCol.DisplayMember = "SubjectName";
-                comboSubjectCol.ValueMember = "SubjectName";
-                comboSubjectCol.ValueType = typeof(string);
-
-                foreach (Subject sub in SubjectController._controller.GetAllSubjects())
-                {
-                    comboSubjectCol.Items.Add(sub);
-                }
-
-                dataGridViewGrades.Columns.Add(comboSubjectCol);
-
-                dataGridViewGrades.Columns.Add("colGrade", "Оценка");
-
-                DataGridViewComboBoxColumn btnPersonCol = new DataGridViewComboBoxColumn();
-                btnPersonCol.Name = "colPerson";
-                btnPersonCol.HeaderText = "Ученик";
-                btnPersonCol.DisplayMember = "FullName";
-                btnPersonCol.ValueMember = "FullName";
-                btnPersonCol.ValueType = typeof(string);
-
-                foreach (User sub in UserController._userController.GetClassStudents(((ComboBoxItem) directorComboBox.SelectedItem).ClassID))
-                {
-                    btnPersonCol.Items.Add(sub.FullName);
-                }
-
-                dataGridViewGrades.Columns.Add(btnPersonCol);
-
-                dataGridViewGrades.Columns.Add("colClass", "Класс");
-
-                dataGridViewGrades.ReadOnly = !isTeacher;
-                dataGridViewGrades.AllowUserToAddRows = isTeacher;  
-                dataGridViewGrades.AllowUserToDeleteRows = isTeacher;
-                dataGridViewGrades.EditMode = DataGridViewEditMode.EditOnKeystroke;
-                dataGridViewGrades.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-                dataGridViewGrades.RowHeadersVisible = false;
-            }
-            else
+            foreach(DataGridView dataGridViewGrades in views)
             {
                 dataGridViewGrades.Columns.Clear();
 
-                dataGridViewGrades.Columns.Add("colGradeID", "ID");
-                dataGridViewGrades.Columns["colGradeID"].Visible = false;
+                bool isTeacher = UserController.CurrentUser.PermissionID > 1;
 
-                var dateCol = new CalendarColumn();
-                dateCol.Name = "colDate";
-                dateCol.HeaderText = "Дата";
-                dateCol.Width = 100;
-                dataGridViewGrades.Columns.Add(dateCol);
+                if (isTeacher)
+                {
+                    dataGridViewGrades.Columns.Add("colGradeID", "ID");
+                    dataGridViewGrades.Columns["colGradeID"].Visible = false;
 
-                dataGridViewGrades.Columns.Add("colSubject", "Предмет");
-                dataGridViewGrades.Columns.Add("colGrade", "Оценка");
-                dataGridViewGrades.Columns.Add("colPerson", "Учитель");
+                    var dateCol = new CalendarColumn();
+                    dateCol.Name = "colDate";
+                    dateCol.HeaderText = "Дата";
+                    dateCol.Width = 100;
+                    dataGridViewGrades.Columns.Add(dateCol);
 
-                dataGridViewHomework.ReadOnly = !isTeacher;
-                dataGridViewHomework.AllowUserToAddRows = isTeacher;
-                dataGridViewHomework.AllowUserToDeleteRows = isTeacher;
-                dataGridViewHomework.EditMode = DataGridViewEditMode.EditOnKeystroke;
-                dataGridViewHomework.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-                dataGridViewHomework.RowHeadersVisible = false;
+                    DataGridViewComboBoxColumn comboSubjectCol = new DataGridViewComboBoxColumn();
+                    comboSubjectCol.Name = "colSubject";
+                    comboSubjectCol.HeaderText = "Предмет";
+                    comboSubjectCol.DisplayMember = "SubjectName";
+                    comboSubjectCol.ValueMember = "SubjectName";
+                    comboSubjectCol.ValueType = typeof(string);
+
+                    foreach (Subject sub in SubjectController._controller.GetAllSubjects())
+                    {
+                        comboSubjectCol.Items.Add(sub);
+                    }
+
+                    dataGridViewGrades.Columns.Add(comboSubjectCol);
+
+                    dataGridViewGrades.Columns.Add("colGrade", "Оценка");
+
+                    DataGridViewComboBoxColumn btnPersonCol = new DataGridViewComboBoxColumn();
+                    btnPersonCol.Name = "colPerson";
+                    btnPersonCol.HeaderText = "Ученик";
+                    btnPersonCol.DisplayMember = "FullName";
+                    btnPersonCol.ValueMember = "FullName";
+                    btnPersonCol.ValueType = typeof(string);
+
+                    foreach (User sub in UserController._userController.GetClassStudents(((ComboBoxItem)directorComboBox.SelectedItem).ClassID))
+                    {
+                        btnPersonCol.Items.Add(sub.FullName);
+                    }
+
+                    dataGridViewGrades.Columns.Add(btnPersonCol);
+
+                    dataGridViewGrades.Columns.Add("colClass", "Класс");
+
+                    dataGridViewGrades.ReadOnly = !isTeacher;
+                    dataGridViewGrades.AllowUserToAddRows = isTeacher;
+                    dataGridViewGrades.AllowUserToDeleteRows = isTeacher;
+                    dataGridViewGrades.EditMode = DataGridViewEditMode.EditOnKeystroke;
+                    dataGridViewGrades.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                    dataGridViewGrades.RowHeadersVisible = false;
+                }
+                else
+                {
+                    dataGridViewGrades.Columns.Clear();
+
+                    dataGridViewGrades.Columns.Add("colGradeID", "ID");
+                    dataGridViewGrades.Columns["colGradeID"].Visible = false;
+
+                    var dateCol = new CalendarColumn();
+                    dateCol.Name = "colDate";
+                    dateCol.HeaderText = "Дата";
+                    dateCol.Width = 100;
+                    dataGridViewGrades.Columns.Add(dateCol);
+
+                    dataGridViewGrades.Columns.Add("colSubject", "Предмет");
+                    dataGridViewGrades.Columns.Add("colGrade", "Оценка");
+                    dataGridViewGrades.Columns.Add("colPerson", "Учитель");
+                }
             }
+
+            dataGridViewGradesAll.Columns.Add("colTeacher", "Поставил");
         }
 
         private void dateTimePickerHomework_ValueChanged_1(object sender, EventArgs e)
@@ -2070,45 +2255,6 @@ namespace school
         private void dateTimePickerGrades_ValueChanged_1(object sender, EventArgs e)
         {
             LoadGradesGrid();
-        }
-
-        /// <summary>
-        /// Проверяет все видимые ячейки таблицы на пустоту.
-        /// Возвращает true если есть пустые ячейки, false если все заполнены
-        /// </summary>
-        public bool HasEmptyVisibleCells(DataGridView dataGridView)
-        {
-            foreach (DataGridViewRow row in dataGridView.Rows)
-            {
-                if (row.IsNewRow) continue;
-
-                foreach (DataGridViewCell cell in row.Cells)
-                {
-                    if (!cell.OwningColumn.Visible) continue;
-
-                    if (IsCellEmpty(cell))
-                    {
-                        dataGridView.CurrentCell = cell;
-                        dataGridView.BeginEdit(true);
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Проверяет, пуста ли ячейка
-        /// </summary>
-        private bool IsCellEmpty(DataGridViewCell cell)
-        {
-            var value = cell.Value;
-
-            if (value == null || value == DBNull.Value)
-                return true;
-
-            string stringValue = value.ToString().Trim();
-            return string.IsNullOrEmpty(stringValue);
         }
 
         /* Сегмент с вкладкой "Мероприятия" */
@@ -2490,6 +2636,15 @@ namespace school
 
             var grid = _gridsToPrint[_currentGridIndex];
 
+            if (grid.Name == "dataGridViewSheduleAll")
+            {
+                DataGridViewPrinter.PrintDataGridView(grid, "Расписание всех классов", e);
+            }
+            else
+            {
+                DataGridViewPrinter.PrintDataGridView(grid, _currentPrintTitle, e);
+            }
+
             DataGridViewPrinter.PrintDataGridView(grid, _currentPrintTitle, e);
 
             _currentGridIndex++;
@@ -2564,6 +2719,7 @@ namespace school
         {
             switch (tabControl.SelectedTab.Name)
             {
+                case "tabStatistics": return "СТАТИСТИКА ПО УЧЕНИКАМ";
                 case "tabShedule": return "РАСПИСАНИЕ УРОКОВ";
                 case "tabHomework": return "ДОМАШНИЕ ЗАДАНИЯ";
                 case "tabGrades": return "ОЦЕНКИ";

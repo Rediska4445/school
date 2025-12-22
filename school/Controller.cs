@@ -273,7 +273,6 @@ namespace school
                 };
             }
 
-
             public static List<string> GenerateTestUsersData(string dbName)
             {
                 return new List<string>()

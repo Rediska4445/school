@@ -24,7 +24,6 @@ namespace school
 
             float colWidth = pageWidth / gridView.ColumnCount;
 
-            // Заголовки колонок
             for (int col = 0; col < gridView.ColumnCount; col++)
             {
                 float colX = x + col * colWidth;
@@ -35,19 +34,16 @@ namespace school
             }
             y += PrintConfig.HeaderOffsetY;
 
-            // Данные строк
             for (int row = 0; row < gridView.RowCount && y < PrintConfig.MaxPageY; row++)
             {
                 float neededHeight = GetRowHeight(e.Graphics, gridView, row, colWidth, x);
 
-                // Фон строк
                 for (int col = 0; col < gridView.ColumnCount; col++)
                 {
                     float colX = x + col * colWidth;
                     e.Graphics.FillRectangle(PrintConfig.RowBgBrush, colX, y, colWidth, neededHeight);
                 }
 
-                // Рамки
                 for (int col = 0; col < gridView.ColumnCount; col++)
                 {
                     float colX = x + col * colWidth;
