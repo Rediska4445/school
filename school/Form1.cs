@@ -1,16 +1,22 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
 using static school.StatisticsController;
+using Color = System.Drawing.Color;
+using Control = System.Windows.Forms.Control;
 using User = school.Models.User;
 
 namespace school
@@ -2878,6 +2884,11 @@ namespace school
 
         private void LoadClassGradesReport(int classId, DateTime startDate, DateTime endDate)
         {
+            DateTime currentMonthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            DateTime currentMonthEnd = currentMonthStart.AddMonths(1).AddDays(-1).Date;
+            dateTimePickerGradesReports1.Value = currentMonthStart;
+            dateTimePickerGradesReports2.Value = currentMonthEnd;
+
             dataGridViewGradesReports.Rows.Clear();
             dataGridViewGradesReports.Columns.Clear();
 
@@ -2901,14 +2912,6 @@ namespace school
                 });
             }
 
-            dataGridViewGradesReports.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Average",
-                HeaderText = "Ср.балл",
-                FillWeight = 15,
-                DefaultCellStyle = { Format = "0.00" }
-            });
-
             var matrix = StatisticsController._controller.GetClassMatrixStatistics(classId, startDate, endDate);
 
             foreach (var studentData in matrix.OrderBy(x => x.Key))
@@ -2924,21 +2927,19 @@ namespace school
                         ? studentData.Value[subject.SubjectName]
                         : "";
                 }
-
-                row.Cells["Average"].Value = studentData.Value.ContainsKey("Общий")
-                    ? studentData.Value["Общий"]
-                    : "0.00";
             }
 
             for (int i = 0; i < dataGridViewGradesReports.Rows.Count; i++)
             {
-                var avgCell = dataGridViewGradesReports.Rows[i].Cells["Average"];
-                if (double.TryParse(avgCell.Value?.ToString(), out double avg))
+                int lastSubjectCol = dataGridViewGradesReports.Columns.Count - 1;
+                var lastSubjectCell = dataGridViewGradesReports.Rows[i].Cells[lastSubjectCol];
+
+                if (double.TryParse(lastSubjectCell.Value?.ToString(), out double avg))
                 {
                     var rowStyle = dataGridViewGradesReports.Rows[i].DefaultCellStyle;
-                    if (avg < 3.0) rowStyle.BackColor = Color.LightPink;
-                    else if (avg < 4.0) rowStyle.BackColor = Color.LightYellow;
-                    else rowStyle.BackColor = Color.LightGreen;
+                    if (avg < 3.0) rowStyle.BackColor = System.Drawing.Color.LightPink;
+                    else if (avg < 4.0) rowStyle.BackColor = System.Drawing.Color.LightYellow;
+                    else rowStyle.BackColor = System.Drawing.Color.LightGreen;
                 }
             }
 
@@ -2953,66 +2954,220 @@ namespace school
                 return;
             }
 
+            var subjectAverages = CalculateSubjectAverages();
+
             using (var workbook = new XLWorkbook())
             {
                 var worksheet = workbook.Worksheets.Add("Успеваемость");
 
-                worksheet.Cell(1, 1).Value = $"Отчет по {directorComboBox.Text}";
-                worksheet.Cell(1, 1).Style.Font.Bold = true;
-                worksheet.Cell(1, 1).Style.Font.FontSize = 14;
-                worksheet.Range(1, 1, 1, dataGridViewGradesReports.Columns.Count).Merge();
+                var titleCell = worksheet.Cell(1, 1);
+                titleCell.Value = $"Отчет по {directorComboBox.Text} за период {dateTimePickerGradesReports1.Value:dd.MM.yyyy} - {dateTimePickerGradesReports2.Value:dd.MM.yyyy}";
+                titleCell.Style.Font.Bold = true;
+                titleCell.Style.Font.FontSize = 11;
+                titleCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                for (int col = 0; col < dataGridViewGradesReports.ColumnCount - 1; col++)
+                worksheet.Range(1, 1, 1, dataGridViewGradesReports.ColumnCount).Merge();
+                worksheet.ColumnsUsed().Width = 20;
+
+                for (int col = 1; col <= dataGridViewGradesReports.ColumnCount; col++)
+                {
+                    worksheet.Column(col).Width = 25; 
+                }
+
+                for (int col = 0; col < dataGridViewGradesReports.ColumnCount; col++)
                 {
                     worksheet.Cell(3, col + 1).Value = dataGridViewGradesReports.Columns[col].HeaderText;
                 }
 
-                var headerRange = worksheet.Range(3, 1, 3, dataGridViewGradesReports.ColumnCount - 1);
+                var headerRange = worksheet.Range(3, 1, 3, dataGridViewGradesReports.ColumnCount);
                 headerRange.Style.Font.Bold = true;
                 headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
                 headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                
+
                 int excelRow = 3;
                 for (int rowIndex = 0; rowIndex < dataGridViewGradesReports.Rows.Count; rowIndex++)
                 {
                     var dgvRow = dataGridViewGradesReports.Rows[rowIndex];
-
-                    if (string.IsNullOrWhiteSpace(dgvRow.Cells[0].Value?.ToString()))
-                        continue;
+                    if (string.IsNullOrWhiteSpace(dgvRow.Cells[0].Value?.ToString())) continue;
 
                     excelRow++;
-                    for (int colIndex = 0; colIndex < dataGridViewGradesReports.ColumnCount - 1; colIndex++) // БЕЗ Ср.балл
+                    worksheet.Cell(excelRow, 1).Value = dgvRow.Cells[0].Value?.ToString() ?? "";
+
+                    for (int colIndex = 1; colIndex < dataGridViewGradesReports.ColumnCount; colIndex++)
                     {
                         var cellValue = dgvRow.Cells[colIndex].Value;
-                        string safeValue = cellValue?.ToString() ?? "";
-
-                        if (colIndex > 0 && double.TryParse(safeValue, out double numValue))
-                        {
+                        if (cellValue != null && double.TryParse(cellValue.ToString(), out double numValue))
                             worksheet.Cell(excelRow, colIndex + 1).Value = numValue;
-                        }
                         else
-                        {
-                            worksheet.Cell(excelRow, colIndex + 1).Value = safeValue;
-                        }
+                            worksheet.Cell(excelRow, colIndex + 1).Value = cellValue?.ToString() ?? "";
                     }
                 }
 
-                // Форматирование
-                worksheet.ColumnsUsed().AdjustToContents();
-
-                // Итоговая строка (средний по последнему предмету)
                 int lastDataRow = excelRow + 1;
-                worksheet.Cell(lastDataRow, 1).Value = "Средний по классу:";
-                // Простая формула без XLAddress
-                worksheet.Cell(lastDataRow, dataGridViewGradesReports.ColumnCount - 2).FormulaA1 =
-                    $"AVERAGE(D4:D{lastDataRow - 1})"; // D - пример последней колонки предметов
+                worksheet.Cell(lastDataRow, 1).Value = "Средний по предметам:";
 
-                worksheet.Range(lastDataRow, 1, lastDataRow, dataGridViewGradesReports.ColumnCount - 1)
-                    .Style.Font.Bold = true;
-                worksheet.Range(lastDataRow, 1, lastDataRow, dataGridViewGradesReports.ColumnCount - 1)
-                    .Style.Fill.BackgroundColor = XLColor.LightGray;
+                foreach (var avg in subjectAverages)
+                {
+                    int colIndex = -1;
+                    for (int col = 1; col < dataGridViewGradesReports.Columns.Count; col++)
+                    {
+                        if (dataGridViewGradesReports.Columns[col].HeaderText == avg.Key)
+                        {
+                            colIndex = col;
+                            break;
+                        }
+                    }
+                    if (colIndex > 0)
+                    {
+                        worksheet.Cell(lastDataRow, colIndex + 1).Value = avg.Value;
+                    }
+                }
+
+                var totalRange = worksheet.Range(lastDataRow, 1, lastDataRow, dataGridViewGradesReports.ColumnCount);
+                totalRange.Style.Font.Bold = true;
+                totalRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                worksheet.Cell(lastDataRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left; // Название влево
+                for (int col = 2; col <= dataGridViewGradesReports.ColumnCount; col++)
+                {
+                    worksheet.Column(col).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center; // Средние по центру
+                    worksheet.Column(col).Style.NumberFormat.Format = "0.00";
+                }
+
+                worksheet.ColumnsUsed().AdjustToContents();
+                for (int col = 2; col <= dataGridViewGradesReports.ColumnCount; col++)
+                    worksheet.Column(col).Style.NumberFormat.Format = "0.00";
 
                 workbook.SaveAs(fileName);
+            }
+        }
+
+        private Dictionary<string, double> CalculateSubjectAverages()
+        {
+            var averages = new Dictionary<string, double>();
+
+            FileLogger.logger.Debug("🔢 Начало подсчета средних по предметам");
+
+            for (int col = 1; col < dataGridViewGradesReports.Columns.Count; col++)
+            {
+                string subjectName = dataGridViewGradesReports.Columns[col].HeaderText;
+                double sum = 0;
+                int validCount = 0;
+
+                FileLogger.logger.Debug($"📊 Предмет: {subjectName} (колонка {col})");
+
+                for (int row = 0; row < dataGridViewGradesReports.Rows.Count; row++)
+                {
+                    string cellValue = dataGridViewGradesReports.Rows[row].Cells[col].Value?.ToString() ?? "";
+
+                    string cleanValue = cellValue.Replace(',', '.').Trim();
+
+                    FileLogger.logger.Debug($"  Исходная: '{cellValue}' → Очищенная: '{cleanValue}'");
+
+                    if (!string.IsNullOrWhiteSpace(cleanValue) && double.TryParse(cleanValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double grade))
+                    {
+                        if (grade > 0)
+                        {
+                            sum += grade;
+                            validCount++;
+                            FileLogger.logger.Debug($"  ✓ Строка {row}: {grade} (сумма={sum:F2}, счетчик={validCount})");
+                        }
+                    }
+                    else
+                    {
+                        FileLogger.logger.Debug($"  ❌ Строка {row}: '{cleanValue}' → НЕ число");
+                    }
+                }
+
+                double avg = validCount > 0 ? sum / validCount : 0;
+                averages[subjectName] = avg;
+
+                FileLogger.logger.Debug($"✅ {subjectName}: {validCount} оценок, среднее={avg:F2}");
+            }
+
+            return averages;
+        }
+
+        private void ExportGradesReportToWord(string fileName)
+        {
+            if (dataGridViewGradesReports.Rows.Count == 0)
+            {
+                MessageBox.Show("Таблица пуста! Сформируйте отчет.");
+                return;
+            }
+
+            var subjectAverages = CalculateSubjectAverages();
+
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document))
+            {
+                MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                mainPart.Document = new Document();
+                Body body = mainPart.Document.AppendChild(new Body());
+
+                Paragraph titlePara = new Paragraph(new Run(new Text($"Отчет по {directorComboBox.Text} за период {dateTimePickerGradesReports1.Value:dd.MM.yyyy} - {dateTimePickerGradesReports2.Value:dd.MM.yyyy}")));
+                titlePara.ParagraphProperties = new ParagraphProperties(new Justification() { Val = JustificationValues.Center });
+
+                body.AppendChild(titlePara);
+
+                body.AppendChild(new Paragraph(new Run(new Break() { Type = BreakValues.Page }))); // Страница
+
+                Table table = new Table();
+                TableProperties tableProps = new TableProperties(
+                    new TableBorders(
+                        new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 }
+                    ),
+                    new TableWidth() { Width = "100%" }
+                );
+
+                table.AppendChild(tableProps);
+
+                TableRow headerRow = new TableRow();
+                headerRow.Append(new TableCell(new Paragraph(new Run(new Text("Ученик")))) { TableCellProperties = new TableCellProperties(new TableCellWidth() { Width = "25%" }) });
+
+                for (int col = 1; col < dataGridViewGradesReports.Columns.Count; col++)
+                {
+                    headerRow.Append(new TableCell(new Paragraph(new Run(new Text(dataGridViewGradesReports.Columns[col].HeaderText))))
+                    {
+                        TableCellProperties = new TableCellProperties(new TableCellWidth() { Width = "20%" })
+                    });
+                }
+                table.AppendChild(headerRow);
+
+                for (int row = 0; row < dataGridViewGradesReports.Rows.Count; row++)
+                {
+                    var dgvRow = dataGridViewGradesReports.Rows[row];
+                    if (string.IsNullOrWhiteSpace(dgvRow.Cells[0].Value?.ToString())) continue;
+
+                    TableRow dataRow = new TableRow();
+                    dataRow.Append(new TableCell(new Paragraph(new Run(new Text(dgvRow.Cells[0].Value?.ToString() ?? "")))));
+
+                    for (int col = 1; col < dataGridViewGradesReports.Columns.Count; col++)
+                    {
+                        string cellValue = dgvRow.Cells[col].Value?.ToString() ?? "";
+                        dataRow.Append(new TableCell(new Paragraph(new Run(new Text(cellValue)))));
+                    }
+                    table.AppendChild(dataRow);
+                }
+
+                TableRow totalRow = new TableRow();
+                totalRow.Append(new TableCell(new Paragraph(new Run(new Text("Средний по предметам:")))) { TableCellProperties = new TableCellProperties(new Bold()) });
+
+                foreach (var avg in subjectAverages)
+                {
+                    totalRow.Append(new TableCell(new Paragraph(new Run(new Text(avg.Value.ToString("0.00")))))
+                    {
+                        TableCellProperties = new TableCellProperties(new Bold())
+                    });
+                }
+                table.AppendChild(totalRow);
+
+                body.AppendChild(table);
+                mainPart.Document.Save();
             }
         }
 
@@ -3024,6 +3179,21 @@ namespace school
         private void dateTimePickerGradesReports2_ValueChanged(object sender, EventArgs e)
         {
             LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+        }
+
+        private void buttonReportsToWord_Click(object sender, EventArgs e)
+        {
+            using (SaveFileDialog sfd = new SaveFileDialog())
+            {
+                sfd.Filter = "Word (*.docx)|*.docx";
+                sfd.FileName = $"Отчет_{directorComboBox.Text}_{DateTime.Now:yyyy-MM-dd}.docx";
+
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    ExportGradesReportToWord(sfd.FileName);
+                    MessageBox.Show("Отчет сохранен в Word!");
+                }
+            }
         }
     }
 }

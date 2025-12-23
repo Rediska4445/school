@@ -109,6 +109,7 @@ namespace school
             this.dateTimePickerGradesReports2 = new System.Windows.Forms.DateTimePicker();
             this.dataGridViewGradesReports = new System.Windows.Forms.DataGridView();
             this.buttonExcelReport = new System.Windows.Forms.Button();
+            this.buttonReportsToWord = new System.Windows.Forms.Button();
             this.panelTop.SuspendLayout();
             this.panelMain.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -1062,6 +1063,7 @@ namespace school
             // 
             // tabPageReports
             // 
+            this.tabPageReports.Controls.Add(this.buttonReportsToWord);
             this.tabPageReports.Controls.Add(this.buttonExcelReport);
             this.tabPageReports.Controls.Add(this.tabControlReports);
             this.tabPageReports.Location = new System.Drawing.Point(4, 30);
@@ -1073,6 +1075,9 @@ namespace school
             // 
             // tabControlReports
             // 
+            this.tabControlReports.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControlReports.Controls.Add(this.tabPageGradesReports);
             this.tabControlReports.Location = new System.Drawing.Point(8, 3);
             this.tabControlReports.Name = "tabControlReports";
@@ -1095,6 +1100,7 @@ namespace school
             // 
             // dateTimePickerGradesReports1
             // 
+            this.dateTimePickerGradesReports1.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.dateTimePickerGradesReports1.Location = new System.Drawing.Point(6, 6);
             this.dateTimePickerGradesReports1.Name = "dateTimePickerGradesReports1";
             this.dateTimePickerGradesReports1.Size = new System.Drawing.Size(577, 25);
@@ -1103,6 +1109,7 @@ namespace school
             // 
             // dateTimePickerGradesReports2
             // 
+            this.dateTimePickerGradesReports2.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.dateTimePickerGradesReports2.Location = new System.Drawing.Point(589, 6);
             this.dateTimePickerGradesReports2.Name = "dateTimePickerGradesReports2";
             this.dateTimePickerGradesReports2.Size = new System.Drawing.Size(578, 25);
@@ -1111,6 +1118,7 @@ namespace school
             // 
             // dataGridViewGradesReports
             // 
+            this.dataGridViewGradesReports.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.dataGridViewGradesReports.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewGradesReports.Location = new System.Drawing.Point(6, 37);
             this.dataGridViewGradesReports.Name = "dataGridViewGradesReports";
@@ -1119,13 +1127,25 @@ namespace school
             // 
             // buttonExcelReport
             // 
-            this.buttonExcelReport.Location = new System.Drawing.Point(463, 759);
+            this.buttonExcelReport.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.buttonExcelReport.Location = new System.Drawing.Point(371, 759);
             this.buttonExcelReport.Name = "buttonExcelReport";
             this.buttonExcelReport.Size = new System.Drawing.Size(267, 28);
             this.buttonExcelReport.TabIndex = 1;
             this.buttonExcelReport.Text = "xlsx";
             this.buttonExcelReport.UseVisualStyleBackColor = true;
             this.buttonExcelReport.Click += new System.EventHandler(this.buttonExcelReport_Click);
+            // 
+            // buttonReportsToWord
+            // 
+            this.buttonReportsToWord.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.buttonReportsToWord.Location = new System.Drawing.Point(644, 759);
+            this.buttonReportsToWord.Name = "buttonReportsToWord";
+            this.buttonReportsToWord.Size = new System.Drawing.Size(267, 28);
+            this.buttonReportsToWord.TabIndex = 2;
+            this.buttonReportsToWord.Text = "docx";
+            this.buttonReportsToWord.UseVisualStyleBackColor = true;
+            this.buttonReportsToWord.Click += new System.EventHandler(this.buttonReportsToWord_Click);
             // 
             // Form1
             // 
@@ -1279,6 +1299,7 @@ namespace school
         private System.Windows.Forms.DateTimePicker dateTimePickerGradesReports2;
         private System.Windows.Forms.DateTimePicker dateTimePickerGradesReports1;
         private System.Windows.Forms.Button buttonExcelReport;
+        private System.Windows.Forms.Button buttonReportsToWord;
     }
 }
 

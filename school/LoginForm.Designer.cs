@@ -224,6 +224,7 @@ namespace school
             this.lblPermission.Size = new System.Drawing.Size(35, 13);
             this.lblPermission.TabIndex = 3;
             this.lblPermission.Text = "Роль:";
+            this.lblPermission.Visible = false;
             // 
             // lblClass
             // 
@@ -233,6 +234,7 @@ namespace school
             this.lblClass.Size = new System.Drawing.Size(41, 13);
             this.lblClass.TabIndex = 4;
             this.lblClass.Text = "Класс:";
+            this.lblClass.Visible = false;
             // 
             // txtFullName
             // 
@@ -260,6 +262,7 @@ namespace school
             this.cmbPermission.Name = "cmbPermission";
             this.cmbPermission.Size = new System.Drawing.Size(160, 21);
             this.cmbPermission.TabIndex = 7;
+            this.cmbPermission.Visible = false;
             // 
             // cmbClass
             // 
@@ -268,6 +271,7 @@ namespace school
             this.cmbClass.Name = "cmbClass";
             this.cmbClass.Size = new System.Drawing.Size(160, 21);
             this.cmbClass.TabIndex = 8;
+            this.cmbClass.Visible = false;
             // 
             // btnRegister
             // 

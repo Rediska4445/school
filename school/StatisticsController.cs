@@ -171,17 +171,18 @@ namespace school
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-                    SELECT 
-                        u.FullName AS StudentName,
-                        COALESCE(s.SubjectName, 'Общий') AS SubjectName,
-                        FORMAT(AVG(CAST(g.GradeValue AS FLOAT)), 'N2') AS AvgGrade
-                    FROM Users u 
-                    INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
-                    LEFT JOIN Grades g ON u.UserID = g.StudentID AND g.GradeDate BETWEEN @StartDate AND @EndDate
-                    LEFT JOIN Subjects s ON g.SubjectID = s.SubjectID
-                    WHERE u.ClassID = @ClassId AND p.PermissionName = N'Ученик'
-                    GROUP BY u.UserID, u.FullName, s.SubjectID, s.SubjectName
-                    ORDER BY u.FullName, s.SubjectName", conn))
+            SELECT 
+                u.FullName,
+                ISNULL(s.SubjectName, 'Ср.балл') AS SubjectName,
+                FORMAT(AVG(CAST(g.GradeValue AS FLOAT)), 'N2') AS AvgGrade
+            FROM Users u 
+            INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
+            LEFT JOIN Grades g ON u.UserID = g.StudentID AND g.GradeDate BETWEEN @StartDate AND @EndDate
+            LEFT JOIN Subjects s ON g.SubjectID = s.SubjectID
+            WHERE u.ClassID = @ClassId AND p.PermissionName = N'Ученик'
+            GROUP BY u.UserID, u.FullName, s.SubjectID, s.SubjectName
+            HAVING COUNT(g.GradeID) > 0 OR s.SubjectID IS NULL
+            ORDER BY u.FullName, s.SubjectName", conn))
                 {
                     cmd.Parameters.AddWithValue("@ClassId", classId);
                     cmd.Parameters.AddWithValue("@StartDate", startDate);
@@ -191,9 +192,9 @@ namespace school
                     {
                         while (reader.Read())
                         {
-                            string student = reader["StudentName"]?.ToString() ?? "";
-                            string subject = reader["SubjectName"]?.ToString() ?? "Общий";
-                            string avg = reader["AvgGrade"]?.ToString() ?? "0.00";
+                            string student = reader.GetString(0);
+                            string subject = reader.GetString(1);
+                            string avg = reader.IsDBNull(2) ? "0.00" : reader.GetString(2);
 
                             if (!matrix.ContainsKey(student))
                                 matrix[student] = new Dictionary<string, string>();
