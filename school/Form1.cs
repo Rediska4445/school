@@ -1272,14 +1272,7 @@ namespace school
 
                 int classId = -1;
 
-                if (UserController.CurrentUser.PermissionID == 3)
-                {
-                    classId = ((ComboBoxItem)directorComboBox.SelectedItem).ClassID;
-                }
-                else
-                {
-                    classId = UserController.CurrentUser.ClassID.Value;
-                }
+                classId = ((ComboBoxItem)directorComboBox.SelectedItem).ClassID;
 
                 if (classId == -1)
                 {
@@ -2094,30 +2087,40 @@ namespace school
         // Загрузка оценок из БД
         private void LoadGradesGrid()
         {
+            FileLogger.logger.Debug("=== LoadGradesGrid() НАЧАЛО ===");
+
             try
             {
+                FileLogger.logger.Debug("Очистка dataGridViewGrades");
                 dataGridViewGrades.DataSource = null;
                 dataGridViewGrades.Columns.Clear();
                 dataGridViewGrades.Rows.Clear();
 
                 DateTime startDate = dateTimePickerGrades.Value;
                 DateTime endDate = dateTimePickerGrades1.Value;
+                FileLogger.logger.Debug($"Период: {startDate:dd.MM.yyyy} - {endDate:dd.MM.yyyy}");
 
                 List<Grade> gradesList;
                 if (UserController.CurrentUser.PermissionID > 1)
                 {
+                    FileLogger.logger.Debug("Загрузка оценок учителя");
                     gradesList = TeacherController._controller.GetTeacherGrades(startDate, endDate, UserController.CurrentUser);
                 }
                 else
                 {
+                    FileLogger.logger.Debug("Загрузка оценок ученика");
                     gradesList = GradesController._controller.GetGradesForStudentPeriod(UserController.CurrentUser.UserID, startDate, endDate);
                 }
+                FileLogger.logger.Debug($"Личных оценок загружено: {gradesList.Count}");
 
-                if(dataGridViewGrades.Columns.Count == 0)
+                if (dataGridViewGrades.Columns.Count == 0)
                 {
+                    FileLogger.logger.Debug("Создание колонок dataGridViewGrades");
                     SetupGradesGrid();
+                    FileLogger.logger.Debug("LoadGradesGrid - Колонки оценок созданы");
                 }
 
+                FileLogger.logger.Debug($"Заполнение {gradesList.Count} строк в dataGridViewGrades");
                 foreach (var grade in gradesList)
                 {
                     int rowIndex = dataGridViewGrades.Rows.Add();
@@ -2138,15 +2141,25 @@ namespace school
                         newRow.Cells["colPerson"].Value = grade.TeacherNameDisplay ?? "";
                     }
 
-                    newRow.Tag = grade; 
+                    newRow.Tag = grade;
                 }
+                FileLogger.logger.Debug("dataGridViewGrades заполнена");
 
-                if(UserController.CurrentUser.PermissionID > 1)
+                if (UserController.CurrentUser.PermissionID > 1)
                 {
+                    FileLogger.logger.Debug("ОБНОВЛЕНИЕ ДЛЯ ДИРЕКТОРА/УЧИТЕЛЯ");
+
+                    var selectedClass = ((ComboBoxItem)directorComboBox.SelectedItem);
+                    FileLogger.logger.Debug($"Выбран класс: {selectedClass?.ClassID} {directorComboBox.Text}");
 
                     List<Grade> gradesListAll;
-                    gradesListAll = TeacherController._controller.GetClassGrades(startDate, endDate, ((ComboBoxItem)directorComboBox.SelectedItem).ClassID);
+                    FileLogger.logger.Debug("Загрузка оценок класса");
 
+                    gradesListAll = TeacherController._controller.GetClassGrades(startDate, endDate, selectedClass.ClassID);
+
+                    FileLogger.logger.Debug($"Оценок класса загружено: {gradesListAll.Count}");
+
+                    FileLogger.logger.Debug($"Заполнение {gradesListAll.Count} строк в dataGridViewGradesAll");
                     foreach (var grade in gradesListAll)
                     {
                         int rowIndex = dataGridViewGradesAll.Rows.Add();
@@ -2156,14 +2169,12 @@ namespace school
                         newRow.Cells["colDate"].Value = grade.GradeDate;
                         newRow.Cells["colSubject"].Value = grade.SubjectNameDisplay ?? "";
                         newRow.Cells["colGrade"].Value = grade.GradeValue.ToString();
-
                         newRow.Cells["colTeacher"].Value = grade.Teacher.FullName;
-
                         newRow.Cells["colPerson"].Value = grade.StudentNameDisplay ?? "👤";
                         newRow.Cells["colClass"].Value = grade.Student?.Class?.ClassName ?? "";
-
                         newRow.Tag = grade;
                     }
+                    FileLogger.logger.Debug("dataGridViewGradesAll заполнена");
                 }
 
                 string labelText = UserController.CurrentUser.PermissionID > 1
@@ -2171,17 +2182,22 @@ namespace school
                     : $"Оценки: {startDate:dd.MM} - {endDate:dd.MM}";
 
                 labelGradesPeriod.Text = $"{labelText} ({gradesList.Count} шт.)";
+                FileLogger.logger.Debug($"Лейбл обновлен: {labelGradesPeriod.Text}");
             }
             catch (Exception ex)
             {
+                FileLogger.logger.Error($"LoadGradesGrid() ОШИБКА: {ex.Message}");
+                FileLogger.logger.Error($"StackTrace: {ex.StackTrace}");
                 MessageBox.Show($"Ошибка загрузки оценок: {ex.Message}");
             }
+
+            FileLogger.logger.Debug("=== LoadGradesGrid() КОНЕЦ ===");
         }
 
         // Подготовка таблицы для оценок
         private void SetupGradesGrid()
         {
-            DataGridView[] views = new DataGridView[] { dataGridViewGrades, dataGridViewGradesAll};
+            DataGridView[] views = new DataGridView[] { dataGridViewGrades , dataGridViewGradesAll};
 
             foreach(DataGridView dataGridViewGrades in views)
             {
@@ -2216,19 +2232,20 @@ namespace school
 
                     dataGridViewGrades.Columns.Add("colGrade", "Оценка");
 
-                    DataGridViewComboBoxColumn btnPersonCol = new DataGridViewComboBoxColumn();
-                    btnPersonCol.Name = "colPerson";
-                    btnPersonCol.HeaderText = "Ученик";
-                    btnPersonCol.DisplayMember = "FullName";
-                    btnPersonCol.ValueMember = "FullName";
-                    btnPersonCol.ValueType = typeof(string);
+                    DataGridViewComboBoxColumn comboStudentCol = new DataGridViewComboBoxColumn();
+                    comboStudentCol.Name = "colPerson";
+                    comboStudentCol.HeaderText = "Ученик";
+                    comboStudentCol.DisplayMember = "FullName";
+                    comboStudentCol.ValueMember = "FullName";
+                    comboStudentCol.ValueType = typeof(string);
+                    comboStudentCol.Width = 120;
 
-                    foreach (User sub in UserController._userController.GetClassStudents(((ComboBoxItem)directorComboBox.SelectedItem).ClassID))
+                    foreach (User sub in UserController._userController.GetAllOfPredicate("u.PermissionID <= 1"))
                     {
-                        btnPersonCol.Items.Add(sub.FullName);
+                        comboStudentCol.Items.Add(sub.FullName);
                     }
 
-                    dataGridViewGrades.Columns.Add(btnPersonCol);
+                    dataGridViewGrades.Columns.Add(comboStudentCol);
 
                     dataGridViewGrades.Columns.Add("colClass", "Класс");
 

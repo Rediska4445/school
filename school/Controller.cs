@@ -267,9 +267,7 @@ namespace school
                         ('2025-12-09', (SELECT UserID FROM Users WHERE FullName = N'Голубев Артем'), @RussianSubjectID, 5, @Teacher2ID),
                         ('2025-12-10', (SELECT UserID FROM Users WHERE FullName = N'Дмитриева Елена'), @RussianSubjectID, 3, @Teacher2ID);
                         PRINT '✅ Добавлено 10 оценок по русскому (1Б)';
-                    END;",
-
-                    @"PRINT '📚 Итого добавлено: 20 тестовых оценок';"
+                    END;"
                 };
             }
 
