@@ -96,6 +96,40 @@ namespace school
             return processed;
         }
 
+        public List<Subject> GetClassSubjects(int classId)
+        {
+            var subjects = new List<Subject>();
+
+            using (var conn = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(@"
+            SELECT DISTINCT 
+                s.SubjectID,
+                s.SubjectName
+            FROM Subjects s
+            INNER JOIN Grades g ON s.SubjectID = g.SubjectID
+            INNER JOIN Users u ON g.StudentID = u.UserID
+            WHERE u.ClassID = @ClassId
+            ORDER BY s.SubjectName", conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassId", classId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            subjects.Add(new Subject
+                            {
+                                SubjectID = reader.GetInt32(0),
+                                SubjectName = reader.GetString(1)
+                            });
+                        }
+                    }
+                }
+            }
+            return subjects;
+        }
+
         public List<Subject> GetAllSubjects()
         {
             var subjects = new List<Subject>();
