@@ -3109,7 +3109,7 @@ namespace school
 
                 body.AppendChild(titlePara);
 
-                body.AppendChild(new Paragraph(new Run(new Break() { Type = BreakValues.Page }))); // Страница
+                body.AppendChild(new Paragraph(new Run(new Break() { Type = BreakValues.Page })));
 
                 Table table = new Table();
                 TableProperties tableProps = new TableProperties(
@@ -3194,6 +3194,12 @@ namespace school
                     MessageBox.Show("Отчет сохранен в Word!");
                 }
             }
+        }
+
+        private void buttonHomeworkPresentation_Click(object sender, EventArgs e)
+        {
+            var searchForm = new NsportalSearchForm();
+            searchForm.ShowDialog(this);
         }
     }
 }

@@ -110,6 +110,7 @@ namespace school
             this.dataGridViewGradesReports = new System.Windows.Forms.DataGridView();
             this.buttonExcelReport = new System.Windows.Forms.Button();
             this.buttonReportsToWord = new System.Windows.Forms.Button();
+            this.buttonHomeworkPresentation = new System.Windows.Forms.Button();
             this.panelTop.SuspendLayout();
             this.panelMain.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -318,6 +319,7 @@ namespace school
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.buttonHomeworkPresentation);
             this.tabPage2.Controls.Add(this.dateTimePickerHomework1);
             this.tabPage2.Controls.Add(this.dateTimePickerHomework);
             this.tabPage2.Controls.Add(this.labelHomeworkPeriod);
@@ -356,7 +358,7 @@ namespace school
             // 
             this.labelHomeworkPeriod.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.labelHomeworkPeriod.AutoSize = true;
-            this.labelHomeworkPeriod.Location = new System.Drawing.Point(557, 719);
+            this.labelHomeworkPeriod.Location = new System.Drawing.Point(521, 710);
             this.labelHomeworkPeriod.Name = "labelHomeworkPeriod";
             this.labelHomeworkPeriod.Size = new System.Drawing.Size(45, 19);
             this.labelHomeworkPeriod.TabIndex = 2;
@@ -376,7 +378,7 @@ namespace school
             this.dataGridViewHomework.RowHeadersVisible = false;
             this.dataGridViewHomework.RowTemplate.Height = 25;
             this.dataGridViewHomework.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewHomework.Size = new System.Drawing.Size(1144, 679);
+            this.dataGridViewHomework.Size = new System.Drawing.Size(1144, 659);
             this.dataGridViewHomework.TabIndex = 1;
             // 
             // tabPage3
@@ -1147,6 +1149,16 @@ namespace school
             this.buttonReportsToWord.UseVisualStyleBackColor = true;
             this.buttonReportsToWord.Click += new System.EventHandler(this.buttonReportsToWord_Click);
             // 
+            // buttonHomeworkPresentation
+            // 
+            this.buttonHomeworkPresentation.Location = new System.Drawing.Point(6, 702);
+            this.buttonHomeworkPresentation.Name = "buttonHomeworkPresentation";
+            this.buttonHomeworkPresentation.Size = new System.Drawing.Size(110, 33);
+            this.buttonHomeworkPresentation.TabIndex = 4;
+            this.buttonHomeworkPresentation.Text = "Презентация";
+            this.buttonHomeworkPresentation.UseVisualStyleBackColor = true;
+            this.buttonHomeworkPresentation.Click += new System.EventHandler(this.buttonHomeworkPresentation_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1300,6 +1312,7 @@ namespace school
         private System.Windows.Forms.DateTimePicker dateTimePickerGradesReports1;
         private System.Windows.Forms.Button buttonExcelReport;
         private System.Windows.Forms.Button buttonReportsToWord;
+        private System.Windows.Forms.Button buttonHomeworkPresentation;
     }
 }
 
