@@ -163,6 +163,50 @@ namespace school
             return statistics;
         }
 
+        public Dictionary<string, Dictionary<string, string>> GetClassAttendanceMatrix(int classId, DateTime startDate, DateTime endDate)
+        {
+            var matrix = new Dictionary<string, Dictionary<string, string>>();
+
+            using (var conn = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(@"
+            SELECT 
+                u.FullName,
+                ISNULL(s.SubjectName, N'Посещаемость') AS SubjectName,
+                COUNT(CASE WHEN a.Present = 0 THEN 1 END) AS Absences
+            FROM Users u 
+            INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
+            LEFT JOIN Attendance a ON u.UserID = a.UserID AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
+            LEFT JOIN Subjects s ON a.SubjectID = s.SubjectID
+            WHERE u.ClassID = @ClassId AND p.PermissionName = N'Ученик'
+            GROUP BY u.UserID, u.FullName, s.SubjectID, s.SubjectName
+            HAVING COUNT(a.AttendanceID) > 0 OR s.SubjectID IS NULL
+            ORDER BY u.FullName, s.SubjectName", conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassId", classId);
+                    cmd.Parameters.AddWithValue("@StartDate", startDate.Date);
+                    cmd.Parameters.AddWithValue("@EndDate", endDate.Date);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string student = reader.GetString(0);
+                            string subject = reader.GetString(1);
+                            int absences = reader.GetInt32(2);
+
+                            if (!matrix.ContainsKey(student))
+                                matrix[student] = new Dictionary<string, string>();
+
+                            matrix[student][subject] = absences.ToString();
+                        }
+                    }
+                }
+            }
+            return matrix;
+        }
+
         public Dictionary<string, Dictionary<string, string>> GetClassMatrixStatistics(int classId, DateTime startDate, DateTime endDate)
         {
             var matrix = new Dictionary<string, Dictionary<string, string>>();

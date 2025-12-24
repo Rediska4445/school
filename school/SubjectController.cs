@@ -306,6 +306,67 @@ namespace school
             return null;
         }
 
+        public List<TeacherSubject> GetTeacherSubjects(int teacherId)
+        {
+            var result = new List<TeacherSubject>();
+
+            using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                connection.Open();
+
+                string sql = @"
+            SELECT 
+                ts.TeacherSubjectID,
+                ts.TeacherID,
+                ts.SubjectID,
+                sub.SubjectName,
+                u.FullName AS TeacherName
+            FROM TeacherSubjects ts
+            INNER JOIN Subjects sub ON ts.SubjectID = sub.SubjectID
+            INNER JOIN Users u ON ts.TeacherID = u.UserID
+            WHERE ts.TeacherID = @TeacherID
+            ORDER BY sub.SubjectName";
+
+                using (var cmd = new SqlCommand(sql, connection))
+                {
+                    cmd.Parameters.AddWithValue("@TeacherID", teacherId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        // Ordinals для производительности
+                        int ordTeacherSubjectID = reader.GetOrdinal("TeacherSubjectID");
+                        int ordTeacherID = reader.GetOrdinal("TeacherID");
+                        int ordSubjectID = reader.GetOrdinal("SubjectID");
+                        int ordSubjectName = reader.GetOrdinal("SubjectName");
+                        int ordTeacherName = reader.GetOrdinal("TeacherName");
+
+                        while (reader.Read())
+                        {
+                            try
+                            {
+                                var item = new TeacherSubject
+                                {
+                                    TeacherSubjectID = reader.IsDBNull(ordTeacherSubjectID) ? 0 : reader.GetInt32(ordTeacherSubjectID),
+                                    TeacherID = reader.IsDBNull(ordTeacherID) ? 0 : reader.GetInt32(ordTeacherID),
+                                    SubjectID = reader.IsDBNull(ordSubjectID) ? 0 : reader.GetInt32(ordSubjectID),
+                                    SubjectName = reader.IsDBNull(ordSubjectName) ? "" : reader.GetString(ordSubjectName),
+                                    TeacherName = reader.IsDBNull(ordTeacherName) ? "" : reader.GetString(ordTeacherName)
+                                };
+
+                                result.Add(item);
+                            }
+                            catch (Exception exRow)
+                            {
+                                FileLogger.logger.Error("GetTeacherSubjects: ошибка парсинга записи", exRow);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// Возвращает Subject по названию (или null если не найден)
         /// </summary>

@@ -121,6 +121,15 @@ namespace school.Models
         }
     }
 
+    public class TeacherSubject
+    {
+        public int TeacherSubjectID { get; set; }
+        public int TeacherID { get; set; }
+        public int SubjectID { get; set; }
+        public string SubjectName { get; set; }
+        public string TeacherName { get; set; }
+    }
+
     public class ScheduleItem
     {
         public int ScheduleID { get; set; }

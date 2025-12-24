@@ -15,6 +15,7 @@ using System.Windows.Forms;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
 using static school.StatisticsController;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Color = System.Drawing.Color;
 using Control = System.Windows.Forms.Control;
 using User = school.Models.User;
@@ -1054,7 +1055,17 @@ namespace school
                 case "tabPageClasses": LoadClasses(dataGridViewClasses); break;
 
                 // Вкладка репортов
-                case "tabPageReports": LoadClassGradesReport(((ComboBoxItem) directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value); break;
+                case "tabPageReports": {
+                        if (tabControlReports.SelectedTab.Name.Equals("tabPageAtterdanceReports"))
+                        {
+                            LoadAttendanceMatrixToDataGridViewAtterdanceReports(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+                        }
+                        else if (tabControlReports.SelectedTab.Name.Equals("tabPageGradesReports"))
+                        {
+                            LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+                        }
+                    }
+                    break;
             }
         }
 
@@ -2125,6 +2136,7 @@ namespace school
                     FileLogger.logger.Debug("Загрузка оценок ученика");
                     gradesList = GradesController._controller.GetGradesForStudentPeriod(UserController.CurrentUser.UserID, startDate, endDate);
                 }
+
                 FileLogger.logger.Debug($"Личных оценок загружено: {gradesList.Count}");
 
                 if (dataGridViewGrades.Columns.Count == 0)
@@ -2163,7 +2175,7 @@ namespace school
                 {
                     FileLogger.logger.Debug("ОБНОВЛЕНИЕ ДЛЯ ДИРЕКТОРА/УЧИТЕЛЯ");
 
-                    var selectedClass = ((ComboBoxItem)directorComboBox.SelectedItem);
+                    var selectedClass = (ComboBoxItem)directorComboBox.SelectedItem;
                     FileLogger.logger.Debug($"Выбран класс: {selectedClass?.ClassID} {directorComboBox.Text}");
 
                     List<Grade> gradesListAll;
@@ -2237,9 +2249,9 @@ namespace school
                     comboSubjectCol.ValueMember = "SubjectName";
                     comboSubjectCol.ValueType = typeof(string);
 
-                    foreach (Subject sub in SubjectController._controller.GetAllSubjects())
+                    foreach (TeacherSubject sub in SubjectController._controller.GetTeacherSubjects(UserController.CurrentUser.UserID))
                     {
-                        comboSubjectCol.Items.Add(sub);
+                        comboSubjectCol.Items.Add(sub.SubjectName);
                     }
 
                     dataGridViewGrades.Columns.Add(comboSubjectCol);
@@ -2860,9 +2872,10 @@ namespace school
         }
 
         // Репорты
+        // Универсальный экспорт текущего отчета
         private void buttonExcelReport_Click(object sender, EventArgs e)
         {
-            if (dataGridViewGradesReports.Rows.Count == 0)
+            if (dataGridViewGradesReports.Rows.Count == 0 && dataGridViewAtterdanceReports.Rows.Count == 0)
             {
                 MessageBox.Show("Сначала сформируйте отчет!");
                 return;
@@ -2871,14 +2884,46 @@ namespace school
             using (var dialog = new SaveFileDialog
             {
                 Filter = "Excel файлы (*.xlsx)|*.xlsx",
-                FileName = $"Успеваемость_{directorComboBox.Text}_{DateTime.Now:yyyy-MM-dd}.xlsx"
+                FileName = GetReportFileName()
             })
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    ExportGradesReportToExcel(dialog.FileName);
+                    ExportCurrentReportToExcel(dialog.FileName);
                     MessageBox.Show($"Отчет сохранен: {dialog.FileName}");
                 }
+            }
+        }
+
+        private string GetReportFileName()
+        {
+            string reportType;
+            switch (tabControlReports.SelectedTab.Name)
+            {
+                case "tabPageGradesReports":
+                    reportType = $"Успеваемость_{directorComboBox.Text}_{DateTime.Now:yyyy-MM-dd}";
+                    break;
+                case "tabPageAtterdanceReports":
+                    reportType = $"Посещаемость_{directorComboBox.Text}_{DateTime.Now:yyyy-MM-dd}";
+                    break;
+                default:
+                    reportType = "Отчет";
+                    break;
+            }
+            return reportType + ".xlsx";
+        }
+
+        private void ExportCurrentReportToExcel(string fileName)
+        {
+            string tabName = tabControlReports.SelectedTab.Name;
+
+            if (tabName.Equals("tabPageGradesReports"))
+            {
+                ExportGradesReportToExcel(fileName);
+            }
+            else if (tabName.Equals("tabPageAtterdanceReports"))
+            {
+                ExportAttendanceReportToExcel(fileName);
             }
         }
 
@@ -3173,12 +3218,26 @@ namespace school
 
         private void dateTimePickerGradesReports1_ValueChanged(object sender, EventArgs e)
         {
-            LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+            if(tabControlReports.SelectedTab.Name.Equals("tabPageGradesReports"))
+            {
+                LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+            }
+            else if (tabControlReports.SelectedTab.Name.Equals("tabPageAtterdanceReports"))
+            {
+                LoadAttendanceMatrixToDataGridViewAtterdanceReports(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+            }
         }
 
         private void dateTimePickerGradesReports2_ValueChanged(object sender, EventArgs e)
         {
-            LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+            if (tabControlReports.SelectedTab.Name.Equals("tabPageGradesReports"))
+            {
+                LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+            }
+            else if (tabControlReports.SelectedTab.Name.Equals("tabPageAtterdanceReports"))
+            {
+                LoadAttendanceMatrixToDataGridViewAtterdanceReports(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+            }
         }
 
         private void buttonReportsToWord_Click(object sender, EventArgs e)
@@ -3186,13 +3245,243 @@ namespace school
             using (SaveFileDialog sfd = new SaveFileDialog())
             {
                 sfd.Filter = "Word (*.docx)|*.docx";
-                sfd.FileName = $"Отчет_{directorComboBox.Text}_{DateTime.Now:yyyy-MM-dd}.docx";
+                sfd.FileName = GetReportFileName().Replace(".xlsx", ".docx");
 
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
-                    ExportGradesReportToWord(sfd.FileName);
+                    if (tabControlReports.SelectedTab.Name.Equals("tabPageAtterdanceReports"))
+                    {
+                        ExportAttendanceReportToWord(sfd.FileName);
+                    }
+                    else if (tabControlReports.SelectedTab.Name.Equals("tabPageGradesReports"))
+                    {
+                        ExportGradesReportToWord(sfd.FileName);
+                    }
+
                     MessageBox.Show("Отчет сохранен в Word!");
                 }
+            }
+        }
+
+        private void LoadAttendanceMatrixToDataGridViewAtterdanceReports(int classId, DateTime startDate, DateTime endDate)
+        {
+            var matrix = StatisticsController._controller.GetClassAttendanceMatrix(classId, startDate, endDate);
+
+            dataGridViewAtterdanceReports.Rows.Clear();
+            dataGridViewAtterdanceReports.Columns.Clear();
+
+            dataGridViewAtterdanceReports.Columns.Add("Student", "Ученик");
+            var subjects = new HashSet<string>();
+
+            foreach (var student in matrix.Values)
+                foreach (var subj in student.Keys)
+                    if (subj != "Посещаемость")
+                        subjects.Add(subj);
+
+            foreach (string subject in subjects.OrderBy(s => s))
+                dataGridViewAtterdanceReports.Columns.Add(subject, subject);
+
+            foreach (var studentData in matrix.OrderBy(s => s.Key))
+            {
+                int rowIndex = dataGridViewAtterdanceReports.Rows.Add(studentData.Key);
+                var row = dataGridViewAtterdanceReports.Rows[rowIndex];
+
+                foreach (DataGridViewColumn col in dataGridViewAtterdanceReports.Columns)
+                {
+                    if (col.Name != "Student" && studentData.Value.ContainsKey(col.HeaderText))
+                    {
+                        row.Cells[col.Name].Value = studentData.Value[col.HeaderText];
+                        if (int.TryParse(studentData.Value[col.HeaderText], out int absences) && absences > 2)
+                            row.Cells[col.Name].Style.BackColor = Color.LightCoral;
+                    }
+                    else if (col.Name != "Student")
+                    {
+                        row.Cells[col.Name].Value = "0";
+                    }
+                }
+            }
+
+            dataGridViewAtterdanceReports.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dataGridViewAtterdanceReports.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        }
+
+        private void ExportAttendanceReportToWord(string fileName)
+        {
+            if (dataGridViewAtterdanceReports.Rows.Count == 0)
+            {
+                MessageBox.Show("Таблица пуста! Сформируйте отчет.");
+                return;
+            }
+
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document))
+            {
+                MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                mainPart.Document = new Document();
+                Body body = mainPart.Document.AppendChild(new Body());
+
+                // Заголовок
+                Paragraph titlePara = new Paragraph(new Run(new Text(
+                    $"Отчет по посещаемости {directorComboBox.Text} за период {dateTimePickerGradesReports1.Value:dd.MM.yyyy} - {dateTimePickerGradesReports2.Value:dd.MM.yyyy}")));
+                titlePara.ParagraphProperties = new ParagraphProperties(new Justification() { Val = JustificationValues.Center });
+                body.AppendChild(titlePara);
+
+                body.AppendChild(new Paragraph(new Run(new Break() { Type = BreakValues.Page })));
+
+                // Таблица
+                Table table = new Table();
+                TableProperties tableProps = new TableProperties(
+                    new TableBorders(
+                        new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                        new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 }
+                    ),
+                    new TableWidth() { Width = "100%" }
+                );
+                table.AppendChild(tableProps);
+
+                // Заголовки
+                TableRow headerRow = new TableRow();
+                headerRow.Append(new TableCell(new Paragraph(new Run(new Text("Ученик"))))
+                {
+                    TableCellProperties = new TableCellProperties(new TableCellWidth() { Width = "25%" })
+                });
+
+                for (int col = 1; col < dataGridViewAtterdanceReports.Columns.Count; col++)
+                {
+                    headerRow.Append(new TableCell(new Paragraph(new Run(new Text(dataGridViewAtterdanceReports.Columns[col].HeaderText))))
+                    {
+                        TableCellProperties = new TableCellProperties(new TableCellWidth() { Width = "20%" })
+                    });
+                }
+                table.AppendChild(headerRow);
+
+                // Данные
+                for (int row = 0; row < dataGridViewAtterdanceReports.Rows.Count; row++)
+                {
+                    var dgvRow = dataGridViewAtterdanceReports.Rows[row];
+                    if (string.IsNullOrWhiteSpace(dgvRow.Cells[0].Value?.ToString())) continue;
+
+                    TableRow dataRow = new TableRow();
+                    dataRow.Append(new TableCell(new Paragraph(new Run(new Text(dgvRow.Cells[0].Value?.ToString() ?? "")))));
+
+                    for (int col = 1; col < dataGridViewAtterdanceReports.Columns.Count; col++)
+                    {
+                        string cellValue = dgvRow.Cells[col].Value?.ToString() ?? "";
+                        dataRow.Append(new TableCell(new Paragraph(new Run(new Text(cellValue)))));
+                    }
+                    table.AppendChild(dataRow);
+                }
+
+                // Итоговая строка
+                TableRow totalRow = new TableRow();
+                totalRow.Append(new TableCell(new Paragraph(new Run(new Text("Итого пропусков:"))))
+                {
+                    TableCellProperties = new TableCellProperties(new Bold())
+                });
+
+                // Подсчет итогов по предметам
+                for (int col = 1; col < dataGridViewAtterdanceReports.Columns.Count; col++)
+                {
+                    int totalAbsences = 0;
+                    for (int row = 0; row < dataGridViewAtterdanceReports.Rows.Count; row++)
+                    {
+                        if (int.TryParse(dataGridViewAtterdanceReports.Rows[row].Cells[col].Value?.ToString(), out int val))
+                            totalAbsences += val;
+                    }
+                    totalRow.Append(new TableCell(new Paragraph(new Run(new Text(totalAbsences.ToString()))))
+                    {
+                        TableCellProperties = new TableCellProperties(new Bold())
+                    });
+                }
+                table.AppendChild(totalRow);
+
+                body.AppendChild(table);
+                mainPart.Document.Save();
+            }
+            MessageBox.Show($"Отчет сохранен: {fileName}");
+        }
+
+        private void ExportAttendanceReportToExcel(string fileName)
+        {
+            if (dataGridViewAtterdanceReports.Rows.Count == 0)
+            {
+                MessageBox.Show("Таблица пуста! Сформируйте отчет.");
+                return;
+            }
+
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Посещаемость");
+
+                // Заголовок отчета
+                var titleCell = worksheet.Cell(1, 1);
+                titleCell.Value = $"Отчет по посещаемости {directorComboBox.Text} за период {dateTimePickerGradesReports1.Value:dd.MM.yyyy} - {dateTimePickerGradesReports2.Value:dd.MM.yyyy}";
+                titleCell.Style.Font.Bold = true;
+                titleCell.Style.Font.FontSize = 11;
+                titleCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                worksheet.Range(1, 1, 1, dataGridViewAtterdanceReports.ColumnCount).Merge();
+
+                // Заголовки таблицы
+                for (int col = 0; col < dataGridViewAtterdanceReports.ColumnCount; col++)
+                {
+                    worksheet.Cell(3, col + 1).Value = dataGridViewAtterdanceReports.Columns[col].HeaderText;
+                }
+
+                var headerRange = worksheet.Range(3, 1, 3, dataGridViewAtterdanceReports.ColumnCount);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                // Данные таблицы
+                int excelRow = 3;
+                for (int rowIndex = 0; rowIndex < dataGridViewAtterdanceReports.Rows.Count; rowIndex++)
+                {
+                    var dgvRow = dataGridViewAtterdanceReports.Rows[rowIndex];
+                    if (string.IsNullOrWhiteSpace(dgvRow.Cells[0].Value?.ToString())) continue;
+
+                    excelRow++;
+                    worksheet.Cell(excelRow, 1).Value = dgvRow.Cells[0].Value?.ToString() ?? "";
+
+                    for (int colIndex = 1; colIndex < dataGridViewAtterdanceReports.ColumnCount; colIndex++)
+                    {
+                        var cellValue = dgvRow.Cells[colIndex].Value;
+                        worksheet.Cell(excelRow, colIndex + 1).Value = cellValue?.ToString() ?? "";
+
+                        // Красный фон для >2 пропусков (как в DataGridView)
+                        if (int.TryParse(cellValue?.ToString(), out int absences) && absences > 2)
+                            worksheet.Cell(excelRow, colIndex + 1).Style.Fill.BackgroundColor = XLColor.LightCoral;
+                    }
+                }
+
+                // Итоговая строка
+                int lastDataRow = excelRow + 1;
+                worksheet.Cell(lastDataRow, 1).Value = "Итого пропусков:";
+
+                // Подсчет суммы по каждому предмету
+                for (int colIndex = 1; colIndex < dataGridViewAtterdanceReports.ColumnCount; colIndex++)
+                {
+                    int totalAbsences = 0;
+                    for (int rowIndex = 0; rowIndex < dataGridViewAtterdanceReports.Rows.Count; rowIndex++)
+                    {
+                        if (int.TryParse(dataGridViewAtterdanceReports.Rows[rowIndex].Cells[colIndex].Value?.ToString(), out int val))
+                            totalAbsences += val;
+                    }
+                    worksheet.Cell(lastDataRow, colIndex + 1).Value = totalAbsences;
+                }
+
+                var totalRange = worksheet.Range(lastDataRow, 1, lastDataRow, dataGridViewAtterdanceReports.ColumnCount);
+                totalRange.Style.Font.Bold = true;
+                totalRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                // Форматирование
+                worksheet.ColumnsUsed().AdjustToContents();
+                worksheet.Columns("A").Width = 25; // Ученик пошире
+
+                workbook.SaveAs(fileName);
+                MessageBox.Show($"Отчет сохранен: {fileName}");
             }
         }
 

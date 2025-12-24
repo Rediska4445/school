@@ -257,6 +257,68 @@ namespace school.Controllers
             return studentsList;
         }
 
+        public List<User> GetAllOfPredicateByClass(int classId, string whereCondition)
+        {
+            var users = new List<User>();
+
+            try
+            {
+                string sql = $@"
+            SELECT 
+                u.UserID, 
+                u.FullName, 
+                u.PasswordHash,
+                u.PermissionID, 
+                p.PermissionName, 
+                u.ClassID,
+                c.ClassName
+            FROM Users u
+            INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
+            LEFT JOIN Classes c ON u.ClassID = c.ClassID
+            WHERE u.ClassID = @ClassID AND {whereCondition}
+            ORDER BY u.FullName";
+
+                using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    command.Parameters.AddWithValue("@ClassID", classId);
+
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int? classIdFromDb = reader.IsDBNull(5) ? (int?)null : reader.GetInt32(5);
+                            string className = reader.IsDBNull(6) ? null : reader.GetString(6);
+
+                            var user = new User
+                            {
+                                UserID = reader.GetInt32(0),
+                                FullName = reader.GetString(1),
+                                Password = reader.IsDBNull(2) ? null : reader.GetString(2),
+                                PermissionID = reader.GetInt32(3),
+                                PermissionName = reader.GetString(4),
+                                ClassID = classIdFromDb,
+                                Class = className != null ? new Class
+                                {
+                                    ClassID = classIdFromDb ?? 0,
+                                    ClassName = className
+                                } : null
+                            };
+
+                            users.Add(user);
+                        }
+                    }
+                }
+
+                return users;
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"GetAllOfPredicateByClass ошибка: {ex.Message}");
+                return new List<User>();
+            }
+        }
 
         public List<User> GetAllOfPredicate(string whereCondition)
         {
