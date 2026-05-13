@@ -1269,7 +1269,7 @@ namespace school
                     foreach (var attendance in attendances)
                     {
                         dataGridViewPersonalAttendance.Rows.Add(
-                            string.Format("{0:dd.MM.yyyy}", attendance.AttendanceDate),
+                                string.Format("{0:dd.MM.yyyy}", attendance.AttendanceDate),
                             attendance.SubjectName,
                             attendance.LessonDate != DateTime.MinValue ?
                                 string.Format("{0:HH:mm}", attendance.LessonDate) : "",
@@ -1971,7 +1971,7 @@ namespace school
                     var homework = new Homework { HomeworkID = homeworkId };
                     _homeworkController.AddHomeworkChange("DELETE", homework);
 
-                    MessageBox.Show($"✅ Удаление ДЗ #{homeworkId} в очереди");
+                    MessageBox.Show($"Удаление ДЗ #{homeworkId} в очереди");
                 }
             }
         }
@@ -2964,7 +2964,8 @@ namespace school
         private void deleteButton_Click(object sender, EventArgs e)
         {
             var dgv = GetFirstDataGridView();
-            if (dgv == null) return;
+            if (dgv == null)
+                return;
 
             if (dgv.CurrentRow != null && dgv.CurrentRow.Index >= 0)
             {

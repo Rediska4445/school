@@ -13,13 +13,12 @@ namespace school
     {
         public class ScheduleChange
         {
-            public string Action { get; set; } // "EDIT", "ADD", "DELETE"
+            public string Action { get; set; }
             public ScheduleItem Schedule { get; set; } = new ScheduleItem();
         }
 
         public static SheduleController _controller = new SheduleController();
 
-        // ✅ КОЛЛЕКЦИЯ ИЗМЕНЕНИЙ РАСПИСАНИЯ
         private List<ScheduleChange> pendingChanges = new List<ScheduleChange>();
 
         /// <summary>
@@ -27,13 +26,75 @@ namespace school
         /// </summary>
         public void AddScheduleChange(string action, ScheduleItem schedule)
         {
-            if (UserController.CurrentUser.PermissionID < 3) return; // Только директор
+            if (UserController.CurrentUser.PermissionID < 3)
+                return; 
 
             pendingChanges.Add(new ScheduleChange
             {
                 Action = action,
                 Schedule = schedule
             });
+        }
+
+        public List<ScheduleItem> GetScheduleBySubjectName(string subjectName)
+        {
+            var scheduleItems = new List<ScheduleItem>();
+            SqlDataReader reader = null;
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Form1.CONNECTION_STRING))
+                {
+                    connection.Open();
+                    string query = @"
+                        SELECT 
+                            s.ScheduleID, s.DayOfWeek, s.LessonNumber, s.LessonTime, s.ClassID, s.SubjectID, s.TeacherID,
+                            c.ClassName, sub.SubjectName, ISNULL(u.FullName, N'Не назначен') AS TeacherName
+                        FROM Schedule s
+                        INNER JOIN Subjects sub ON s.SubjectID = sub.SubjectID
+                        INNER JOIN Classes c ON s.ClassID = c.ClassID
+                        LEFT JOIN Users u ON s.TeacherID = u.UserID
+                        WHERE sub.SubjectName = @SubjectName
+                        ORDER BY s.DayOfWeek, s.LessonNumber";
+
+                    using (SqlCommand cmd = new SqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@SubjectName", subjectName ?? "");
+
+                        reader = cmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            var item = new ScheduleItem
+                            {
+                                ScheduleID = Convert.ToInt32(reader["ScheduleID"]),
+                                DayOfWeek = Convert.ToByte(reader["DayOfWeek"]),
+                                LessonNumber = Convert.ToByte(reader["LessonNumber"]),
+                                LessonTime = reader["LessonTime"] == DBNull.Value ? null : (TimeSpan?)Convert.ToDateTime(reader["LessonTime"]).TimeOfDay,
+                                ClassID = Convert.ToInt32(reader["ClassID"]),
+                                ClassName = reader["ClassName"]?.ToString() ?? "",
+                                SubjectID = Convert.ToInt32(reader["SubjectID"]),
+                                SubjectName = reader["SubjectName"]?.ToString() ?? "",
+                                TeacherID = reader["TeacherID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TeacherID"]),
+                                TeacherName = reader["TeacherName"]?.ToString() ?? "Не назначен"
+                            };
+                            scheduleItems.Add(item);
+                        }
+                    }
+                }
+
+                FileLogger.logger.Info($"Найдено {scheduleItems.Count} уроков для '{subjectName}'");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"Ошибка: {ex.Message}");
+            }
+            finally
+            {
+                reader?.Close();
+                reader?.Dispose();
+            }
+
+            return scheduleItems;
         }
 
         /// <summary>
@@ -92,17 +153,17 @@ namespace school
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-            SELECT 
-                s.ScheduleID, s.DayOfWeek, s.LessonNumber, s.LessonTime,
-                s.ClassID, c.ClassName,
-                s.SubjectID, sub.SubjectName,
-                s.TeacherID, u.FullName AS TeacherName
-            FROM Schedule s
-            JOIN Classes c ON s.ClassID = c.ClassID
-            JOIN Subjects sub ON s.SubjectID = sub.SubjectID
-            JOIN Users u ON s.TeacherID = u.UserID
-            WHERE s.ClassID = @ClassID
-            ORDER BY s.DayOfWeek, s.LessonNumber", conn))
+                SELECT 
+                    s.ScheduleID, s.DayOfWeek, s.LessonNumber, s.LessonTime,
+                    s.ClassID, c.ClassName,
+                    s.SubjectID, sub.SubjectName,
+                    s.TeacherID, u.FullName AS TeacherName
+                FROM Schedule s
+                JOIN Classes c ON s.ClassID = c.ClassID
+                JOIN Subjects sub ON s.SubjectID = sub.SubjectID
+                JOIN Users u ON s.TeacherID = u.UserID
+                WHERE s.ClassID = @ClassID
+                ORDER BY s.DayOfWeek, s.LessonNumber", conn))
                 {
                     cmd.Parameters.AddWithValue("@ClassID", classId);
 
@@ -143,40 +204,40 @@ namespace school
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-            SELECT 
-                s.ScheduleID,
-                s.DayOfWeek,
-                s.LessonNumber,
-                s.LessonTime,
-                s.ClassID,
-                c.ClassName,
-                s.SubjectID,
-                sub.SubjectName,
-                s.TeacherID,
-                u.FullName AS TeacherName
-            FROM Schedule s
-            JOIN Classes c ON s.ClassID = c.ClassID
-            JOIN Subjects sub ON s.SubjectID = sub.SubjectID
-            JOIN Users u ON s.TeacherID = u.UserID
-            WHERE s.ClassID = @ClassID
-                AND (
-                    (@StartDate <= DATEFROMPARTS(YEAR(@StartDate), MONTH(@StartDate), 
-                        CASE s.DayOfWeek 
-                            WHEN 1 THEN 1  -- Пн
-                            WHEN 2 THEN 2  -- Вт
-                            WHEN 3 THEN 3  -- Ср
-                            WHEN 4 THEN 4  -- Чт
-                            WHEN 5 THEN 5  -- Пт
-                            WHEN 6 THEN 6  -- Сб
-                            WHEN 7 THEN 7  -- Вс
-                        END)
-                    AND DATEFROMPARTS(YEAR(@EndDate), MONTH(@EndDate), 
-                        CASE s.DayOfWeek 
-                            WHEN 1 THEN 1 WHEN 2 THEN 2 WHEN 3 THEN 3 
-                            WHEN 4 THEN 4 WHEN 5 THEN 5 WHEN 6 THEN 6 WHEN 7 THEN 7
-                        END) <= @EndDate)
-                )
-            ORDER BY s.DayOfWeek, s.LessonNumber", conn))
+                    SELECT 
+                        s.ScheduleID,
+                        s.DayOfWeek,
+                        s.LessonNumber,
+                        s.LessonTime,
+                        s.ClassID,
+                        c.ClassName,
+                        s.SubjectID,
+                        sub.SubjectName,
+                        s.TeacherID,
+                        u.FullName AS TeacherName
+                    FROM Schedule s
+                    JOIN Classes c ON s.ClassID = c.ClassID
+                    JOIN Subjects sub ON s.SubjectID = sub.SubjectID
+                    JOIN Users u ON s.TeacherID = u.UserID
+                    WHERE s.ClassID = @ClassID
+                        AND (
+                            (@StartDate <= DATEFROMPARTS(YEAR(@StartDate), MONTH(@StartDate), 
+                                CASE s.DayOfWeek 
+                                    WHEN 1 THEN 1  -- Пн
+                                    WHEN 2 THEN 2  -- Вт
+                                    WHEN 3 THEN 3  -- Ср
+                                    WHEN 4 THEN 4  -- Чт
+                                    WHEN 5 THEN 5  -- Пт
+                                    WHEN 6 THEN 6  -- Сб
+                                    WHEN 7 THEN 7  -- Вс
+                                END)
+                            AND DATEFROMPARTS(YEAR(@EndDate), MONTH(@EndDate), 
+                                CASE s.DayOfWeek 
+                                    WHEN 1 THEN 1 WHEN 2 THEN 2 WHEN 3 THEN 3 
+                                    WHEN 4 THEN 4 WHEN 5 THEN 5 WHEN 6 THEN 6 WHEN 7 THEN 7
+                                END) <= @EndDate)
+                        )
+                    ORDER BY s.DayOfWeek, s.LessonNumber", conn))
                 {
                     cmd.Parameters.AddWithValue("@ClassID", classId);
                     cmd.Parameters.AddWithValue("@StartDate", startDate.Date);
@@ -229,7 +290,6 @@ namespace school
 
                 if (schedule.ScheduleID == -1 || schedule.ScheduleID == 0)
                 {
-                    // ✅ НОВЫЙ урок - INSERT с IDENTITY
                     SqlCommand insertCmd = new SqlCommand(@"
                 INSERT INTO Schedule (DayOfWeek, LessonNumber, ClassID, SubjectID, TeacherID, LessonTime)
                 OUTPUT INSERTED.ScheduleID
@@ -249,7 +309,6 @@ namespace school
                 }
                 else
                 {
-                    // ✅ Проверяем существование записи
                     SqlCommand checkCmd = new SqlCommand("SELECT COUNT(*) FROM Schedule WHERE ScheduleID = @ScheduleID", connection);
                     checkCmd.Parameters.AddWithValue("@ScheduleID", schedule.ScheduleID);
                     int exists = (int)checkCmd.ExecuteScalar();
@@ -257,7 +316,7 @@ namespace school
                     if (exists == 0)
                     {
                         FileLogger.logger.Warn($"UPDATE failed: ScheduleID={schedule.ScheduleID} not found. Doing INSERT instead.");
-                        // Fallback на INSERT
+
                         SqlCommand insertCmd = new SqlCommand(@"
                     INSERT INTO Schedule (DayOfWeek, LessonNumber, ClassID, SubjectID, TeacherID, LessonTime)
                     OUTPUT INSERTED.ScheduleID
@@ -275,7 +334,6 @@ namespace school
                         return newId;
                     }
 
-                    // ✅ UPDATE по ID
                     SqlCommand updateCmd = new SqlCommand(@"
                     UPDATE Schedule SET 
                         DayOfWeek = @DayOfWeek,
@@ -347,7 +405,7 @@ namespace school
                 string sql;
                 SqlCommand cmd;
 
-                if (permissionId == 3) // Директор видит ВСЁ
+                if (permissionId == 3) 
                 {
                     sql = @"
                 SELECT 
@@ -363,7 +421,7 @@ namespace school
 
                     cmd = new SqlCommand(sql, connection);
                 }
-                else // Учитель видит только свои уроки
+                else
                 {
                     sql = @"
                 SELECT 
@@ -419,7 +477,6 @@ namespace school
                         }
                         catch (Exception exRow)
                         {
-                            // Логирование ошибки чтения строки, но не прерываем весь цикл
                             FileLogger.logger.Error("GetScheduleForTeacher: ошибка парсинга записи расписания", exRow);
                         }
                     }

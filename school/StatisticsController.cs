@@ -61,18 +61,67 @@ namespace school
             public Dictionary<string, string> SubjectGrades { get; set; } = new Dictionary<string, string>();
         }
 
+        public List<ScheduleItem> GetScheduleBySubjectAndClass(string subjectName, string className)
+        {
+            var scheduleItems = new List<ScheduleItem>();
+
+            using (SqlConnection connection = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                connection.Open();
+                string query = @"
+            SELECT 
+                s.ScheduleID, s.DayOfWeek, s.LessonNumber, s.LessonTime, 
+                s.ClassID, s.SubjectID, s.TeacherID,
+                c.ClassName, sub.SubjectName, ISNULL(u.FullName, N'Не назначен') AS TeacherName
+            FROM Schedule s
+            INNER JOIN Subjects sub ON s.SubjectID = sub.SubjectID
+            INNER JOIN Classes c ON s.ClassID = c.ClassID
+            LEFT JOIN Users u ON s.TeacherID = u.UserID
+            WHERE sub.SubjectName = @SubjectName 
+              AND c.ClassName = @ClassName
+            ORDER BY s.DayOfWeek, s.LessonNumber";
+
+                using (SqlCommand cmd = new SqlCommand(query, connection))
+                {
+                    cmd.Parameters.AddWithValue("@SubjectName", subjectName ?? "");
+                    cmd.Parameters.AddWithValue("@ClassName", className ?? "");
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            scheduleItems.Add(new ScheduleItem
+                            {
+                                ScheduleID = Convert.ToInt32(reader["ScheduleID"]),
+                                DayOfWeek = Convert.ToByte(reader["DayOfWeek"]),
+                                LessonNumber = Convert.ToByte(reader["LessonNumber"]),
+                                LessonTime = reader["LessonTime"] == DBNull.Value ? null : (TimeSpan?)Convert.ToDateTime(reader["LessonTime"]).TimeOfDay,
+                                ClassID = Convert.ToInt32(reader["ClassID"]),
+                                ClassName = reader["ClassName"]?.ToString() ?? "",
+                                SubjectID = Convert.ToInt32(reader["SubjectID"]),
+                                SubjectName = reader["SubjectName"]?.ToString() ?? "",
+                                TeacherID = reader["TeacherID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TeacherID"]),
+                                TeacherName = reader["TeacherName"]?.ToString() ?? "Не назначен"
+                            });
+                        }
+                    }
+                }
+            }
+
+            return scheduleItems;
+        }
+
         public Dictionary<string, StudentGradeStats> GetClassStudentStatisticsFull(int classId, DateTime startDate, DateTime endDate)
         {
             var statistics = new Dictionary<string, StudentGradeStats>();
 
-            FileLogger.logger.Debug($"🔍 Отчет успеваемости: ClassID={classId}, период {startDate:dd.MM.yyyy} - {endDate:dd.MM.yyyy}");
+            FileLogger.logger.Debug($"Отчет успеваемости: ClassID={classId}, период {startDate:dd.MM.yyyy} - {endDate:dd.MM.yyyy}");
 
             using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
             {
                 connection.Open();
-                FileLogger.logger.Debug("✅ Соединение открыто");
+                FileLogger.logger.Debug("Соединение открыто");
 
-                // 1. Ученики класса
                 using (var cmdStudents = new SqlCommand(@"
             SELECT 
                 u.UserID,
@@ -137,7 +186,7 @@ namespace school
                     cmdSubjects.Parameters.AddWithValue("@StartDate", startDate);
                     cmdSubjects.Parameters.AddWithValue("@EndDate", endDate);
 
-                    FileLogger.logger.Debug("📚 Запрос предметов выполнен");
+                    FileLogger.logger.Debug("Запрос предметов выполнен");
                     using (var reader = cmdSubjects.ExecuteReader())
                     {
                         int subjectCount = 0;
@@ -159,7 +208,7 @@ namespace school
                 }
             }
 
-            FileLogger.logger.Debug($"✅ ИТОГО: {statistics.Count} учеников в словаре");
+            FileLogger.logger.Debug($"ИТОГО: {statistics.Count} учеников в словаре");
             return statistics;
         }
 
