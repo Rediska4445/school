@@ -12,8 +12,8 @@ namespace school
 {
     public partial class ClassStudentsForm : Form
     {
-        public User ReturnedStudent { get; private set; }  // ✅ Возвращаемый ученик
-        public User SelectedStudent { get; set; }          // ✅ Предвыделенный
+        public User ReturnedStudent { get; private set; }
+        public User SelectedStudent { get; set; }  
 
         private TabControl tabControlClasses;
         private DataGridView dataGridViewStudents;

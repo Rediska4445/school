@@ -12,7 +12,7 @@ namespace school.Models
 
         [Required] // @NotNull
         [StringLength(10)]
-        public string ClassName { get; set; } = ""; // Getter/Setter
+        public string ClassName { get; set; } = "";
     }
 
     /// <summary>
@@ -42,11 +42,11 @@ namespace school.Models
         public int PermissionID { get; set; }
 
         [StringLength(50)]
-        public string PermissionName { get; set; } = ""; // "Обычный учитель", "Ученик" и т.д.
+        public string PermissionName { get; set; } = ""; 
 
-        public int? ClassID { get; set; }  // Nullable int для учителей
-        public Class Class { get; set; }   // Navigation property
-        public string Password { get; set; }   // Navigation property
+        public int? ClassID { get; set; } 
+        public Class Class { get; set; }
+        public string Password { get; set; }  
 
         public override string ToString()
         {
@@ -105,7 +105,7 @@ namespace school.Models
 
         [Required]
         [Range(1, 5)]
-        public byte GradeValue { get; set; } // TINYINT 1-5
+        public byte GradeValue { get; set; }
 
         [Required]
         public int TeacherID { get; set; }
@@ -227,6 +227,6 @@ namespace school.Models
         public string StudentNameDisplay => Student != null ? Student.FullName : "";
         public string AttendanceDateDisplay => AttendanceDate.ToString("dd.MM.yyyy");
         public string LessonTimeDisplay => LessonDate != DateTime.MinValue ? LessonDate.ToString("HH:mm") : "";
-        public string IconStatus => Present ? "✓" : (ExcuseReason ? "⚠️" : "✗");
+        public string IconStatus => Present ? "✓" : (ExcuseReason ? "⚠️" : "X");
     }
 }

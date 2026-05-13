@@ -42,7 +42,6 @@ namespace school.Tests.Integration
             {
                 conn.Open();
 
-                // Создаем класс
                 SqlCommand classCmd = new SqlCommand("INSERT INTO Classes (ClassName) VALUES (N'10А'); SELECT SCOPE_IDENTITY();", conn);
                 _testClassId = Convert.ToInt32(classCmd.ExecuteScalar());
 

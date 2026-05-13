@@ -4,7 +4,6 @@ using System;
 
 namespace school
 {
-    // LoginForm.Designer.cs - ПРОСТОЙ СТАНДАРТНЫЙ ИНТЕРФЕЙС
     partial class LoginForm
     {
         private System.ComponentModel.IContainer components = null;

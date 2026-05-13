@@ -22,16 +22,13 @@ using User = school.Models.User;
 
 namespace school
 {
-    // Be kidda, To be will murdaaaaaaaaaaaaaaaaa!!!!!!!!!
-    // Dis fuckin lunatic, however cannot to change it!
-
-    /// <summary>
-    /// Основная форма для отображения всей этой хуйни.
-    /// </summary>
     public partial class Form1 : Form
     {
+        // Be kidda, To be will murdaaaaaaaaaaaaaaaaa!!!!!!!!!
+        // Dis fuckin lunatic, however cannot to change it!
+
         // Ебанный список из классов для ебанного расписания
-        private ComboBox directorComboBox;
+        // private ComboBox directorComboBox;
 
         // Хуйня для подключения к БД
         // Может меняться для тестов
@@ -1796,12 +1793,12 @@ namespace school
 
             if (isDirector)
             {
-                directorComboBox = new ComboBox
-                {
-                    Location = new Point(10, 10),
-                    Size = new Size(120, 25),
-                    DropDownStyle = ComboBoxStyle.DropDownList
-                };
+                //directorComboBox = new ComboBox
+                //{
+                //    Location = new Point(10, 10),
+                //    Size = new Size(120, 25),
+                //    DropDownStyle = ComboBoxStyle.DropDownList
+                //};
 
                 var classes = ClassController._controller.GetAllClasses();
                 directorComboBox.Items.Clear();
@@ -2454,62 +2451,130 @@ namespace school
 
         private void SetupTeachersGridColumns()
         {
-            if (dataGridViewTeachers.Columns.Count != 0)
-                return;
-
-            if (dataGridViewTeachers.Columns.Count > 0)
-                dataGridViewTeachers.Columns.Clear();
-
-            dataGridViewTeachers.Columns.Add("UserID", "ID");
-            dataGridViewTeachers.Columns[0].Visible = false;
-
-            dataGridViewTeachers.Columns.Add("FullName", "ФИО");
-
-            if (UserController.CurrentUser.PermissionID >= 3)
+            try
             {
-                DataGridViewComboBoxColumn comboRoleCol = new DataGridViewComboBoxColumn();
-                comboRoleCol.Name = "PermissionName";
-                comboRoleCol.HeaderText = "Роль";
-                comboRoleCol.ValueType = typeof(string);
-                comboRoleCol.Items.AddRange(new string[] {
-                    "", "Учитель", "Директор"
-                });
-                dataGridViewTeachers.Columns.Add(comboRoleCol);
-            }
-            else
-            {
-                dataGridViewTeachers.Columns.Add("PermissionName", "Роль");
-            }
+                FileLogger.logger.Debug("Начало настройки колонок DataGridView для учителей");
 
-            dataGridViewTeachers.Columns.Add("Password", "Пароль");
-            dataGridViewTeachers.Columns["Password"].Visible = UserController.CurrentUser.PermissionID >= 3;
-
-            dataGridViewTeachers.Columns.Add("ClassID", "Класс ID");
-            dataGridViewTeachers.Columns["ClassID"].Visible = false;
-
-            if (UserController.CurrentUser.PermissionID >= 3)
-            {
-                DataGridViewComboBoxColumn comboClassCol = new DataGridViewComboBoxColumn();
-                comboClassCol.Name = "ClassName";
-                comboClassCol.HeaderText = "Руководство классом";
-
-                foreach (Class clzz in ClassController._controller.GetAllClasses())
+                if (dataGridViewTeachers.Columns.Count != 0)
                 {
-                    comboClassCol.Items.Add(clzz.ClassName);
+                    FileLogger.logger.Debug($"Колонки уже существуют ({dataGridViewTeachers.Columns.Count}), выход из метода");
+                    return;
                 }
 
-                dataGridViewTeachers.Columns.Add(comboClassCol);
+                if (dataGridViewTeachers.Columns.Count > 0)
+                {
+                    FileLogger.logger.Debug($"Очистка {dataGridViewTeachers.Columns.Count} существующих колонок");
+                    dataGridViewTeachers.Columns.Clear();
+                    FileLogger.logger.Debug("Колонки успешно очищены");
+                }
+                else
+                {
+                    FileLogger.logger.Debug("Колонки отсутствуют, очистка не требуется");
+                }
+
+                FileLogger.logger.Debug("Добавление колонки UserID (ID)");
+                dataGridViewTeachers.Columns.Add("UserID", "ID");
+                dataGridViewTeachers.Columns["UserID"].Visible = false;
+                FileLogger.logger.Debug("Колонка UserID добавлена и скрыта");
+
+                FileLogger.logger.Debug("Добавление колонки FullName (ФИО)");
+                dataGridViewTeachers.Columns.Add("FullName", "ФИО");
+                FileLogger.logger.Debug("Колонка FullName добавлена");
+
+                int currentPermission = UserController.CurrentUser.PermissionID;
+                FileLogger.logger.Debug($"Текущий PermissionID пользователя: {currentPermission}");
+
+                if (currentPermission >= 3)
+                {
+                    FileLogger.logger.Debug("PermissionID >= 3: создание ComboBox колонки для роли");
+                    DataGridViewComboBoxColumn comboRoleCol = new DataGridViewComboBoxColumn();
+                    comboRoleCol.Name = "PermissionName";
+                    comboRoleCol.HeaderText = "Роль";
+                    comboRoleCol.ValueType = typeof(string);
+
+                    string[] roleItems = new string[] { "", "Учитель", "Директор" };
+                    comboRoleCol.Items.AddRange(roleItems);
+                    FileLogger.logger.Debug($"Добавлены элементы роли: [{string.Join(", ", roleItems)}]");
+
+                    dataGridViewTeachers.Columns.Add(comboRoleCol);
+                    FileLogger.logger.Debug("ComboBox колонка PermissionName добавлена");
+                }
+                else
+                {
+                    FileLogger.logger.Debug("PermissionID < 3: добавление текстовой колонки для роли");
+                    dataGridViewTeachers.Columns.Add("PermissionName", "Роль");
+                    FileLogger.logger.Debug("Текстовая колонка PermissionName добавлена");
+                }
+
+                FileLogger.logger.Debug("Добавление колонки Password (Пароль)");
+                dataGridViewTeachers.Columns.Add("Password", "Пароль");
+                bool passwordVisible = currentPermission >= 3;
+                dataGridViewTeachers.Columns["Password"].Visible = passwordVisible;
+                FileLogger.logger.Debug($"Колонка Password добавлена, видимость: {passwordVisible}");
+
+                FileLogger.logger.Debug("Добавление скрытой колонки ClassID");
+                dataGridViewTeachers.Columns.Add("ClassID", "Класс ID");
+                dataGridViewTeachers.Columns["ClassID"].Visible = false;
+                FileLogger.logger.Debug("Колонка ClassID добавлена и скрыта");
+
+                if (currentPermission >= 3)
+                {
+                    FileLogger.logger.Debug("PermissionID >= 3: создание ComboBox колонки для классов");
+                    DataGridViewComboBoxColumn comboClassCol = new DataGridViewComboBoxColumn();
+                    comboClassCol.Name = "ClassName";
+                    comboClassCol.HeaderText = "Руководство классом";
+
+                    try
+                    {
+                        List<Class> classes = ClassController._controller.GetAllClasses();
+                        FileLogger.logger.Debug($"Получено {classes.Count} классов из ClassController");
+
+                        foreach (Class clzz in classes)
+                        {
+                            comboClassCol.Items.Add(clzz.ClassName);
+                        }
+                        FileLogger.logger.Debug($"Добавлено {comboClassCol.Items.Count} элементов классов в ComboBox");
+
+                        dataGridViewTeachers.Columns.Add(comboClassCol);
+                        FileLogger.logger.Debug("ComboBox колонка ClassName добавлена");
+                    }
+                    catch (Exception ex)
+                    {
+                        FileLogger.logger.Error($"Ошибка при загрузке классов: {ex.Message}", ex);
+                        dataGridViewTeachers.Columns.Add("ClassName", "Руководство классом");
+                        FileLogger.logger.Warn("Добавлена текстовая колонка ClassName вместо ComboBox");
+                    }
+                }
+                else
+                {
+                    FileLogger.logger.Debug("PermissionID < 3: добавление текстовой колонки для классов");
+                    dataGridViewTeachers.Columns.Add("ClassName", "Руководство классом");
+                    FileLogger.logger.Debug("Текстовая колонка ClassName добавлена");
+                }
+
+                bool isAdminMode = currentPermission >= 3;
+                dataGridViewTeachers.ReadOnly = !isAdminMode;
+                dataGridViewTeachers.AllowUserToAddRows = isAdminMode;
+                dataGridViewTeachers.AllowUserToDeleteRows = isAdminMode;
+
+                FileLogger.logger.Debug($"Настроены свойства DataGridView: ReadOnly={dataGridViewTeachers.ReadOnly}, " +
+                                       $"AllowUserToAddRows={dataGridViewTeachers.AllowUserToAddRows}, " +
+                                       $"AllowUserToDeleteRows={dataGridViewTeachers.AllowUserToDeleteRows}");
+
+                int totalColumns = dataGridViewTeachers.Columns.Count;
+                FileLogger.logger.Info($"Настройка колонок завершена успешно. Всего колонок: {totalColumns}");
+
+                FileLogger.logger.Debug("Список всех колонок:");
+                foreach (DataGridViewColumn col in dataGridViewTeachers.Columns)
+                {
+                    FileLogger.logger.Debug($"  - {col.Name}: '{col.HeaderText}' (Visible: {col.Visible})");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                dataGridViewTeachers.Columns.Add("ClassName", "Руководство классом");
+                FileLogger.logger.Error($"Критическая ошибка в SetupTeachersGridColumns: {ex.Message}", ex);
+                throw; 
             }
-
-            dataGridViewTeachers.ReadOnly = !(UserController.CurrentUser.PermissionID >= 3);
-            dataGridViewTeachers.AllowUserToAddRows = UserController.CurrentUser.PermissionID >= 3;
-            dataGridViewTeachers.AllowUserToDeleteRows = UserController.CurrentUser.PermissionID >= 3;
-
-            FileLogger.logger.Debug($"Колонки: {dataGridViewTeachers.Columns.Count} шт.");
         }
 
         /* Сегмент с вкладкой "Ученики" */
@@ -3478,7 +3543,7 @@ namespace school
 
                 // Форматирование
                 worksheet.ColumnsUsed().AdjustToContents();
-                worksheet.Columns("A").Width = 25; // Ученик пошире
+                worksheet.Columns("A").Width = 25;
 
                 workbook.SaveAs(fileName);
                 MessageBox.Show($"Отчет сохранен: {fileName}");

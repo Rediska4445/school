@@ -592,7 +592,7 @@ namespace school
             ExecuteScripts(connectionString, DatabaseScripts.GenerateTestTeacherSubjectsData(dbName), "Учителя-Предметы");
             ExecuteScripts(connectionString, DatabaseScripts.GenerateTestEventsData(dbName), "События");
 
-            FileLogger.logger.Info("✅ Тестовые данные загружены! БД готова для тестирования!");
+            FileLogger.logger.Info("Тестовые данные загружены! БД готова для тестирования!");
         }
     }
 }

@@ -50,12 +50,12 @@ namespace school
                 string json = File.ReadAllText("print-config.json");
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 _config = JsonSerializer.Deserialize<ConfigData>(json, options);
-                Console.WriteLine("✅ PrintConfig загружен из JSON");
+                Console.WriteLine("PrintConfig загружен из JSON");
             }
             catch
             {
-                _config = new ConfigData(); // дефолтные значения
-                Console.WriteLine("⚠️ PrintConfig не найден, используются дефолтные");
+                _config = new ConfigData(); 
+                Console.WriteLine("PrintConfig не найден, используются дефолтные");
             }
         }
 
