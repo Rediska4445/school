@@ -2439,8 +2439,10 @@ namespace school
                     FileLogger.logger.Debug($"Добавлена строка: {user.FullName} ({user.PermissionName})");
                 }
 
-                FileLogger.logger.Info($"Form1.LoadTeachersGrid - Zагружено {dataGridViewTeachers.Rows.Count} строк в грид");
+                FileLogger.logger.Info($"Form1.LoadTeachersGrid - Загружено {dataGridViewTeachers.Rows.Count} строк в грид");
                 FileLogger.logger.Info("Form1.LoadTeachersGrid: ЗАВЕРШЕНО успешно");
+
+                FillTeachersClassData();
             }
             catch (Exception ex)
             {
@@ -2533,9 +2535,11 @@ namespace school
                         {
                             comboClassCol.Items.Add(clzz.ClassName);
                         }
+
                         FileLogger.logger.Debug($"Добавлено {comboClassCol.Items.Count} элементов классов в ComboBox");
 
                         dataGridViewTeachers.Columns.Add(comboClassCol);
+
                         FileLogger.logger.Debug("ComboBox колонка ClassName добавлена");
                     }
                     catch (Exception ex)
@@ -2547,9 +2551,14 @@ namespace school
                 }
                 else
                 {
-                    FileLogger.logger.Debug("PermissionID < 3: добавление текстовой колонки для классов");
-                    dataGridViewTeachers.Columns.Add("ClassName", "Руководство классом");
-                    FileLogger.logger.Debug("Текстовая колонка ClassName добавлена");
+                    FileLogger.logger.Debug("PermissionID < 3: настройка колонки классов для учителей с реальными данными");
+
+                    DataGridViewTextBoxColumn classNameCol = new DataGridViewTextBoxColumn();
+                    classNameCol.Name = "ClassName";
+                    classNameCol.HeaderText = "Руководство классом";
+
+                    dataGridViewTeachers.Columns.Add(classNameCol);
+                    FileLogger.logger.Debug("Колонка ClassName добавлена как ReadOnly для учителей");
                 }
 
                 bool isAdminMode = currentPermission >= 3;
@@ -2562,8 +2571,8 @@ namespace school
                                        $"AllowUserToDeleteRows={dataGridViewTeachers.AllowUserToDeleteRows}");
 
                 int totalColumns = dataGridViewTeachers.Columns.Count;
-                FileLogger.logger.Info($"Настройка колонок завершена успешно. Всего колонок: {totalColumns}");
 
+                FileLogger.logger.Info($"Настройка колонок завершена успешно. Всего колонок: {totalColumns}");
                 FileLogger.logger.Debug("Список всех колонок:");
                 foreach (DataGridViewColumn col in dataGridViewTeachers.Columns)
                 {
@@ -2574,6 +2583,37 @@ namespace school
             {
                 FileLogger.logger.Error($"Критическая ошибка в SetupTeachersGridColumns: {ex.Message}", ex);
                 throw; 
+            }
+        }
+
+        /// <summary>
+        /// Заполняет колонку "Руководство классом" реальными данными для всех учителей в гриде
+        /// </summary>
+        private void FillTeachersClassData()
+        {
+            try
+            {
+                FileLogger.logger.Debug("Начало заполнения данных о классах для учителей");
+
+                foreach (DataGridViewRow row in dataGridViewTeachers.Rows)
+                {
+                    if (row.IsNewRow || row.Cells["UserID"].Value == null)
+                        continue;
+
+                    int userId = Convert.ToInt32(row.Cells["UserID"].Value);
+                    string fullName = row.Cells["FullName"].Value?.ToString() ?? "";
+
+                    string className = TeacherController._controller.GetTeacherClassName(userId, fullName);
+                    row.Cells["ClassName"].Value = className;
+
+                    FileLogger.logger.Debug($"Учитель ID={userId} '{fullName}' → Класс: '{className}'");
+                }
+
+                FileLogger.logger.Info($"Заполнено {dataGridViewTeachers.Rows.Count} строк данными о классах");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"Ошибка заполнения классов учителей: {ex.Message}", ex);
             }
         }
 

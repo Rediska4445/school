@@ -24,7 +24,6 @@ namespace school
         {
             FileLogger.logger.Info("=== GetStudentsByClass НАЧАЛО ===");
 
-            // ✅ Проверки (без изменений)
             FileLogger.logger.Info($"ClassID: {classObj?.ClassID ?? 0}");
 
             if (classObj == null)
@@ -83,11 +82,10 @@ namespace school
                         ClassID = reader.GetInt32(3),
                         PermissionName = reader.GetString(4),
 
-                        // ✅ ПОЛНЫЙ CLASS объект
                         Class = new Class
                         {
-                            ClassID = reader.GetInt32(5),     // Class_ClassID
-                            ClassName = reader.GetString(6)   // ClassName
+                            ClassID = reader.GetInt32(5),   
+                            ClassName = reader.GetString(6) 
                         }
                     };
                     students.Add(student);
@@ -415,7 +413,6 @@ namespace school
                 SqlCommand cmd = new SqlCommand(sql, connection);
                 cmd.Parameters.AddWithValue("@FullName", teacherName.Trim());
 
-                // ✅ Добавляем параметры для каждой роли
                 for (int i = 0; i < permissionIds.Length; i++)
                 {
                     cmd.Parameters.AddWithValue($"@p{i}", permissionIds[i]);
@@ -482,6 +479,110 @@ namespace school
         {
             var teacher = GetTeacherByName(teacherName);
             return teacher?.UserID ?? 0;
+        }
+
+        /// <summary>
+        /// Получает класс, которым руководит указанный учитель (по UserID или FullName)
+        /// Возвращает null, если учитель не руководит ни одним классом
+        /// </summary>
+        /// <param name="userId">ID пользователя (приоритетнее FullName)</param>
+        /// <param name="fullName">ФИО пользователя (если userId = 0)</param>
+        /// <returns>Class или null</returns>
+        public Class GetClassByTeacher(int userId = 0, string fullName = null)
+        {
+            var teacherClass = new Class();
+            SqlConnection connection = null;
+            SqlDataReader reader = null;
+
+            try
+            {
+                connection = new SqlConnection(_connectionString);
+                connection.Open();
+
+                string query = @"
+                    SELECT TOP 1 c.ClassID, c.ClassName 
+                    FROM Users u 
+                    INNER JOIN Classes c ON u.ClassID = c.ClassID 
+                    WHERE u.PermissionID >= 2  -- Только учителя и выше
+                        AND (u.UserID = @UserID OR @UserID = 0)
+                        AND (@FullName IS NULL OR u.FullName LIKE '%' + @FullName + '%')
+                    ORDER BY u.UserID";
+
+                SqlCommand cmd = new SqlCommand(query, connection);
+                cmd.Parameters.AddWithValue("@UserID", userId);
+                cmd.Parameters.AddWithValue("@FullName", (object)fullName ?? DBNull.Value);
+
+                reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    teacherClass.ClassID = reader.GetInt32(reader.GetOrdinal("ClassID"));
+                    teacherClass.ClassName = reader.GetString(reader.GetOrdinal("ClassName"));
+                    FileLogger.logger.Debug($"Найден класс '{teacherClass.ClassName}' (ID: {teacherClass.ClassID}) для учителя UserID={userId}");
+                    return teacherClass;
+                }
+                else
+                {
+                    FileLogger.logger.Debug($"Учитель UserID={userId} ({fullName}) не руководит ни одним классом");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"Ошибка получения класса учителя UserID={userId}: {ex.Message}", ex);
+                return null;
+            }
+            finally
+            {
+                reader?.Dispose();
+                connection?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Получает название класса, которым руководит учитель (строка вместо объекта Class)
+        /// </summary>
+        public string GetTeacherClassName(int userId = 0, string fullName = null)
+        {
+            var teacherClass = GetClassByTeacher(userId, fullName);
+            return teacherClass?.ClassName ?? "Не руководит классом";
+        }
+
+        /// <summary>
+        /// Проверяет, руководит ли учитель указанным классом
+        /// </summary>
+        public bool IsTeacherClassLeader(int teacherUserId, int classId)
+        {
+            SqlConnection connection = null;
+            SqlDataReader reader = null;
+
+            try
+            {
+                connection = new SqlConnection(_connectionString);
+                connection.Open();
+
+                string query = @"
+            SELECT COUNT(*) 
+            FROM Users u 
+            INNER JOIN Classes c ON u.ClassID = c.ClassID 
+            WHERE u.UserID = @TeacherID AND c.ClassID = @ClassID AND u.PermissionID >= 2";
+
+                SqlCommand cmd = new SqlCommand(query, connection);
+                cmd.Parameters.AddWithValue("@TeacherID", teacherUserId);
+                cmd.Parameters.AddWithValue("@ClassID", classId);
+
+                int count = (int)cmd.ExecuteScalar();
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                FileLogger.logger.Error($"Ошибка проверки руководителя класса: {ex.Message}", ex);
+                return false;
+            }
+            finally
+            {
+                connection?.Dispose();
+            }
         }
     }
 }

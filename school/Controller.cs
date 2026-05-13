@@ -277,16 +277,28 @@ namespace school
                 {
                     $"USE [{dbName}];",
 
-                    // Учителя (всего 6)
-                    @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Иванов Иван Иванович')
-                    INSERT INTO Users (FullName, PasswordHash, PermissionID) VALUES
-                    (N'Иванов Иван Иванович', 'teacher1', 2),
-                    (N'Петрова Анна Сергеевна', 'teacher2', 2),
-                    (N'Сидоров Петр Петрович', 'teacher3', 2),
-                    (N'Козлова Мария Васильевна', 'teacher4', 2),
-                    (N'Морозова Ольга Петровна', 'teacher5', 2),
-                    (N'Волков Дмитрий Сергеевич', 'teacher6', 2);
-                    PRINT '✅ Добавлены 6 учителей';",
+                    // Учителя
+                    @"-- Тестовые учителя С КЛАССАМИ
+                    DECLARE @Class5A INT, @Class6A INT, @Class7A INT, @Class8A INT;
+
+                    -- Получаем ID классов
+                    SELECT @Class5A = ClassID FROM Classes WHERE ClassName = N'5А';
+                    SELECT @Class6A = ClassID FROM Classes WHERE ClassName = N'6А';
+                    SELECT @Class7A = ClassID FROM Classes WHERE ClassName = N'7А';
+                    SELECT @Class8A = ClassID FROM Classes WHERE ClassName = N'8А';
+
+                    IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Иванов Иван Иванович')
+                    INSERT INTO Users (FullName, PasswordHash, PermissionID, ClassID) VALUES
+                    -- Руководители классов
+                    (N'Иванов Иван Иванович', 'teacher1', 2, @Class5A),
+                    (N'Петрова Анна Сергеевна', 'teacher2', 2, @Class6A),
+                    (N'Сидоров Петр Петрович', 'teacher3', 2, @Class7A),
+                    -- Без классов (обычные учителя)
+                    (N'Козлова Мария Васильевна', 'teacher4', 2, NULL),
+                    (N'Морозова Ольга Петровна', 'teacher5', 2, NULL),
+                    (N'Волков Дмитрий Сергеевич', 'teacher6', 2, NULL);
+
+                    PRINT '✅ Добавлены 6 учителей (3 с классами, 3 без)';",
 
                     // Директор (всего 1)
                     @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Директор')
@@ -558,7 +570,7 @@ namespace school
                                 executed++;
                             }
                         }
-                        catch (SqlException ex) when (ex.Number == 2714 || ex.Number == 1750) // Таблица/объект уже существует
+                        catch (SqlException ex) when (ex.Number == 2714 || ex.Number == 1750) 
                         {
                             string firstLine = script.Split('\n')[0].Trim();
                             FileLogger.logger.Debug($"[{operationName}] Пропущен (уже существует): {firstLine}");
