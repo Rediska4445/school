@@ -270,6 +270,134 @@ namespace school
             }
         }
 
+        public int UpsertSubjectWithHours(
+            Subject subject,
+            int classId,
+            int hoursPerWeek)
+        {
+            FileLogger.logger.Info(
+                $"UpsertSubjectWithHours: " +
+                $"SubjectID={subject.SubjectID}, " +
+                $"Name='{subject.SubjectName}', " +
+                $"ClassID={classId}, Hours={hoursPerWeek}");
+
+            if (subject == null || string.IsNullOrWhiteSpace(subject.SubjectName))
+                throw new ArgumentException("Предмет не может быть null или пустым");
+
+            if (classId <= 0)
+                throw new ArgumentException("Некорректный ClassID");
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                int resultSubjectId = 0;
+
+                using (var cmd = new SqlCommand())
+                {
+                    cmd.Connection = conn;
+
+                    cmd.CommandText = "SELECT COUNT(*) FROM Subjects WHERE SubjectID = @SubjectID";
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@SubjectID", subject.SubjectID);
+                    int exists = (int)cmd.ExecuteScalar();
+
+                    if (exists == 0)
+                    {
+                        FileLogger.logger.Info("Предмет не существует - вставляем новый");
+
+                        cmd.CommandText =
+                            "INSERT INTO Subjects (SubjectName) OUTPUT INSERTED.SubjectID VALUES (@SubjectName)";
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@SubjectName", subject.SubjectName);
+                        resultSubjectId = (int)cmd.ExecuteScalar();
+                        FileLogger.logger.Info($"Вставлен новый предмет, ID={resultSubjectId}");
+
+                        UpsertClassSubjectHoursInConnection(conn, cmd, classId, resultSubjectId, hoursPerWeek);
+                    }
+                    else
+                    {
+                        cmd.CommandText = "SELECT SubjectName FROM Subjects WHERE SubjectID = @SubjectID";
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@SubjectID", subject.SubjectID);
+                        var currentName = cmd.ExecuteScalar()?.ToString() ?? "";
+
+                        cmd.CommandText = @"
+                    SELECT ISNULL(Hours, 0) FROM SubjectClassHours
+                    WHERE ClassID = @ClassID AND SubjectID = @SubjectID";
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@ClassID", classId);
+                        cmd.Parameters.AddWithValue("@SubjectID", subject.SubjectID);
+                        var currentHoursObj = cmd.ExecuteScalar();
+                        int currentHours = (currentHoursObj != null ? Convert.ToInt32(currentHoursObj) : 0);
+
+                        if (!string.Equals(currentName, subject.SubjectName, StringComparison.OrdinalIgnoreCase) ||
+                            currentHours != hoursPerWeek)
+                        {
+                            FileLogger.logger.Info(
+                                "Изменение: " +
+                                $"Name: '{currentName}' -> '{subject.SubjectName}', " +
+                                $"Hours: {currentHours} -> {hoursPerWeek}");
+
+                            if (!string.Equals(currentName, subject.SubjectName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                cmd.CommandText = "UPDATE Subjects SET SubjectName = @SubjectName WHERE SubjectID = @SubjectID";
+                                cmd.Parameters.Clear();
+                                cmd.Parameters.AddWithValue("@SubjectName", subject.SubjectName);
+                                cmd.Parameters.AddWithValue("@SubjectID", subject.SubjectID);
+                                int rows = cmd.ExecuteNonQuery();
+                                FileLogger.logger.Info($"UPDATE Subjects affected rows: {rows}");
+                            }
+
+                            UpsertClassSubjectHoursInConnection(conn, cmd, classId, resultSubjectId, hoursPerWeek);
+
+                            resultSubjectId = subject.SubjectID;
+                        }
+                        else
+                        {
+                            FileLogger.logger.Info("Нет изменений: имя и часы совпадают, пропускаем");
+                            resultSubjectId = subject.SubjectID;
+                        }
+                    }
+                }
+
+                return resultSubjectId;
+            }
+        }
+
+        private void UpsertClassSubjectHoursInConnection(
+    SqlConnection conn,
+    SqlCommand cmd,
+    int classId,
+    int subjectId,
+    int hours)
+        {
+            FileLogger.logger.Info(
+                $"UpsertClassSubjectHoursInConnection: " +
+                $"Class={classId}, Subject={subjectId}, Hours={hours}");
+
+            cmd.CommandTimeout = 30;
+            cmd.CommandText = @"
+        MERGE SubjectClassHours AS target
+        USING (VALUES (@ClassID, @SubjectID, @Hours)) AS source (ClassID, SubjectID, Hours)
+        ON target.ClassID = source.ClassID
+           AND target.SubjectID = source.SubjectID
+        WHEN MATCHED THEN
+            UPDATE SET Hours = source.Hours
+        WHEN NOT MATCHED THEN
+            INSERT (ClassID, SubjectID, Hours)
+            VALUES (source.ClassID, source.SubjectID, source.Hours);";
+
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("@ClassID", classId);
+            cmd.Parameters.AddWithValue("@SubjectID", subjectId);
+            cmd.Parameters.AddWithValue("@Hours", hours);
+
+            cmd.ExecuteNonQuery();
+            FileLogger.logger.Info(
+                $"MERGE выполнен для Class={classId}, Subject={subjectId}, Hours={hours}");
+        }
+
         /// <summary>
         /// [translate:Получение предмета по уникальному идентификатору]
         /// </summary>
@@ -385,18 +513,65 @@ namespace school
             }
         }
 
-        public List<Subject> GetSubjectsForClass(int classId)
+        public List<Subject> GetAllSubjectsForClass(int classId)
         {
+            if (classId <= 0)
+                return new List<Subject>();
+
             const string sql = @"
         SELECT DISTINCT
             s.SubjectID,
             s.SubjectName
-        FROM Subjects s
-        JOIN TeacherSubjects ts ON s.SubjectID = ts.SubjectID
-        WHERE
-            ts.ClassID = @ClassID
-            OR ts.ClassID IS NULL
+        FROM SubjectClassHours sch
+        JOIN Subjects s ON s.SubjectID = sch.SubjectID
+        WHERE sch.ClassID = @ClassID
         ORDER BY s.SubjectName";
+
+            var result = new List<Subject>();
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        int subjectIdOrdinal = reader.GetOrdinal("SubjectID");
+                        int subjectNameOrdinal = reader.GetOrdinal("SubjectName");
+
+                        while (reader.Read())
+                        {
+                            int subjectId = reader.GetInt32(subjectIdOrdinal);
+                            string subjectName = reader.GetString(subjectNameOrdinal);
+
+                            result.Add(new Subject
+                            {
+                                SubjectID = subjectId,
+                                SubjectName = subjectName
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public List<Subject> GetSubjectsForClass(int classId)
+        {
+            const string sql = @"
+            SELECT DISTINCT
+                s.SubjectID,
+                s.SubjectName
+            FROM Subjects s
+            JOIN TeacherSubjects ts ON s.SubjectID = ts.SubjectID
+            WHERE
+                ts.ClassID = @ClassID
+                OR ts.ClassID IS NULL
+            ORDER BY s.SubjectName";
 
             var result = new List<Subject>();
 

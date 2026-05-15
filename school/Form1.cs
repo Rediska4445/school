@@ -1607,16 +1607,18 @@ namespace school
                 int.TryParse(subjectCountObj.ToString(), out int subjectCount) &&
                 subjectCount > 0)
             {
-                ClassController._controller.UpsertClassSubjectHours(
-                    GetClassIdFromDirectorComboBox(),
-                    subjectId,
-                    subjectCount
+                int classId = GetClassIdFromDirectorComboBox();
+                int resultId = SubjectController._controller.UpsertSubjectWithHours(
+                    subject,
+                    classId,
+                    subjectCount 
                 );
+
+                FileLogger.logger.Info(
+                    $"Результат UpsertSubjectWithHours: " +
+                    $"ID={resultId}, Name='{subject.SubjectName}', " +
+                    $"class={classId}, hours={subjectCount}");
             }
-
-            FileLogger.logger.Info($"Добавляем изменение: ID={subject.SubjectID} Name='{subject.SubjectName}' (новый: {subject.SubjectID <= 0}), lessonCount: {subjectCountObj}");
-
-            SubjectController._controller.AddSubjectChange("EDIT", subject);
         }
 
         private void LoadSubjects()
@@ -1639,7 +1641,7 @@ namespace school
             dataGridViewSubjects.Rows.Clear();
             FileLogger.logger.Info("Строки очищены");
 
-            var subjects = SubjectController._controller.GetSubjectsForClass(GetClassIdFromDirectorComboBox());
+            var subjects = SubjectController._controller.GetAllSubjectsForClass(GetClassIdFromDirectorComboBox());
             FileLogger.logger.Info($"Загружено предметов: {subjects.Count}");
 
             foreach (Subject subject in subjects)
