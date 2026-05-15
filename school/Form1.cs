@@ -204,7 +204,7 @@ namespace school
 
         private int GetClassColumnIndex(int classId)
         {
-            for (int i = 2; i < dataGridViewSheduleAll.Columns.Count; i++) // Пропускаем День+# 
+            for (int i = 2; i < dataGridViewSheduleAll.Columns.Count; i++) 
             {
                 if (dataGridViewSheduleAll.Columns[i].Name == $"col{classId}")
                     return i;
@@ -646,7 +646,7 @@ namespace school
                     labelStatisticsSummary.Text = "Ошибка загрузки статистики";
                 }
             }
-            else if (UserController.CurrentUser.PermissionID >= 2) // Учитель
+            else if (UserController.CurrentUser.PermissionID >= 2) 
             {
                 Class clzz = new Class();
                 clzz.ClassID = ((ComboBoxItem)directorComboBox.SelectedItem).ClassID;
@@ -1053,16 +1053,16 @@ namespace school
 
                 // Вкладка репортов
                 case "tabPageReports": {
-                        if (tabControlReports.SelectedTab.Name.Equals("tabPageAtterdanceReports"))
-                        {
-                            LoadAttendanceMatrixToDataGridViewAtterdanceReports(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
-                        }
-                        else if (tabControlReports.SelectedTab.Name.Equals("tabPageGradesReports"))
-                        {
-                            LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
-                        }
+                    if (tabControlReports.SelectedTab.Name.Equals("tabPageAtterdanceReports"))
+                    {
+                        LoadAttendanceMatrixToDataGridViewAtterdanceReports(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
                     }
-                    break;
+                    else if (tabControlReports.SelectedTab.Name.Equals("tabPageGradesReports"))
+                    {
+                        LoadClassGradesReport(((ComboBoxItem)directorComboBox.SelectedItem).ClassID, dateTimePickerGradesReports1.Value, dateTimePickerGradesReports2.Value);
+                    }
+                }
+                break;
             }
         }
 
@@ -1433,7 +1433,7 @@ namespace school
         private bool IsValidSubjectRow(DataGridViewRow row)
         {
             string nameValue = row.Cells["SubjectName"].Value?.ToString()?.Trim();
-            return !string.IsNullOrWhiteSpace(nameValue);  // ✅ ТОЛЬКО Name!
+            return !string.IsNullOrWhiteSpace(nameValue);
         }
 
         private void SetupSubject()
@@ -1445,6 +1445,7 @@ namespace school
 
             dataGridViewSubjects.Columns.Add("SubjectID", "ID");
             dataGridViewSubjects.Columns.Add("SubjectName", "Предмет");
+            dataGridViewSubjects.Columns.Add("SubjectCount", "Количество уроков в неделю");
             FileLogger.logger.Info("Колонки добавлены");
 
             dataGridViewSubjects.ReadOnly = !isDirector;
@@ -1558,11 +1559,24 @@ namespace school
 
             foreach (Subject subject in subjects)
             {
-                dataGridViewSubjects.Rows.Add(subject.SubjectID, subject.SubjectName);
+                int lessonCount = SubjectController._controller.GetHoursByClassSubject(
+                    GetClassIdFromDirectorComboBox(), subject.SubjectID
+                );
+
+                dataGridViewSubjects.Rows.Add(
+                    subject.SubjectID,
+                    subject.SubjectName,
+                    lessonCount
+                );
                 FileLogger.logger.Debug($"Добавлена строка: {subject.SubjectID} - {subject.SubjectName}");
             }
 
             FileLogger.logger.Info("=== LoadSubjects КОНЕЦ ===");
+        }
+
+        public int GetClassIdFromDirectorComboBox()
+        {
+            return ((ComboBoxItem)directorComboBox.SelectedItem).ClassID;
         }
 
         // Загрузка расписания с БД.
@@ -3522,7 +3536,6 @@ namespace school
             {
                 var worksheet = workbook.Worksheets.Add("Посещаемость");
 
-                // Заголовок отчета
                 var titleCell = worksheet.Cell(1, 1);
                 titleCell.Value = $"Отчет по посещаемости {directorComboBox.Text} за период {dateTimePickerGradesReports1.Value:dd.MM.yyyy} - {dateTimePickerGradesReports2.Value:dd.MM.yyyy}";
                 titleCell.Style.Font.Bold = true;
@@ -3530,7 +3543,6 @@ namespace school
                 titleCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 worksheet.Range(1, 1, 1, dataGridViewAtterdanceReports.ColumnCount).Merge();
 
-                // Заголовки таблицы
                 for (int col = 0; col < dataGridViewAtterdanceReports.ColumnCount; col++)
                 {
                     worksheet.Cell(3, col + 1).Value = dataGridViewAtterdanceReports.Columns[col].HeaderText;
@@ -3541,7 +3553,6 @@ namespace school
                 headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
                 headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                // Данные таблицы
                 int excelRow = 3;
                 for (int rowIndex = 0; rowIndex < dataGridViewAtterdanceReports.Rows.Count; rowIndex++)
                 {
@@ -3556,17 +3567,14 @@ namespace school
                         var cellValue = dgvRow.Cells[colIndex].Value;
                         worksheet.Cell(excelRow, colIndex + 1).Value = cellValue?.ToString() ?? "";
 
-                        // Красный фон для >2 пропусков (как в DataGridView)
                         if (int.TryParse(cellValue?.ToString(), out int absences) && absences > 2)
                             worksheet.Cell(excelRow, colIndex + 1).Style.Fill.BackgroundColor = XLColor.LightCoral;
                     }
                 }
 
-                // Итоговая строка
                 int lastDataRow = excelRow + 1;
                 worksheet.Cell(lastDataRow, 1).Value = "Итого пропусков:";
 
-                // Подсчет суммы по каждому предмету
                 for (int colIndex = 1; colIndex < dataGridViewAtterdanceReports.ColumnCount; colIndex++)
                 {
                     int totalAbsences = 0;
@@ -3582,7 +3590,6 @@ namespace school
                 totalRange.Style.Font.Bold = true;
                 totalRange.Style.Fill.BackgroundColor = XLColor.LightGray;
 
-                // Форматирование
                 worksheet.ColumnsUsed().AdjustToContents();
                 worksheet.Columns("A").Width = 25;
 
@@ -3595,6 +3602,299 @@ namespace school
         {
             var searchForm = new NsportalSearchForm();
             searchForm.ShowDialog(this);
+        }
+
+        private void buttonCalculateQuaterGrades_Click(object sender, EventArgs e)
+        {
+            if (comboBoxQuaterGradesStudent.SelectedItem == null)
+            {
+                FileLogger.logger.Warn("buttonCalculateQuaterGrades_Click - Нет выбранного ученика");
+                return;
+            }
+
+            var student = (User)comboBoxQuaterGradesStudent.SelectedItem;
+            FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Обрабатываем ученика: {student.UserID} ({student.FullName})");
+
+            DateTime startDate = dateTimePickerGrades.Value.Date;
+            DateTime endDate = dateTimePickerGrades1.Value.Date;
+
+            if (endDate < startDate)
+            {
+                FileLogger.logger.Warn($"buttonCalculateQuaterGrades_Click - Конец периода раньше начала: {startDate:yyyy-MM-dd} → {endDate:yyyy-MM-dd}");
+                return;
+            }
+
+            FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Период: {startDate:yyyy-MM-dd} → {endDate:yyyy-MM-dd}");
+
+            var subjects = SubjectController._controller.GetAllSubjects();
+            if (subjects == null || subjects.Count == 0)
+            {
+                FileLogger.logger.Warn("buttonCalculateQuaterGrades_Click - Нет предметов");
+                return;
+            }
+
+            var gradesAll = GradesController._controller.GetGradesForStudentPeriod(student.UserID, startDate, endDate);
+
+            if (gradesAll == null)
+            {
+                FileLogger.logger.Warn($"buttonCalculateQuaterGrades_Click - GetGradesForStudentPeriod вернул null для ученика {student.UserID}");
+                return;
+            }
+
+            FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Оценок для ученика {student.UserID} в период: {gradesAll.Count}");
+
+            var gradesBySubject = new Dictionary<int, List<Grade>>();
+
+            foreach (var grade in gradesAll)
+            {
+                FileLogger.logger.Debug($"ГРАДА: Grade.SubjectID={grade.SubjectID} (Type={grade.SubjectID.GetType()})");
+
+                if (!gradesBySubject.ContainsKey(grade.SubjectID))
+                {
+                    gradesBySubject[grade.SubjectID] = new List<Grade>();
+                }
+
+                gradesBySubject[grade.SubjectID].Add(grade);
+            }
+
+            foreach (var subject in subjects)
+            {
+                FileLogger.logger.Debug($"buttonCalculateQuaterGrades_Click - Обработка предмета: {subject.SubjectID} - {subject.SubjectName}");
+
+                List<Grade> subjGrades;
+
+                if (gradesBySubject.TryGetValue(subject.SubjectID, out var list))
+                {
+                    subjGrades = list;
+                    FileLogger.logger.Debug($"buttonCalculateQuaterGrades_Click - Для предмета {subject.SubjectID} найдено оценок: {subjGrades.Count}");
+                }
+                else
+                {
+                    subjGrades = new List<Grade>();
+                    FileLogger.logger.Debug($"buttonCalculateQuaterGrades_Click - Для предмета {subject.SubjectID} нет оценок в этом периоде");
+                }
+
+                var q1Grades = subjGrades.Where(g => g.GradeDate >= startDate && g.GradeDate <= endDate).ToList(); // можно разбить на 4QA
+                var q2Grades = new List<Grade>();
+                var q3Grades = new List<Grade>();
+                var q4Grades = new List<Grade>();
+
+                FileLogger.logger.Debug($"  - Всего оценок по предмету {subject.SubjectID}: {subjGrades.Count}");
+                FileLogger.logger.Debug($"  - Quarter1: {q1Grades.Count}");
+
+                double avg1 = q1Grades.Count > 0 ? q1Grades.Average(g => g.GradeValue) : 0;
+                double avg2 = q2Grades.Count > 0 ? q2Grades.Average(g => g.GradeValue) : 0;
+                double avg3 = q3Grades.Count > 0 ? q3Grades.Average(g => g.GradeValue) : 0;
+                double avg4 = q4Grades.Count > 0 ? q4Grades.Average(g => g.GradeValue) : 0;
+
+                int? q1 = avg1 > 0 ? (int)Math.Round(avg1) : (int?)null;
+                int? q2 = avg2 > 0 ? (int)Math.Round(avg2) : (int?)null;
+                int? q3 = avg3 > 0 ? (int)Math.Round(avg3) : (int?)null;
+                int? q4 = avg4 > 0 ? (int)Math.Round(avg4) : (int?)null;
+
+                FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Попытка сохранить в QuarterGrades:");
+                FileLogger.logger.Info($"  - StudentID={student.UserID}, SubjectID={subject.SubjectID}, Year={startDate.Year}");
+                FileLogger.logger.Info($"  - Q1={q1}, Q2={q2}, Q3={q3}, Q4={q4}");
+
+                QuarterGradesController._controller.SaveOrUpdateQuarterGrades(student.UserID, subject.SubjectID, startDate.Year, q1, q2, q3, q4);
+            }
+
+            comboBoxQuaterGradesStudent_SelectedIndexChanged(null, null);
+        }
+
+        private void comboBoxQuaterGradesStudent_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (comboBoxQuaterGradesStudent.SelectedItem == null)
+            {
+                dataGridViewQuaterGrades.Rows.Clear();
+                return;
+            }
+
+            var student = (User)comboBoxQuaterGradesStudent.SelectedItem;
+            int year = DateTime.Now.Year;
+
+            FileLogger.logger.Info($"comboBoxQuaterGradesStudent_SelectedIndexChanged - Загрузка четвертных оценок для ученика {student.UserID}");
+
+            var quarterGrades = QuarterGradesController._controller.GetQuarterGradesForStudent(student.UserID, year);
+
+            FileLogger.logger.Info($"comboBoxQuaterGradesStudent_SelectedIndexChanged - Найдено четвертных оценок: {quarterGrades.Count}");
+
+            foreach (var qg in quarterGrades)
+            {
+                FileLogger.logger.Debug($"  QuarterGrades: SubjectID={qg.SubjectID}, Q1={qg.Quarter1Grade}, Q2={qg.Quarter2Grade}, Q3={qg.Quarter3Grade}, Q4={qg.Quarter4Grade}");
+            }
+
+            dataGridViewQuaterGrades.Rows.Clear();
+            var subjects = SubjectController._controller.GetAllSubjects();
+
+            foreach (var subject in subjects)
+            {
+                var qg = quarterGrades.FirstOrDefault(q =>
+                    q.SubjectID == subject.SubjectID
+                );
+
+                if (qg == null)
+                {
+                    FileLogger.logger.Debug($"  ПРЕДМЕТ {subject.SubjectID} - НЕ НАЙДЕН в QuarterGrades");
+                }
+
+                dataGridViewQuaterGrades.Rows.Add(
+                    subject.SubjectName,
+                    qg?.Quarter1Grade?.ToString() ?? "-",
+                    qg?.Quarter2Grade?.ToString() ?? "-",
+                    qg?.Quarter3Grade?.ToString() ?? "-",
+                    qg?.Quarter4Grade?.ToString() ?? "-"
+                );
+            }
+        }
+
+        private void directorComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (directorComboBox.SelectedItem == null)
+            {
+                comboBoxQuaterGradesStudent.Items.Clear();
+                return;
+            }
+
+            int classId = ((ComboBoxItem)directorComboBox.SelectedItem).ClassID;
+
+            Class clzz = new Class();
+            clzz.ClassID = classId;
+
+            var students = UserController._userController.GetClassStudents(clzz.ClassID);
+
+            comboBoxQuaterGradesStudent.Items.Clear();
+            comboBoxQuaterGradesStudent.DisplayMember = "FullName";  
+
+            foreach (var student in students)
+            {
+                comboBoxQuaterGradesStudent.Items.Add(student);
+            }
+
+            if (comboBoxQuaterGradesStudent.Items.Count > 0)
+            {
+                comboBoxQuaterGradesStudent.SelectedIndex = 0;
+            }
+        }
+
+        public List<ScheduleItem> CreateScheduleForWeek(
+            List<ClassSubjectHours> classSubjects,
+            int classId,
+            TimeSpan? startTime = null)
+        {
+            var rng = new Random();
+            var allLessons = new List<ScheduleItem>();
+
+            // 1. Собираем ВСЕ уроки
+            foreach (var cs in classSubjects)
+            {
+                for (int i = 0; i < cs.HoursPerWeek; i++)
+                {
+                    allLessons.Add(new ScheduleItem
+                    {
+                        ClassID = classId,
+                        SubjectID = cs.SubjectID,
+                        SubjectName = cs.SubjectName
+                    });
+                }
+            }
+
+            if (allLessons.Count == 0)
+                return new List<ScheduleItem>();
+
+            // 2. Перемешать уроки
+            for (int i = 0; i < allLessons.Count; i++)
+            {
+                int j = rng.Next(allLessons.Count);
+                var tmp = allLessons[i];
+                allLessons[i] = allLessons[j];
+                allLessons[j] = tmp;
+            }
+
+            // 3. Распределяем по дням (Пн–Пт)
+            var perDay = new List<List<ScheduleItem>>();
+            for (int i = 0; i < 5; i++)
+                perDay.Add(new List<ScheduleItem>());
+
+            // 4. Распределяем по 5 дней
+            int dayIndex = 0;
+            foreach (var item in allLessons)
+            {
+                perDay[dayIndex].Add(item);
+                dayIndex = (dayIndex + 1) % 5;
+            }
+
+            // 5. Формируем окончательный список
+            var scheduleItems = new List<ScheduleItem>();
+            for (int dow = 1; dow <= 5; dow++)
+            {
+                var dayLessons = perDay[dow - 1];
+                for (int j = 0; j < dayLessons.Count; j++)
+                {
+                    var item = dayLessons[j];
+                    item.DayOfWeek = (byte)dow;
+                    item.LessonNumber = (byte)(j + 1);
+
+                    // Время урока: 8:00 + j * 40 минут
+                    int totalMinutes = 0;
+                    if (startTime.HasValue)
+                        totalMinutes = (int)startTime.Value.TotalMinutes;
+
+                    totalMinutes += (j + 1) * 40;
+                    item.LessonTime = TimeSpan.FromMinutes(totalMinutes);
+
+                    scheduleItems.Add(item);
+
+                    // Вывод предмета в лог
+                    FileLogger.logger.Info($"Subject: {item.SubjectName}, Day: {item.DayOfWeek}, Lesson: {item.LessonNumber}, Time: {item.LessonTime}");
+                }
+            }
+
+            return scheduleItems;
+        }
+
+        private void buttonCreateSheduleFromSubjects_Click(object sender, EventArgs e)
+        {
+            int classId = GetClassIdFromDirectorComboBox();
+            if (classId <= 0)
+            {
+                MessageBox.Show("Не удалось определить ID класса.");
+                return;
+            }
+
+            var classSubjectHours = ClassController._controller.GetClassSubjectHours(classId);
+            if (classSubjectHours == null || classSubjectHours.Count == 0)
+            {
+                MessageBox.Show("Нет данных по количеству часов для предметов.");
+                return;
+            }
+
+            SheduleController._controller.DeleteScheduleByClassId(classId);
+
+            int totalLessons = 0;
+
+            var scheduleItems = CreateScheduleForWeek(classSubjectHours, classId, new TimeSpan(9, 0, 0));
+
+            foreach (var item in scheduleItems)
+            {
+                var teacher = UserController._userController.GetTeacherBySubjectIdAndClassId(item.SubjectID, classId);
+                if (teacher == null)
+                {
+                    FileLogger.logger.Warn($"Предмет SubjectID={item.SubjectID} - Не найден учитель.");
+                    continue;
+                }
+
+                item.TeacherID = teacher.UserID;
+                item.TeacherName = teacher.FullName;
+                item.ScheduleID = -1;
+
+                int scheduleId = SheduleController._controller.InsertOrUpdateSchedulePart(item);
+                item.ScheduleID = scheduleId;
+                totalLessons++;
+            }
+
+            FileLogger.logger.Info($"Расписание сгенерировано: {totalLessons} уроков");
+            LoadScheduleGrid(classId);
         }
     }
 }

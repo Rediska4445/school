@@ -173,7 +173,59 @@ namespace school
                             VALUES (@FullName, @Password, @PermissionID, @ClassID);
                             SET @NewUserID = SCOPE_IDENTITY();
                         END')
-                    END;"
+                    END;",
+                    @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='QuarterGrades' AND xtype='U')
+                    CREATE TABLE QuarterGrades (
+                          QuarterGradeID INT IDENTITY(1,1) PRIMARY KEY,
+                          StudentID INT NOT NULL,
+                          SubjectID INT NOT NULL,
+                          Quarter1Grade TINYINT NULL CHECK (Quarter1Grade BETWEEN 1 AND 5),
+                          Quarter2Grade TINYINT NULL CHECK (Quarter2Grade BETWEEN 1 AND 5),
+                          Quarter3Grade TINYINT NULL CHECK (Quarter3Grade BETWEEN 1 AND 5),
+                          Quarter4Grade TINYINT NULL CHECK (Quarter4Grade BETWEEN 1 AND 5),
+                          Year SMALLINT NOT NULL DEFAULT YEAR(GETDATE()),
+                          CONSTRAINT FK_QuarterGrades_Students FOREIGN KEY (StudentID) REFERENCES Users(UserID),
+                          CONSTRAINT FK_QuarterGrades_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
+                          UNIQUE (StudentID, SubjectID, Year)
+                      );",
+                        @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='QuarterGrades' AND xtype='U')
+                          CREATE TABLE QuarterGrades (
+                              QuarterGradeID INT IDENTITY(1,1) PRIMARY KEY,
+                              StudentID INT NOT NULL,
+                              SubjectID INT NOT NULL,
+                              Quarter1Grade TINYINT NULL CHECK (Quarter1Grade BETWEEN 1 AND 5),
+                              Quarter2Grade TINYINT NULL CHECK (Quarter2Grade BETWEEN 1 AND 5),
+                              Quarter3Grade TINYINT NULL CHECK (Quarter3Grade BETWEEN 1 AND 5),
+                              Quarter4Grade TINYINT NULL CHECK (Quarter4Grade BETWEEN 1 AND 5),
+                              Year SMALLINT NOT NULL DEFAULT YEAR(GETDATE()),
+                              CONSTRAINT FK_QuarterGrades_Students FOREIGN KEY (StudentID) REFERENCES Users(UserID),
+                              CONSTRAINT FK_QuarterGrades_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
+                              UNIQUE (StudentID, SubjectID, Year)
+                          );",
+
+                        @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SubjectLessonCount' AND xtype='U')
+                          CREATE TABLE SubjectLessonCount (
+                              SubjectLessonCountID INT IDENTITY(1,1) PRIMARY KEY,
+                              SubjectID INT NOT NULL,
+                              LessonCount INT NOT NULL DEFAULT 0,
+                              INDEX IX_SubjectLessonCount_Subject (SubjectID),
+                              CONSTRAINT FK_SubjectLessonCount_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID)
+                          );",
+                         @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'SubjectClassHours' AND xtype = 'U')
+                          CREATE TABLE SubjectClassHours (
+                            SubjectClassHoursID INT IDENTITY(1,1) PRIMARY KEY,
+                            ClassID INT NOT NULL,
+                            SubjectID INT NOT NULL,
+                            Hours INT NOT NULL DEFAULT 0,
+
+                            CONSTRAINT FK_SubjectClassHours_Classes
+                                FOREIGN KEY (ClassID) REFERENCES Classes(ClassID),
+                            CONSTRAINT FK_SubjectClassHours_Subjects
+                                FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
+
+                            UNIQUE (ClassID, SubjectID),
+                            INDEX IX_SubjectClassHours_ClassSubject (ClassID, SubjectID)
+                          );",
                 };
             }
 
@@ -213,10 +265,45 @@ namespace school
                         (N'Технология'), (N'ИЗО'), (N'Музыка'), (N'Физкультура'),
                         (N'Обществознание'), (N'Родной язык'), (N'Экология');
             
-                        PRINT '✅ Добавлены тестовые предметы (17 предметов)';
+                        PRINT 'Добавлены тестовые предметы (17 предметов)';
                     END
                     ELSE
-                        PRINT 'ℹ️ Предметы уже существуют';"
+                        PRINT 'Предметы уже существуют';",
+                    @"INSERT INTO SubjectClassHours (ClassID, SubjectID, Hours)
+                    VALUES
+                        (1, 1, 5),
+                        (1, 2, 4),
+                        (1, 3, 3),
+                        (2, 1, 4),
+                        (2, 2, 3),
+                        (2, 3, 2),
+                        (3, 1, 4),
+                        (3, 2, 3),
+                        (3, 3, 1);",
+                        @"IF NOT EXISTS (SELECT * FROM SubjectClassHours WHERE ClassID = 13)
+                        BEGIN
+                            INSERT INTO SubjectClassHours (ClassID, SubjectID, Hours)
+                            VALUES
+                                (13, 1,  5),  -- Математика
+                                (13, 2,  4),  -- Русский язык
+                                (13, 3,  2),  -- Литература
+                                (13, 4,  2),  -- История
+                                (13, 5,  2),  -- География
+                                (13, 6,  2),  -- Биология
+                                (13, 7,  2),  -- Физика
+                                (13, 8,  3),  -- Английский язык
+                                (13, 9,  1),  -- Немецкий язык
+                                (13, 10, 1),  -- Информатика
+                                (13, 11, 1),  -- Технология
+                                (13, 12, 1),  -- ИЗО
+                                (13, 13, 1),  -- Музыка
+                                (13, 14, 3),  -- Физкультура
+                                (13, 15, 1);  -- Обществознание
+   
+                            PRINT 'Добавлены тестовые часы для 7A';
+                        END
+                        ELSE
+                            PRINT 'Часы для 7A уже существуют';"
                 };
             }
 
@@ -226,7 +313,6 @@ namespace school
                 {
                     $"USE [{dbName}];",
 
-                    // Оценки для учителя (Иванов) - 10 оценок по 1А
                     @"DECLARE @TeacherID INT = (SELECT UserID FROM Users WHERE FullName = N'Иванов Иван Иванович');
                     DECLARE @MathSubjectID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Математика');
                     DECLARE @Class1A INT = (SELECT ClassID FROM Classes WHERE ClassName = N'1А');

@@ -254,6 +254,7 @@ namespace school.Controllers
                     }
                 }
             }
+
             return studentsList;
         }
 
@@ -497,6 +498,51 @@ namespace school.Controllers
                                MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
+        }
+
+        public User GetTeacherBySubjectIdAndClassId(int subjectId, int classId)
+        {
+            if (subjectId <= 0 || classId <= 0)
+                return null;
+
+            const string sql = @"
+        SELECT TOP 1
+            u.UserID,
+            u.FullName AS FullName
+        FROM TeacherSubjects ts
+        JOIN Users u ON ts.TeacherID = u.UserID
+        WHERE ts.SubjectID = @SubjectID
+          AND (ts.ClassID = @ClassID OR ts.ClassID IS NULL)
+          AND u.PermissionID = 2
+        ORDER BY ts.ClassID DESC;";
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@SubjectID", subjectId);
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            int idOrdinal = reader.GetOrdinal("UserID");
+                            int fullNameOrdinal = reader.GetOrdinal("FullName");
+
+                            return new User
+                            {
+                                UserID = reader.GetInt32(idOrdinal),
+                                FullName = reader.GetString(fullNameOrdinal),
+                            };
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

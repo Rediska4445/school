@@ -367,6 +367,80 @@ namespace school
             return result;
         }
 
+        public int GetLessonCountBySubjectName(string subjectName)
+        {
+            if (string.IsNullOrWhiteSpace(subjectName))
+                return 0;
+
+            var query = @"
+                SELECT ISNULL(slc.LessonCount, 0) AS LessonCount
+                FROM Subjects s
+                LEFT JOIN SubjectLessonCount slc ON s.SubjectID = slc.SubjectID
+                WHERE s.SubjectName = @SubjectName";
+
+            using (var conn = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@SubjectName", subjectName.Trim());
+
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
+        }
+
+        public int GetHoursByClassSubject(int classId, int subjectId)
+        {
+            if (classId <= 0 || subjectId <= 0)
+                return 0;
+
+            const string sql = @"
+        SELECT ISNULL(Hours, 0) AS LessonHours
+        FROM SubjectClassHours
+        WHERE ClassID = @ClassID
+          AND SubjectID = @SubjectID";
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+                    cmd.Parameters.AddWithValue("@SubjectID", subjectId);
+
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
+        }
+
+        public int GetLessonCountBySubjectId(int subjectId)
+        {
+            if (subjectId <= 0)
+                return 0;
+
+            const string sql = @"
+            SELECT ISNULL(LessonCount, 0) AS LessonCount
+            FROM SubjectLessonCount
+            WHERE SubjectID = @SubjectID";
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@SubjectID", subjectId);
+
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 0;
+                }
+            }
+        }
+
         /// <summary>
         /// Возвращает Subject по названию (или null если не найден)
         /// </summary>

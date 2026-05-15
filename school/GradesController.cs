@@ -12,10 +12,9 @@ namespace school
 
         public static GradesController _controller = new GradesController(Form1.CONNECTION_STRING);
 
-        // KОЛЛЕКЦИЯ ИЗМЕНЕНИЙ ОЦЕНОК
         public class GradeChange
         {
-            public string Action { get; set; } // "EDIT", "ADD", "DELETE"
+            public string Action { get; set; } 
             public Grade Grade { get; set; } = new Grade();
         }
 
@@ -105,7 +104,6 @@ namespace school
             };
         }
 
-        // Вставка или обновление оценки
         public void InsertOrUpdateGrade(Grade grade)
         {
             SqlConnection connection = null;
@@ -114,7 +112,6 @@ namespace school
                 connection = new SqlConnection(_connectionString);
                 connection.Open();
 
-                // Проверяем, есть ли уже оценка по дате, предмету, ученику
                 SqlCommand checkCmd = new SqlCommand(@"
                 SELECT GradeID FROM Grades 
                 WHERE GradeDate = @GradeDate AND SubjectID = @SubjectID AND StudentID = @StudentID", connection);
@@ -127,7 +124,6 @@ namespace school
 
                 if (existingId != null)
                 {
-                    // Обновить существующую оценку
                     SqlCommand updateCmd = new SqlCommand(@"
                     UPDATE Grades SET GradeValue = @GradeValue, TeacherID = @TeacherID 
                     WHERE GradeID = @GradeID", connection);
@@ -139,7 +135,6 @@ namespace school
                 }
                 else
                 {
-                    // Вставить новую оценку
                     SqlCommand insertCmd = new SqlCommand(@"
                     INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID)
                     VALUES (@GradeDate, @StudentID, @SubjectID, @GradeValue, @TeacherID)", connection);
@@ -181,13 +176,11 @@ namespace school
             }
         }
 
-        // Получение оценки по предмету (объект), ученику (объект), дате
         public Grade GetGradeBySubjectStudentDate(Subject subject, User student, DateTime date)
         {
             return GetGradeByIds(subject.SubjectID, student.UserID, date);
         }
 
-        // Получение оценки по названию предмета, логину ученика, дате
         public Grade GetGradeBySubjectNameStudentLoginDate(string subjectName, string studentLogin, DateTime date)
         {
             SqlConnection connection = null;
@@ -196,7 +189,6 @@ namespace school
                 connection = new SqlConnection(_connectionString);
                 connection.Open();
 
-                // Получим SubjectID по имени предмета
                 SqlCommand subjectCmd = new SqlCommand("SELECT SubjectID FROM Subjects WHERE SubjectName = @SubjectName", connection);
                 subjectCmd.Parameters.AddWithValue("@SubjectName", subjectName);
                 object subjectIdObj = subjectCmd.ExecuteScalar();
@@ -204,7 +196,6 @@ namespace school
                     return null;
                 int subjectId = (int)subjectIdObj;
 
-                // Получим StudentID по полному имени
                 SqlCommand studentCmd = new SqlCommand("SELECT UserID FROM Users WHERE FullName = @FullName AND Role = N'Ученик'", connection);
                 studentCmd.Parameters.AddWithValue("@FullName", studentLogin);
                 object studentIdObj = studentCmd.ExecuteScalar();
@@ -221,7 +212,6 @@ namespace school
             }
         }
 
-        // Вспомогательный метод получения оценки по IDs
         private Grade GetGradeByIds(int subjectId, int studentId, DateTime date)
         {
             SqlConnection connection = null;
@@ -272,15 +262,15 @@ namespace school
             {
                 connection.Open();
                 using (var cmd = new SqlCommand(@"
-            SELECT 
-                g.GradeID, g.GradeDate, g.StudentID, g.SubjectID, g.GradeValue, g.TeacherID,
-                s.SubjectName, t.FullName AS TeacherName
-            FROM Grades g
-            JOIN Subjects s ON g.SubjectID = s.SubjectID
-            JOIN Users t ON g.TeacherID = t.UserID
-            WHERE g.StudentID = @StudentID
-                AND g.GradeDate BETWEEN @StartDate AND @EndDate
-            ORDER BY g.GradeDate, s.SubjectName", connection))
+                    SELECT 
+                        g.GradeID, g.GradeDate, g.StudentID, g.SubjectID, g.GradeValue, g.TeacherID,
+                        s.SubjectName, t.FullName AS TeacherName
+                    FROM Grades g
+                    JOIN Subjects s ON g.SubjectID = s.SubjectID
+                    JOIN Users t ON g.TeacherID = t.UserID
+                    WHERE g.StudentID = @StudentID
+                        AND g.GradeDate BETWEEN @StartDate AND @EndDate
+                    ORDER BY g.GradeDate, s.SubjectName", connection))
                 {
                     cmd.Parameters.AddWithValue("@StudentID", studentId);
                     cmd.Parameters.AddWithValue("@StartDate", startDate.Date);

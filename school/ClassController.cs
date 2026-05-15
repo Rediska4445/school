@@ -193,6 +193,53 @@ namespace school.Controllers
             return null;
         }
 
+        public List<ClassSubjectHours> GetClassSubjectHours(int classId)
+        {
+            const string sql = @"
+        SELECT 
+            sch.ClassID,
+            s.SubjectID,
+            s.SubjectName,
+            sch.Hours AS HoursPerWeek
+        FROM SubjectClassHours sch
+        JOIN Subjects s ON sch.SubjectID = s.SubjectID
+        WHERE sch.ClassID = @ClassID
+        ORDER BY s.SubjectName";
+
+            var result = new List<ClassSubjectHours>();
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int classIdOrdinal = reader.GetOrdinal("ClassID");
+                            int subjectIdOrdinal = reader.GetOrdinal("SubjectID");
+                            int subjectNameOrdinal = reader.GetOrdinal("SubjectName");
+                            int hoursOrdinal = reader.GetOrdinal("HoursPerWeek");
+
+                            result.Add(new ClassSubjectHours
+                            {
+                                ClassID = reader.GetInt32(classIdOrdinal),
+                                SubjectID = reader.GetInt32(subjectIdOrdinal),
+                                SubjectName = reader.GetString(subjectNameOrdinal),
+                                HoursPerWeek = reader.GetInt32(hoursOrdinal)
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public Class GetClassByName(string className)
         {
             if (string.IsNullOrWhiteSpace(className))
