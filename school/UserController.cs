@@ -321,6 +321,68 @@ namespace school.Controllers
             }
         }
 
+        public User GetStudentByNameInClass(string fullName, int classId)
+        {
+            if (string.IsNullOrWhiteSpace(fullName) || classId <= 0)
+                return null;
+
+            const string sql = @"
+                SELECT 
+                    u.UserID, 
+                    u.FullName, 
+                    u.PasswordHash,
+                    u.PermissionID, 
+                    p.PermissionName, 
+                    u.ClassID,
+                    c.ClassName
+                FROM Users u
+                INNER JOIN Permissions p ON u.PermissionID = p.PermissionID
+                LEFT JOIN Classes c ON u.ClassID = c.ClassID
+                WHERE u.FullName = @FullName
+                  AND u.PermissionID = 1        -- только ученики
+                  AND u.ClassID = @ClassID
+                ORDER BY u.FullName";
+
+            User user = null;
+
+            using (var conn = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@FullName", fullName.Trim());
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            int? classIdDb = reader.IsDBNull(5) ? (int?)null : reader.GetInt32(5);
+                            string className = reader.IsDBNull(6) ? null : reader.GetString(6);
+
+                            user = new User
+                            {
+                                UserID = reader.GetInt32(0),
+                                FullName = reader.GetString(1),
+                                Password = reader.IsDBNull(2) ? null : reader.GetString(2),
+                                PermissionID = reader.GetInt32(3),
+                                PermissionName = reader.GetString(4),
+                                ClassID = classIdDb,
+                                Class = className != null ? new Class
+                                {
+                                    ClassID = classIdDb ?? 0,
+                                    ClassName = className
+                                } : null
+                            };
+                        }
+                    }
+                }
+            }
+
+            return user;
+        }
+
         public List<User> GetAllOfPredicate(string whereCondition)
         {
             var users = new List<User>();

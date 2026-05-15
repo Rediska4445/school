@@ -221,7 +221,6 @@ namespace school
                 conn.Open();
                 FileLogger.logger.Debug("Соединение открыто");
 
-                // ✅ Проверяем существование ID
                 using (var checkCmd = new SqlCommand("SELECT COUNT(*) FROM Subjects WHERE SubjectID = @SubjectID", conn))
                 {
                     checkCmd.Parameters.AddWithValue("@SubjectID", sub.SubjectID);
@@ -230,7 +229,6 @@ namespace school
 
                     if (exists == 0)
                     {
-                        // ✅ НЕТ - ДОБАВЛЯЕМ (автоинкремент)
                         FileLogger.logger.Info("INSERT новый предмет");
                         using (var cmd = new SqlCommand(
                             "INSERT INTO Subjects (SubjectName) OUTPUT INSERTED.SubjectID VALUES (@SubjectName)", conn))
@@ -243,10 +241,8 @@ namespace school
                     }
                     else
                     {
-                        // ✅ ЕСТЬ - ИЗМЕНЯЕМ
                         FileLogger.logger.Info("UPDATE существующий предмет");
 
-                        // ПРОВЕРКА FK
                         int homeworkCount = 0, gradesCount = 0;
                         using (var hwCmd = new SqlCommand("SELECT COUNT(*) FROM Homework WHERE SubjectID = @SubjectID", conn))
                         {
@@ -260,7 +256,6 @@ namespace school
                         }
                         FileLogger.logger.Debug($"Homework: {homeworkCount}, Grades: {gradesCount}");
 
-                        // UPDATE
                         using (var cmd = new SqlCommand(
                             "UPDATE Subjects SET SubjectName = @SubjectName WHERE SubjectID = @SubjectID", conn))
                         {
@@ -333,7 +328,6 @@ namespace school
 
                     using (var reader = cmd.ExecuteReader())
                     {
-                        // Ordinals для производительности
                         int ordTeacherSubjectID = reader.GetOrdinal("TeacherSubjectID");
                         int ordTeacherID = reader.GetOrdinal("TeacherID");
                         int ordSubjectID = reader.GetOrdinal("SubjectID");

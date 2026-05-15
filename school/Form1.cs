@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
 using static school.StatisticsController;
@@ -1048,6 +1049,8 @@ namespace school
                 // Сотрудники
                 case "tabPageTeachers": LoadTeachersGrid(); break;
 
+                case "tabPage10": LoadQuaterGrades(); break;
+
                 // Вкладка посещаемости
                 case "tabPageAttendance": LoadAttendance(); break;
 
@@ -1067,6 +1070,74 @@ namespace school
                 }
                 break;
             }
+        }
+
+        private void LoadQuaterGrades()
+        {
+            FileLogger.logger.Info("=== LoadQuaterGrades НАЧАЛО ===");
+
+            dataGridViewQuaterGrades.Rows.Clear();
+            FileLogger.logger.Info("Строки dataGridViewQuaterGrades очищены");
+
+            int classId = GetClassIdFromDirectorComboBox();
+            FileLogger.logger.Info($"Полученный ClassID из комбобокса: {classId}");
+
+            if (classId <= 0)
+            {
+                FileLogger.logger.Warn("ClassID <= 0, выход из LoadQuaterGrades");
+                return;
+            }
+
+            string fullName = comboBoxQuaterGradesStudent.Text.Trim();
+            FileLogger.logger.Info($"Имя выбранного ученика: '{fullName}'");
+
+            if (string.IsNullOrEmpty(fullName))
+            {
+                FileLogger.logger.Warn("Имя ученика пустое, выход из LoadQuaterGrades");
+                return;
+            }
+
+            User student = UserController._userController.GetStudentByNameInClass(fullName, classId);
+            if (student == null || student.UserID <= 0)
+            {
+                FileLogger.logger.Warn($"Ученик с именем '{fullName}' в классе {classId} не найден");
+                return;
+            }
+
+            FileLogger.logger.Info($"Найден ученик: UserID={student.UserID}, FullName={student.FullName}");
+
+            var subjects = SubjectController._controller.GetSubjectsForClass(classId);
+            FileLogger.logger.Info($"Получено {subjects.Count} предметов для класса {classId}");
+
+            if (subjects.Count == 0)
+                return;
+
+            var grades = QuarterGradesController._controller.GetQuarterGradesForStudent(student.UserID);
+            FileLogger.logger.Info($"Получено {grades.Count} строк четвертных оценок");
+
+            foreach (var subject in subjects)
+            {
+                FileLogger.logger.Debug($"Обработка предмета: SubjectID={subject.SubjectID}, {subject.SubjectName}");
+
+                var gradeRow = grades.Find(x => x.SubjectID == subject.SubjectID);
+
+                string q1 = gradeRow?.Quarter1Grade?.ToString() ?? "—";
+                string q2 = gradeRow?.Quarter2Grade?.ToString() ?? "—";
+                string q3 = gradeRow?.Quarter3Grade?.ToString() ?? "—";
+                string q4 = gradeRow?.Quarter4Grade?.ToString() ?? "—";
+
+                dataGridViewQuaterGrades.Rows.Add(
+                    subject.SubjectName,
+                    q1,
+                    q2,
+                    q3,
+                    q4
+                );
+
+                FileLogger.logger.Debug($"Добавлена строка предмета: {subject.SubjectName}, оценки: {q1},{q2},{q3},{q4}");
+            }
+
+            FileLogger.logger.Info($"=== LoadQuaterGrades КОНЕЦ. Всего строк: {dataGridViewQuaterGrades.Rows.Count}");
         }
 
         public void SetupAttendance(DataGridView dataGridView)
@@ -3614,146 +3685,123 @@ namespace school
 
         private void buttonCalculateQuaterGrades_Click(object sender, EventArgs e)
         {
-            if (comboBoxQuaterGradesStudent.SelectedItem == null)
+            int classId = GetClassIdFromDirectorComboBox();
+            FileLogger.logger.Info($"Полученный ClassID из комбобокса: {classId}");
+
+            if (classId <= 0)
             {
-                FileLogger.logger.Warn("buttonCalculateQuaterGrades_Click - Нет выбранного ученика");
+                FileLogger.logger.Warn("ClassID <= 0, выход из LoadQuaterGrades");
                 return;
             }
 
-            var student = (User)comboBoxQuaterGradesStudent.SelectedItem;
-            FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Обрабатываем ученика: {student.UserID} ({student.FullName})");
+            string fullName = comboBoxQuaterGradesStudent.Text.Trim();
+            FileLogger.logger.Info($"Имя выбранного ученика: '{fullName}'");
 
+            if (string.IsNullOrEmpty(fullName))
+            {
+                FileLogger.logger.Warn("Имя ученика пустое, выход из LoadQuaterGrades");
+                return;
+            }
+
+            User student = UserController._userController.GetStudentByNameInClass(fullName, classId);
+            if (student == null || student.UserID <= 0)
+            {
+                FileLogger.logger.Warn($"Ученик с именем '{fullName}' в классе {classId} не найден");
+                return;
+            }
+
+            FileLogger.logger.Info($"Расчёт для ученика: {student.FullName} (UserID={student.UserID})");
+            
             DateTime startDate = dateTimePickerGrades.Value.Date;
             DateTime endDate = dateTimePickerGrades1.Value.Date;
 
-            if (endDate < startDate)
+            if (startDate >= endDate)
             {
-                FileLogger.logger.Warn($"buttonCalculateQuaterGrades_Click - Конец периода раньше начала: {startDate:yyyy-MM-dd} → {endDate:yyyy-MM-dd}");
+                MessageBox.Show("Начальная дата должна быть раньше конечной.");
                 return;
             }
 
-            FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Период: {startDate:yyyy-MM-dd} → {endDate:yyyy-MM-dd}");
+            FileLogger.logger.Info($"Период: {startDate:yyyy-MM-dd} – {endDate:yyyy-MM-dd}");
 
-            var subjects = SubjectController._controller.GetAllSubjects();
-            if (subjects == null || subjects.Count == 0)
-            {
-                FileLogger.logger.Warn("buttonCalculateQuaterGrades_Click - Нет предметов");
-                return;
-            }
+            TimeSpan total = endDate - startDate;
+            TimeSpan quarterSpan = new TimeSpan(total.Ticks / 4);
 
-            var gradesAll = GradesController._controller.GetGradesForStudentPeriod(student.UserID, startDate, endDate);
+            DateTime q1Start = startDate;
+            DateTime q1End = q1Start + quarterSpan;
+            DateTime q2Start = q1End.AddDays(1);
+            DateTime q2End = q2Start + quarterSpan;
+            DateTime q3Start = q2End.AddDays(1);
+            DateTime q3End = q3Start + quarterSpan;
+            DateTime q4Start = q3End.AddDays(1);
+            DateTime q4End = endDate;
 
-            if (gradesAll == null)
-            {
-                FileLogger.logger.Warn($"buttonCalculateQuaterGrades_Click - GetGradesForStudentPeriod вернул null для ученика {student.UserID}");
-                return;
-            }
+            var allGrades = GradesController._controller.GetGradesForStudentPeriod(student.UserID, startDate, endDate);
+            FileLogger.logger.Info($"Получено {allGrades.Count} оценок за период");
 
-            FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Оценок для ученика {student.UserID} в период: {gradesAll.Count}");
-
-            var gradesBySubject = new Dictionary<int, List<Grade>>();
-
-            foreach (var grade in gradesAll)
-            {
-                FileLogger.logger.Debug($"ГРАДА: Grade.SubjectID={grade.SubjectID} (Type={grade.SubjectID.GetType()})");
-
-                if (!gradesBySubject.ContainsKey(grade.SubjectID))
-                {
-                    gradesBySubject[grade.SubjectID] = new List<Grade>();
-                }
-
-                gradesBySubject[grade.SubjectID].Add(grade);
-            }
+            var subjects = SubjectController._controller.GetSubjectsForClass(classId);
+            FileLogger.logger.Info($"Предметов в классе: {subjects.Count}");
 
             foreach (var subject in subjects)
             {
-                FileLogger.logger.Debug($"buttonCalculateQuaterGrades_Click - Обработка предмета: {subject.SubjectID} - {subject.SubjectName}");
+                byte? q1 = CalculateAverageGradeForQuarter(allGrades, subject.SubjectID, q1Start, q1End);
+                byte? q2 = CalculateAverageGradeForQuarter(allGrades, subject.SubjectID, q2Start, q2End);
+                byte? q3 = CalculateAverageGradeForQuarter(allGrades, subject.SubjectID, q3Start, q3End);
+                byte? q4 = CalculateAverageGradeForQuarter(allGrades, subject.SubjectID, q4Start, q4End);
 
-                List<Grade> subjGrades;
+                FileLogger.logger.Info($"Предмет {subject.SubjectName}: Q1={q1 ?? -1}, Q2={q2 ?? -1}, Q3={q3 ?? -1}, Q4={q4 ?? -1}");
 
-                if (gradesBySubject.TryGetValue(subject.SubjectID, out var list))
-                {
-                    subjGrades = list;
-                    FileLogger.logger.Debug($"buttonCalculateQuaterGrades_Click - Для предмета {subject.SubjectID} найдено оценок: {subjGrades.Count}");
-                }
-                else
-                {
-                    subjGrades = new List<Grade>();
-                    FileLogger.logger.Debug($"buttonCalculateQuaterGrades_Click - Для предмета {subject.SubjectID} нет оценок в этом периоде");
-                }
-
-                var q1Grades = subjGrades.Where(g => g.GradeDate >= startDate && g.GradeDate <= endDate).ToList(); // можно разбить на 4QA
-                var q2Grades = new List<Grade>();
-                var q3Grades = new List<Grade>();
-                var q4Grades = new List<Grade>();
-
-                FileLogger.logger.Debug($"  - Всего оценок по предмету {subject.SubjectID}: {subjGrades.Count}");
-                FileLogger.logger.Debug($"  - Quarter1: {q1Grades.Count}");
-
-                double avg1 = q1Grades.Count > 0 ? q1Grades.Average(g => g.GradeValue) : 0;
-                double avg2 = q2Grades.Count > 0 ? q2Grades.Average(g => g.GradeValue) : 0;
-                double avg3 = q3Grades.Count > 0 ? q3Grades.Average(g => g.GradeValue) : 0;
-                double avg4 = q4Grades.Count > 0 ? q4Grades.Average(g => g.GradeValue) : 0;
-
-                int? q1 = avg1 > 0 ? (int)Math.Round(avg1) : (int?)null;
-                int? q2 = avg2 > 0 ? (int)Math.Round(avg2) : (int?)null;
-                int? q3 = avg3 > 0 ? (int)Math.Round(avg3) : (int?)null;
-                int? q4 = avg4 > 0 ? (int)Math.Round(avg4) : (int?)null;
-
-                FileLogger.logger.Info($"buttonCalculateQuaterGrades_Click - Попытка сохранить в QuarterGrades:");
-                FileLogger.logger.Info($"  - StudentID={student.UserID}, SubjectID={subject.SubjectID}, Year={startDate.Year}");
-                FileLogger.logger.Info($"  - Q1={q1}, Q2={q2}, Q3={q3}, Q4={q4}");
-
-                QuarterGradesController._controller.SaveOrUpdateQuarterGrades(student.UserID, subject.SubjectID, startDate.Year, q1, q2, q3, q4);
+                QuarterGradesController._controller.SaveOrUpdateQuarterGrades(
+                    student.UserID,
+                    subject.SubjectID,
+                    q1,
+                    q2,
+                    q3,
+                    q4
+                );
             }
 
-            comboBoxQuaterGradesStudent_SelectedIndexChanged(null, null);
+            LoadQuaterGrades();
+
+            FileLogger.logger.Info("=== Расчёт четвертных оценок ЗАВЕРШЁН ===");
+        }
+
+        /// <summary>
+        /// Считает среднюю оценку по предмету за указанный период.
+        /// Если оценок нет, возвращает null.
+        /// </summary>
+        private byte? CalculateAverageGradeForQuarter(
+            List<Grade> grades,
+            int subjectId,
+            DateTime start,
+            DateTime end)
+        {
+            FileLogger.logger.Debug(
+                $"CalculateAverageGradeForQuarter: subjectId={subjectId}, " +
+                $"period: {start:yyyy-MM-dd} – {end:yyyy-MM-dd}");
+
+            var gradesInQuarter = grades
+                .Where(x => x.SubjectID == subjectId &&
+                            x.GradeDate >= start &&
+                            x.GradeDate <= end)
+                .ToList();
+
+            if (gradesInQuarter.Count == 0)
+            {
+                FileLogger.logger.Debug($"Нет оценок для предмета {subjectId} в указанном периоде");
+                return null;
+            }
+
+            double avg = gradesInQuarter.Average(x => x.GradeValue);
+            FileLogger.logger.Debug($"Среднее: {avg:F2} по {gradesInQuarter.Count} оценкам");
+
+            // Округляем в обычную сторону до целого байта
+            byte value = (byte)Math.Round(avg, MidpointRounding.AwayFromZero);
+            return value;
         }
 
         private void comboBoxQuaterGradesStudent_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBoxQuaterGradesStudent.SelectedItem == null)
-            {
-                dataGridViewQuaterGrades.Rows.Clear();
-                return;
-            }
-
-            var student = (User)comboBoxQuaterGradesStudent.SelectedItem;
-            int year = DateTime.Now.Year;
-
-            FileLogger.logger.Info($"comboBoxQuaterGradesStudent_SelectedIndexChanged - Загрузка четвертных оценок для ученика {student.UserID}");
-
-            var quarterGrades = QuarterGradesController._controller.GetQuarterGradesForStudent(student.UserID, year);
-
-            FileLogger.logger.Info($"comboBoxQuaterGradesStudent_SelectedIndexChanged - Найдено четвертных оценок: {quarterGrades.Count}");
-
-            foreach (var qg in quarterGrades)
-            {
-                FileLogger.logger.Debug($"  QuarterGrades: SubjectID={qg.SubjectID}, Q1={qg.Quarter1Grade}, Q2={qg.Quarter2Grade}, Q3={qg.Quarter3Grade}, Q4={qg.Quarter4Grade}");
-            }
-
-            dataGridViewQuaterGrades.Rows.Clear();
-            var subjects = SubjectController._controller.GetAllSubjects();
-
-            foreach (var subject in subjects)
-            {
-                var qg = quarterGrades.FirstOrDefault(q =>
-                    q.SubjectID == subject.SubjectID
-                );
-
-                if (qg == null)
-                {
-                    FileLogger.logger.Debug($"  ПРЕДМЕТ {subject.SubjectID} - НЕ НАЙДЕН в QuarterGrades");
-                }
-
-                dataGridViewQuaterGrades.Rows.Add(
-                    subject.SubjectName,
-                    qg?.Quarter1Grade?.ToString() ?? "-",
-                    qg?.Quarter2Grade?.ToString() ?? "-",
-                    qg?.Quarter3Grade?.ToString() ?? "-",
-                    qg?.Quarter4Grade?.ToString() ?? "-"
-                );
-            }
+            LoadQuaterGrades();
         }
 
         private void directorComboBox_SelectedIndexChanged(object sender, EventArgs e)

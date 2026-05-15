@@ -16,7 +16,6 @@ namespace school
         public void SaveOrUpdateQuarterGrades(
             int studentId,
             int subjectId,
-            int year,
             int? q1,
             int? q2,
             int? q3,
@@ -29,14 +28,12 @@ namespace school
                 SELECT QuarterGradeID
                 FROM QuarterGrades
                 WHERE StudentID = @StudentID
-                  AND SubjectID = @SubjectID
-                  AND Year = @Year";
+                  AND SubjectID = @SubjectID";
 
                 using (var selectCmd = new SqlCommand(selectSql, connection))
                 {
                     selectCmd.Parameters.AddWithValue("@StudentID", studentId);
                     selectCmd.Parameters.AddWithValue("@SubjectID", subjectId);
-                    selectCmd.Parameters.AddWithValue("@Year", year);
 
                     var result = selectCmd.ExecuteScalar();
                     int quarterGradeId = result != null ? (int)result : 0;
@@ -47,7 +44,7 @@ namespace school
                     }
                     else
                     {
-                        InsertQuarterGrades(connection, studentId, subjectId, year, q1, q2, q3, q4);
+                        InsertQuarterGrades(connection, studentId, subjectId, q1, q2, q3, q4);
                     }
                 }
             }
@@ -57,21 +54,19 @@ namespace school
             SqlConnection connection,
             int studentId,
             int subjectId,
-            int year,
             int? q1,
             int? q2,
             int? q3,
             int? q4)
         {
             const string sql = @"
-            INSERT INTO QuarterGrades (StudentID, SubjectID, Year, Quarter1Grade, Quarter2Grade, Quarter3Grade, Quarter4Grade)
-            VALUES (@StudentID, @SubjectID, @Year, @Q1, @Q2, @Q3, @Q4)";
+            INSERT INTO QuarterGrades (StudentID, SubjectID, Quarter1Grade, Quarter2Grade, Quarter3Grade, Quarter4Grade)
+            VALUES (@StudentID, @SubjectID, @Q1, @Q2, @Q3, @Q4)";
 
             using (var cmd = new SqlCommand(sql, connection))
             {
                 cmd.Parameters.AddWithValue("@StudentID", studentId);
                 cmd.Parameters.AddWithValue("@SubjectID", subjectId);
-                cmd.Parameters.AddWithValue("@Year", year);
                 cmd.Parameters.AddWithValue("@Q1", q1 ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Q2", q2 ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Q3", q3 ?? (object)DBNull.Value);
@@ -109,7 +104,7 @@ namespace school
             }
         }
 
-        public List<QuarterGrade> GetQuarterGradesForStudent(int studentId, int year)
+        public List<QuarterGrade> GetQuarterGradesForStudent(int studentId)
         {
             var result = new List<QuarterGrade>();
 
@@ -118,7 +113,7 @@ namespace school
                 connection.Open();
 
                 const string sql = @"
-            SELECT QuarterGradeID, StudentID, SubjectID, Quarter1Grade, Quarter2Grade, Quarter3Grade, Quarter4Grade, Year
+            SELECT QuarterGradeID, StudentID, SubjectID, Quarter1Grade, Quarter2Grade, Quarter3Grade, Quarter4Grade
             FROM QuarterGrades
             WHERE StudentID = @StudentID";
 
@@ -137,7 +132,6 @@ namespace school
                             int q2Ordinal = reader.GetOrdinal("Quarter2Grade");
                             int q3Ordinal = reader.GetOrdinal("Quarter3Grade");
                             int q4Ordinal = reader.GetOrdinal("Quarter4Grade");
-                            int yearOrdinal = reader.GetOrdinal("Year");
 
                             result.Add(new QuarterGrade
                             {
@@ -147,8 +141,7 @@ namespace school
                                 Quarter1Grade = reader.IsDBNull(q1Ordinal) ? (byte?)null : reader.GetByte(q1Ordinal),
                                 Quarter2Grade = reader.IsDBNull(q2Ordinal) ? (byte?)null : reader.GetByte(q2Ordinal),
                                 Quarter3Grade = reader.IsDBNull(q3Ordinal) ? (byte?)null : reader.GetByte(q3Ordinal),
-                                Quarter4Grade = reader.IsDBNull(q4Ordinal) ? (byte?)null : reader.GetByte(q4Ordinal),
-                                Year = reader.IsDBNull(yearOrdinal) ? (short)0 : reader.GetInt16(yearOrdinal),
+                                Quarter4Grade = reader.IsDBNull(q4Ordinal) ? (byte?)null : reader.GetByte(q4Ordinal)
                             });
                         }
                     }

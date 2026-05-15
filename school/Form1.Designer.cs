@@ -493,10 +493,10 @@ namespace school
             // tabGrades
             // 
             this.tabGrades.Controls.Add(this.panelGrades);
-            this.tabGrades.Location = new System.Drawing.Point(4, 30);
+            this.tabGrades.Location = new System.Drawing.Point(4, 56);
             this.tabGrades.Name = "tabGrades";
             this.tabGrades.Padding = new System.Windows.Forms.Padding(9);
-            this.tabGrades.Size = new System.Drawing.Size(1197, 775);
+            this.tabGrades.Size = new System.Drawing.Size(1197, 749);
             this.tabGrades.TabIndex = 1;
             this.tabGrades.Text = "Оценки";
             this.tabGrades.UseVisualStyleBackColor = true;
@@ -510,7 +510,7 @@ namespace school
             this.panelGrades.Location = new System.Drawing.Point(9, 9);
             this.panelGrades.Name = "panelGrades";
             this.panelGrades.Padding = new System.Windows.Forms.Padding(9);
-            this.panelGrades.Size = new System.Drawing.Size(1179, 757);
+            this.panelGrades.Size = new System.Drawing.Size(1179, 731);
             this.panelGrades.TabIndex = 0;
             // 
             // dateTimePickerGrades1
@@ -535,7 +535,7 @@ namespace school
             this.tabControl1.Location = new System.Drawing.Point(3, 43);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(1164, 711);
+            this.tabControl1.Size = new System.Drawing.Size(1164, 685);
             this.tabControl1.TabIndex = 3;
             // 
             // tabPage4
@@ -545,7 +545,7 @@ namespace school
             this.tabPage4.Location = new System.Drawing.Point(4, 26);
             this.tabPage4.Name = "tabPage4";
             this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage4.Size = new System.Drawing.Size(1156, 681);
+            this.tabPage4.Size = new System.Drawing.Size(1156, 655);
             this.tabPage4.TabIndex = 0;
             this.tabPage4.Text = "Период";
             this.tabPage4.UseVisualStyleBackColor = true;
@@ -554,7 +554,7 @@ namespace school
             // 
             this.labelGradesPeriod.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.labelGradesPeriod.AutoSize = true;
-            this.labelGradesPeriod.Location = new System.Drawing.Point(558, 659);
+            this.labelGradesPeriod.Location = new System.Drawing.Point(558, 633);
             this.labelGradesPeriod.Name = "labelGradesPeriod";
             this.labelGradesPeriod.Size = new System.Drawing.Size(45, 19);
             this.labelGradesPeriod.TabIndex = 2;
@@ -574,7 +574,7 @@ namespace school
             this.dataGridViewGrades.RowHeadersVisible = false;
             this.dataGridViewGrades.RowTemplate.Height = 25;
             this.dataGridViewGrades.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewGrades.Size = new System.Drawing.Size(1144, 650);
+            this.dataGridViewGrades.Size = new System.Drawing.Size(1144, 624);
             this.dataGridViewGrades.TabIndex = 1;
             // 
             // tabPage5

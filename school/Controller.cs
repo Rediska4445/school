@@ -189,20 +189,18 @@ namespace school
                           UNIQUE (StudentID, SubjectID, Year)
                       );",
                         @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='QuarterGrades' AND xtype='U')
-                          CREATE TABLE QuarterGrades (
-                              QuarterGradeID INT IDENTITY(1,1) PRIMARY KEY,
-                              StudentID INT NOT NULL,
-                              SubjectID INT NOT NULL,
-                              Quarter1Grade TINYINT NULL CHECK (Quarter1Grade BETWEEN 1 AND 5),
-                              Quarter2Grade TINYINT NULL CHECK (Quarter2Grade BETWEEN 1 AND 5),
-                              Quarter3Grade TINYINT NULL CHECK (Quarter3Grade BETWEEN 1 AND 5),
-                              Quarter4Grade TINYINT NULL CHECK (Quarter4Grade BETWEEN 1 AND 5),
-                              Year SMALLINT NOT NULL DEFAULT YEAR(GETDATE()),
-                              CONSTRAINT FK_QuarterGrades_Students FOREIGN KEY (StudentID) REFERENCES Users(UserID),
-                              CONSTRAINT FK_QuarterGrades_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
-                              UNIQUE (StudentID, SubjectID, Year)
-                          );",
-
+                        CREATE TABLE QuarterGrades (
+                            QuarterGradeID INT IDENTITY(1,1) PRIMARY KEY,
+                            StudentID INT NOT NULL,
+                            SubjectID INT NOT NULL,
+                            Quarter1Grade TINYINT NULL CHECK (Quarter1Grade BETWEEN 1 AND 5),
+                            Quarter2Grade TINYINT NULL CHECK (Quarter2Grade BETWEEN 1 AND 5),
+                            Quarter3Grade TINYINT NULL CHECK (Quarter3Grade BETWEEN 1 AND 5),
+                            Quarter4Grade TINYINT NULL CHECK (Quarter4Grade BETWEEN 1 AND 5),
+                            CONSTRAINT FK_QuarterGrades_Students FOREIGN KEY (StudentID) REFERENCES Users(UserID),
+                            CONSTRAINT FK_QuarterGrades_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
+                            UNIQUE (StudentID, SubjectID)
+                        );",
                         @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SubjectLessonCount' AND xtype='U')
                           CREATE TABLE SubjectLessonCount (
                               SubjectLessonCountID INT IDENTITY(1,1) PRIMARY KEY,

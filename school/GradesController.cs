@@ -255,6 +255,64 @@ namespace school
             }
         }
 
+        public List<QuarterGradeRow> GetQuarterGradesByStudentId(int studentId)
+        {
+            if (studentId <= 0)
+                return new List<QuarterGradeRow>();
+
+            const string sql = @"
+                SELECT
+                    s.SubjectID,
+                    s.SubjectName,
+                    qg.Quarter1Grade,
+                    qg.Quarter2Grade,
+                    qg.Quarter3Grade,
+                    qg.Quarter4Grade
+                FROM QuarterGrades qg
+                JOIN Subjects s ON s.SubjectID = qg.SubjectID
+                WHERE qg.StudentID = @StudentID
+                ORDER BY s.SubjectName";
+
+            var result = new List<QuarterGradeRow>();
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@StudentID", studentId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        int subjectIdOrdinal = reader.GetOrdinal("SubjectID");
+                        int subjectNameOrdinal = reader.GetOrdinal("SubjectName");
+                        int q1Ordinal = reader.GetOrdinal("Quarter1Grade");
+                        int q2Ordinal = reader.GetOrdinal("Quarter2Grade");
+                        int q3Ordinal = reader.GetOrdinal("Quarter3Grade");
+                        int q4Ordinal = reader.GetOrdinal("Quarter4Grade");
+
+                        while (reader.Read())
+                        {
+                            var row = new QuarterGradeRow
+                            {
+                                SubjectID = reader.GetInt32(subjectIdOrdinal),
+                                SubjectName = reader.GetString(subjectNameOrdinal),
+                                Quarter1Grade = reader.IsDBNull(q1Ordinal) ? (int?)null : reader.GetInt32(q1Ordinal),
+                                Quarter2Grade = reader.IsDBNull(q2Ordinal) ? (int?)null : reader.GetInt32(q2Ordinal),
+                                Quarter3Grade = reader.IsDBNull(q3Ordinal) ? (int?)null : reader.GetInt32(q3Ordinal),
+                                Quarter4Grade = reader.IsDBNull(q4Ordinal) ? (int?)null : reader.GetInt32(q4Ordinal)
+                            };
+
+                            result.Add(row);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public List<Grade> GetGradesForStudentPeriod(int studentId, DateTime startDate, DateTime endDate)
         {
             List<Grade> grades = new List<Grade>();
