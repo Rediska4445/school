@@ -22,8 +22,8 @@ namespace school
 
             InitializeComponent();
 
-            txtLogin.Text = "Петрова Анна Сергеевна";
-            txtPassword.Text = "teacher2";
+            txtLogin.Text = "Директор";
+            txtPassword.Text = "director1";
         }
 
         private void btnLogin_Click_1(object sender, EventArgs e)

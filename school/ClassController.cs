@@ -193,18 +193,46 @@ namespace school.Controllers
             return null;
         }
 
+        public void UpsertClassSubjectHours(int classId, int subjectId, int hoursPerWeek)
+        {
+            const string sql = @"
+                MERGE SubjectClassHours AS target
+                USING (VALUES (@ClassID, @SubjectID, @Hours)) AS source (ClassID, SubjectID, Hours)
+                ON target.ClassID = source.ClassID
+                    AND target.SubjectID = source.SubjectID
+                WHEN MATCHED THEN
+                    UPDATE SET Hours = source.Hours
+                WHEN NOT MATCHED THEN
+                    INSERT (ClassID, SubjectID, Hours)
+                    VALUES (source.ClassID, source.SubjectID, source.Hours);";
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+                    cmd.Parameters.AddWithValue("@SubjectID", subjectId);
+                    cmd.Parameters.AddWithValue("@Hours", hoursPerWeek);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public List<ClassSubjectHours> GetClassSubjectHours(int classId)
         {
             const string sql = @"
-        SELECT 
-            sch.ClassID,
-            s.SubjectID,
-            s.SubjectName,
-            sch.Hours AS HoursPerWeek
-        FROM SubjectClassHours sch
-        JOIN Subjects s ON sch.SubjectID = s.SubjectID
-        WHERE sch.ClassID = @ClassID
-        ORDER BY s.SubjectName";
+            SELECT 
+                sch.ClassID,
+                s.SubjectID,
+                s.SubjectName,
+                sch.Hours AS HoursPerWeek
+            FROM SubjectClassHours sch
+            JOIN Subjects s ON sch.SubjectID = s.SubjectID
+            WHERE sch.ClassID = @ClassID
+            ORDER BY s.SubjectName";
 
             var result = new List<ClassSubjectHours>();
 

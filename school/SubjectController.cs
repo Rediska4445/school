@@ -391,6 +391,52 @@ namespace school
             }
         }
 
+        public List<Subject> GetSubjectsForClass(int classId)
+        {
+            const string sql = @"
+        SELECT DISTINCT
+            s.SubjectID,
+            s.SubjectName
+        FROM Subjects s
+        JOIN TeacherSubjects ts ON s.SubjectID = ts.SubjectID
+        WHERE
+            ts.ClassID = @ClassID
+            OR ts.ClassID IS NULL
+        ORDER BY s.SubjectName";
+
+            var result = new List<Subject>();
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ClassID", classId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        int subjectIdOrdinal = reader.GetOrdinal("SubjectID");
+                        int subjectNameOrdinal = reader.GetOrdinal("SubjectName");
+
+                        while (reader.Read())
+                        {
+                            int subjectId = reader.GetInt32(subjectIdOrdinal);
+                            string subjectName = reader.GetString(subjectNameOrdinal);
+
+                            result.Add(new Subject
+                            {
+                                SubjectID = subjectId,
+                                SubjectName = subjectName
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public int GetHoursByClassSubject(int classId, int subjectId)
         {
             if (classId <= 0 || subjectId <= 0)

@@ -131,6 +131,9 @@ namespace school
 
                 CreateSheduleAllTable();
             }
+
+            tabControl.TabPages.Remove(tabPageTeachers);
+            tabControl.TabPages.Remove(tabPageStudents);
         }
 
         private void CreateSheduleAllTable()
@@ -1464,7 +1467,6 @@ namespace school
             }
 
             FileLogger.logger.Info("Обработчики событий добавлены");
-
             FileLogger.logger.Info("=== SetupSubject КОНЕЦ ===");
         }
 
@@ -1529,7 +1531,19 @@ namespace school
                 SubjectName = nameValue.Trim()
             };
 
-            FileLogger.logger.Info($"Добавляем изменение: ID={subject.SubjectID} Name='{subject.SubjectName}' (новый: {subject.SubjectID <= 0})");
+            var subjectCountObj = row.Cells["SubjectCount"].Value;
+            if (subjectCountObj != null &&
+                int.TryParse(subjectCountObj.ToString(), out int subjectCount) &&
+                subjectCount > 0)
+            {
+                ClassController._controller.UpsertClassSubjectHours(
+                    GetClassIdFromDirectorComboBox(),
+                    subjectId,
+                    subjectCount
+                );
+            }
+
+            FileLogger.logger.Info($"Добавляем изменение: ID={subject.SubjectID} Name='{subject.SubjectName}' (новый: {subject.SubjectID <= 0}), lessonCount: {subjectCountObj}");
 
             SubjectController._controller.AddSubjectChange("EDIT", subject);
         }
@@ -1554,7 +1568,7 @@ namespace school
             dataGridViewSubjects.Rows.Clear();
             FileLogger.logger.Info("Строки очищены");
 
-            var subjects = SubjectController._controller.GetAllSubjects();
+            var subjects = SubjectController._controller.GetSubjectsForClass(GetClassIdFromDirectorComboBox());
             FileLogger.logger.Info($"Загружено предметов: {subjects.Count}");
 
             foreach (Subject subject in subjects)
@@ -3439,7 +3453,6 @@ namespace school
                 mainPart.Document = new Document();
                 Body body = mainPart.Document.AppendChild(new Body());
 
-                // Заголовок
                 Paragraph titlePara = new Paragraph(new Run(new Text(
                     $"Отчет по посещаемости {directorComboBox.Text} за период {dateTimePickerGradesReports1.Value:dd.MM.yyyy} - {dateTimePickerGradesReports2.Value:dd.MM.yyyy}")));
                 titlePara.ParagraphProperties = new ParagraphProperties(new Justification() { Val = JustificationValues.Center });
@@ -3447,7 +3460,6 @@ namespace school
 
                 body.AppendChild(new Paragraph(new Run(new Break() { Type = BreakValues.Page })));
 
-                // Таблица
                 Table table = new Table();
                 TableProperties tableProps = new TableProperties(
                     new TableBorders(
@@ -3462,7 +3474,6 @@ namespace school
                 );
                 table.AppendChild(tableProps);
 
-                // Заголовки
                 TableRow headerRow = new TableRow();
                 headerRow.Append(new TableCell(new Paragraph(new Run(new Text("Ученик"))))
                 {
@@ -3478,7 +3489,6 @@ namespace school
                 }
                 table.AppendChild(headerRow);
 
-                // Данные
                 for (int row = 0; row < dataGridViewAtterdanceReports.Rows.Count; row++)
                 {
                     var dgvRow = dataGridViewAtterdanceReports.Rows[row];
@@ -3495,14 +3505,12 @@ namespace school
                     table.AppendChild(dataRow);
                 }
 
-                // Итоговая строка
                 TableRow totalRow = new TableRow();
                 totalRow.Append(new TableCell(new Paragraph(new Run(new Text("Итого пропусков:"))))
                 {
                     TableCellProperties = new TableCellProperties(new Bold())
                 });
 
-                // Подсчет итогов по предметам
                 for (int col = 1; col < dataGridViewAtterdanceReports.Columns.Count; col++)
                 {
                     int totalAbsences = 0;
@@ -3785,24 +3793,25 @@ namespace school
             var rng = new Random();
             var allLessons = new List<ScheduleItem>();
 
-            // 1. Собираем ВСЕ уроки
             foreach (var cs in classSubjects)
             {
-                for (int i = 0; i < cs.HoursPerWeek; i++)
+                if (cs.HoursPerWeek > 0)
                 {
-                    allLessons.Add(new ScheduleItem
+                    for (int i = 0; i < cs.HoursPerWeek; i++)
                     {
-                        ClassID = classId,
-                        SubjectID = cs.SubjectID,
-                        SubjectName = cs.SubjectName
-                    });
+                        allLessons.Add(new ScheduleItem
+                        {
+                            ClassID = classId,
+                            SubjectID = cs.SubjectID,
+                            SubjectName = cs.SubjectName
+                        });
+                    }
                 }
             }
 
             if (allLessons.Count == 0)
                 return new List<ScheduleItem>();
 
-            // 2. Перемешать уроки
             for (int i = 0; i < allLessons.Count; i++)
             {
                 int j = rng.Next(allLessons.Count);
@@ -3811,31 +3820,59 @@ namespace school
                 allLessons[j] = tmp;
             }
 
-            // 3. Распределяем по дням (Пн–Пт)
             var perDay = new List<List<ScheduleItem>>();
             for (int i = 0; i < 5; i++)
                 perDay.Add(new List<ScheduleItem>());
 
-            // 4. Распределяем по 5 дней
             int dayIndex = 0;
             foreach (var item in allLessons)
             {
-                perDay[dayIndex].Add(item);
-                dayIndex = (dayIndex + 1) % 5;
+                if (perDay[dayIndex].Count < 8)
+                {
+                    perDay[dayIndex].Add(item);
+                    dayIndex = (dayIndex + 1) % 5;
+                }
+                else
+                {
+                    dayIndex = (dayIndex + 1) % 5;
+                }
             }
 
-            // 5. Формируем окончательный список
+            bool hasOverflow;
+            do
+            {
+                hasOverflow = false;
+
+                for (int i = 0; i < 5; i++)
+                {
+                    if (perDay[i].Count > 8)
+                    {
+                        hasOverflow = true;
+
+                        int nextDay = (i + 1) % 5;
+                        while (perDay[i].Count > 8 && perDay[nextDay].Count < 8)
+                        {
+                            var item = perDay[i].Last();
+                            perDay[i].RemoveAt(perDay[i].Count - 1);
+                            perDay[nextDay].Add(item);
+                        }
+                    }
+                }
+            }
+            while (hasOverflow);
+
             var scheduleItems = new List<ScheduleItem>();
+
             for (int dow = 1; dow <= 5; dow++)
             {
                 var dayLessons = perDay[dow - 1];
+
                 for (int j = 0; j < dayLessons.Count; j++)
                 {
                     var item = dayLessons[j];
-                    item.DayOfWeek = (byte)dow;
-                    item.LessonNumber = (byte)(j + 1);
+                    item.DayOfWeek = (byte)dow;           // 1–5 (Пн–Пт)
+                    item.LessonNumber = (byte)(j + 1);    // 1–8
 
-                    // Время урока: 8:00 + j * 40 минут
                     int totalMinutes = 0;
                     if (startTime.HasValue)
                         totalMinutes = (int)startTime.Value.TotalMinutes;
@@ -3845,8 +3882,11 @@ namespace school
 
                     scheduleItems.Add(item);
 
-                    // Вывод предмета в лог
-                    FileLogger.logger.Info($"Subject: {item.SubjectName}, Day: {item.DayOfWeek}, Lesson: {item.LessonNumber}, Time: {item.LessonTime}");
+                    FileLogger.logger.Info(
+                        $"Subject: {item.SubjectName}, " +
+                        $"Day: {item.DayOfWeek}, " +
+                        $"Lesson: {item.LessonNumber}, " +
+                        $"Time: {item.LessonTime}");
                 }
             }
 
