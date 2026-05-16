@@ -375,7 +375,7 @@ namespace school
                                 FileLogger.logger.Info($"UPDATE Subjects affected rows: {rows}");
                             }
 
-                            UpsertClassSubjectHoursInConnection(conn, cmd, classId, resultSubjectId, hoursPerWeek);
+                            UpsertClassSubjectHoursInConnection(conn, cmd, classId, subject.SubjectID, hoursPerWeek);
 
                             resultSubjectId = subject.SubjectID;
                         }

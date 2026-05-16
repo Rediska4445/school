@@ -1723,7 +1723,32 @@ namespace school
             int classId = GetClassIdFromDirectorComboBox();
 
             var subjects = SubjectController._controller.GetAllSubjectsForClass(classId);
-            FileLogger.logger.Info($"Загружено предметов: {subjects.Count}");
+
+            FileLogger.logger.Info($"Загружено предметов: {subjects?.Count ?? 0}");
+
+            if (subjects != null)
+            {
+                for (int i = 0; i < subjects.Count; i++)
+                {
+                    Subject subject = subjects[i];
+
+                    if (subject == null)
+                    {
+                        FileLogger.logger.Info($"Subject[{i}] = null");
+                    }
+                    else
+                    {
+                        FileLogger.logger.Info(
+                            $"Subject[{i}]: " +
+                            $"SubjectID={subject.SubjectID}, " +
+                            $"SubjectName='{subject?.SubjectName ?? "null"}'");
+                    }
+                }
+            }
+            else
+            {
+                FileLogger.logger.Info("subjects = null");
+            }
 
             foreach (Subject subject in subjects)
             {
@@ -1766,13 +1791,11 @@ namespace school
         private void LoadScheduleGrid()
         {
             // Если директор и прочая лабуда для проверки
-            if (UserController.CurrentUser.PermissionID >= 3 &&
-                directorComboBox != null &&
-                directorComboBox.SelectedItem is ComboBoxItem selectedItem)
+            if (UserController.CurrentUser.PermissionID >= 3)
             {
 
                 // Вызвать загрузку с тем классом что выбран в списке
-                LoadScheduleGrid(selectedItem.ClassID);
+                LoadScheduleGrid(GetClassIdFromDirectorComboBox());
             }
             else
             {
@@ -1867,6 +1890,31 @@ namespace school
             }
         }
 
+        private void FillSubjectComboBox()
+        {
+            DataGridViewComboBoxColumn comboSubjectCol =
+                sheduleGridView.Columns["colSubject"] as DataGridViewComboBoxColumn;
+
+            if (comboSubjectCol == null)
+                return;
+
+            comboSubjectCol.Items.Clear();
+            comboSubjectCol.DataSource = null;
+
+            List<Subject> subjects = SubjectController._controller.GetAllSubjects();
+
+            FileLogger.logger.Info($"FillSubjectComboBox: получено {subjects.Count} предметов");
+
+            foreach (Subject subject in subjects)
+            {
+                comboSubjectCol.Items.Add(subject);
+
+                FileLogger.logger.Info(
+                    $"Добавлен в ComboBox: SubjectID={subject.SubjectID}, " +
+                    $"SubjectName='{subject.SubjectName}'");
+            }
+        }
+
         private void LoadScheduleGrid(int classId)
         {
             try
@@ -1874,16 +1922,53 @@ namespace school
                 sheduleGridView.DataSource = null;
                 sheduleGridView.Rows.Clear();
 
+                FillSubjectComboBox();
+
                 var scheduleList = SheduleController._controller.GetScheduleForClass(classId);
+
+                FileLogger.logger.Info($"GetScheduleForClass(classId={classId}) вернула {scheduleList?.Count ?? 0} записей");
+
+                if (scheduleList != null)
+                {
+                    for (int i = 0; i < scheduleList.Count; i++)
+                    {
+                        var schedule = scheduleList[i];
+
+                        if (schedule == null)
+                        {
+                            FileLogger.logger.Info($"scheduleList[{i}] = null");
+                        }
+                        else
+                        {
+                            FileLogger.logger.Info(
+                                $"Schedule[{i}]: " +
+                                $"ScheduleID={schedule.ScheduleID}, " +
+                                $"DayOfWeekDisplay='{schedule.DayOfWeekDisplay ?? "null"}', " +
+                                $"LessonNumber={schedule.LessonNumber}, " +
+                                $"LessonTimeDisplay='{schedule.LessonTimeDisplay ?? "null"}', " +
+                                $"SubjectName='{schedule.SubjectName ?? "null"}', " +
+                                $"TeacherName='{schedule.TeacherName ?? "null"}', " +
+                                $"ClassID={schedule.ClassID}");
+                        }
+                    }
+                }
 
                 if (sheduleGridView.Columns.Count == 0)
                 {
+                    FileLogger.logger.Info("sheduleGridView.Columns.Count = 0 → вызываем SetupScheduleGrid()");
                     SetupScheduleGrid();
                 }
 
+                // Очищаем grid, чтобы не было дублей (если строку уже отображали)
+                sheduleGridView.Rows.Clear();
+                FileLogger.logger.Info("sheduleGridView.Rows.Clear() выполнено");
+
                 foreach (var schedule in scheduleList)
                 {
-                    sheduleGridView.Rows.Add(
+                    if (schedule == null)
+                        continue;
+
+                    int rowIndex = sheduleGridView.Rows.Add(
                         schedule.ScheduleID,
                         schedule.DayOfWeekDisplay,
                         schedule.LessonNumber,
@@ -1891,9 +1976,16 @@ namespace school
                         schedule.SubjectName,
                         schedule.TeacherName
                     );
+
+                    FileLogger.logger.Info(
+                        $"Добавлена строка в sheduleGridView: " +
+                        $"rowIndex={rowIndex}, " +
+                        $"ScheduleID={schedule.ScheduleID}, " +
+                        $"Subject='{schedule.SubjectName ?? "null"}', " +
+                        $"Teacher='{schedule.TeacherName ?? "null"}'");
                 }
 
-                string className = classId == 1 ? "5А" : $"Класс {classId}";
+                string className = classId < 0 ? "Неизвестный" : $"Класс {classId}";
 
                 sheduleLabel.Text = $"Расписание класса {className} ({scheduleList.Count} уроков)";
             }
@@ -1954,6 +2046,7 @@ namespace school
                 {
                     comboSubjectCol.Items.Add(sub);
                 }
+
                 sheduleGridView.Columns.Add(comboSubjectCol);
 
                 // Учитель - ComboBox
