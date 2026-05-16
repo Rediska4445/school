@@ -467,7 +467,7 @@ namespace school
             this.labelHomeworkAll.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.labelHomeworkAll.AutoSize = true;
-            this.labelHomeworkAll.Location = new System.Drawing.Point(347, 750);
+            this.labelHomeworkAll.Location = new System.Drawing.Point(347, 754);
             this.labelHomeworkAll.Name = "labelHomeworkAll";
             this.labelHomeworkAll.Size = new System.Drawing.Size(45, 19);
             this.labelHomeworkAll.TabIndex = 3;
@@ -487,7 +487,7 @@ namespace school
             this.datagridviewHomeworkAll.RowHeadersVisible = false;
             this.datagridviewHomeworkAll.RowTemplate.Height = 25;
             this.datagridviewHomeworkAll.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.datagridviewHomeworkAll.Size = new System.Drawing.Size(1148, 744);
+            this.datagridviewHomeworkAll.Size = new System.Drawing.Size(1148, 748);
             this.datagridviewHomeworkAll.TabIndex = 2;
             // 
             // tabGrades
@@ -602,7 +602,7 @@ namespace school
             this.dataGridViewGradesAll.RowHeadersVisible = false;
             this.dataGridViewGradesAll.RowTemplate.Height = 25;
             this.dataGridViewGradesAll.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewGradesAll.Size = new System.Drawing.Size(1144, 719);
+            this.dataGridViewGradesAll.Size = new System.Drawing.Size(1144, 723);
             this.dataGridViewGradesAll.TabIndex = 2;
             // 
             // tabPage10
@@ -631,9 +631,9 @@ namespace school
             // 
             this.buttonCalculateQuaterGrades.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonCalculateQuaterGrades.Location = new System.Drawing.Point(6, 611);
+            this.buttonCalculateQuaterGrades.Location = new System.Drawing.Point(6, 615);
             this.buttonCalculateQuaterGrades.Name = "buttonCalculateQuaterGrades";
-            this.buttonCalculateQuaterGrades.Size = new System.Drawing.Size(1144, 42);
+            this.buttonCalculateQuaterGrades.Size = new System.Drawing.Size(1144, 37);
             this.buttonCalculateQuaterGrades.TabIndex = 3;
             this.buttonCalculateQuaterGrades.Text = "Сформировать оценки за четверти автоматически";
             this.buttonCalculateQuaterGrades.UseVisualStyleBackColor = true;
@@ -660,7 +660,7 @@ namespace school
             this.dataGridViewQuaterGrades.RowHeadersVisible = false;
             this.dataGridViewQuaterGrades.RowTemplate.Height = 25;
             this.dataGridViewQuaterGrades.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewQuaterGrades.Size = new System.Drawing.Size(1144, 570);
+            this.dataGridViewQuaterGrades.Size = new System.Drawing.Size(1144, 574);
             this.dataGridViewQuaterGrades.TabIndex = 2;
             // 
             // SubjectName
@@ -784,7 +784,7 @@ namespace school
             this.dataGridViewSheduleAll.RowHeadersVisible = false;
             this.dataGridViewSheduleAll.RowTemplate.Height = 25;
             this.dataGridViewSheduleAll.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.dataGridViewSheduleAll.Size = new System.Drawing.Size(1153, 694);
+            this.dataGridViewSheduleAll.Size = new System.Drawing.Size(1153, 698);
             this.dataGridViewSheduleAll.TabIndex = 4;
             // 
             // sheduleLabel
@@ -800,10 +800,10 @@ namespace school
             // tabStatistics
             // 
             this.tabStatistics.Controls.Add(this.panelStatistics);
-            this.tabStatistics.Location = new System.Drawing.Point(4, 30);
+            this.tabStatistics.Location = new System.Drawing.Point(4, 56);
             this.tabStatistics.Name = "tabStatistics";
             this.tabStatistics.Padding = new System.Windows.Forms.Padding(9);
-            this.tabStatistics.Size = new System.Drawing.Size(1197, 775);
+            this.tabStatistics.Size = new System.Drawing.Size(1197, 749);
             this.tabStatistics.TabIndex = 2;
             this.tabStatistics.Text = "Статистика";
             this.tabStatistics.UseVisualStyleBackColor = true;
@@ -815,7 +815,7 @@ namespace school
             this.panelStatistics.Location = new System.Drawing.Point(9, 9);
             this.panelStatistics.Name = "panelStatistics";
             this.panelStatistics.Padding = new System.Windows.Forms.Padding(9);
-            this.panelStatistics.Size = new System.Drawing.Size(1179, 757);
+            this.panelStatistics.Size = new System.Drawing.Size(1179, 731);
             this.panelStatistics.TabIndex = 0;
             // 
             // tabControlStatistic
@@ -828,7 +828,7 @@ namespace school
             this.tabControlStatistic.Location = new System.Drawing.Point(7, 3);
             this.tabControlStatistic.Name = "tabControlStatistic";
             this.tabControlStatistic.SelectedIndex = 0;
-            this.tabControlStatistic.Size = new System.Drawing.Size(1164, 751);
+            this.tabControlStatistic.Size = new System.Drawing.Size(1164, 725);
             this.tabControlStatistic.TabIndex = 4;
             // 
             // tabPagePersonal
@@ -840,7 +840,7 @@ namespace school
             this.tabPagePersonal.Location = new System.Drawing.Point(4, 26);
             this.tabPagePersonal.Name = "tabPagePersonal";
             this.tabPagePersonal.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPagePersonal.Size = new System.Drawing.Size(1156, 721);
+            this.tabPagePersonal.Size = new System.Drawing.Size(1156, 695);
             this.tabPagePersonal.TabIndex = 0;
             this.tabPagePersonal.Text = "Личное";
             this.tabPagePersonal.UseVisualStyleBackColor = true;
@@ -865,7 +865,7 @@ namespace school
             // 
             this.labelStatisticsSummary.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.labelStatisticsSummary.AutoSize = true;
-            this.labelStatisticsSummary.Location = new System.Drawing.Point(562, 685);
+            this.labelStatisticsSummary.Location = new System.Drawing.Point(562, 659);
             this.labelStatisticsSummary.Name = "labelStatisticsSummary";
             this.labelStatisticsSummary.Size = new System.Drawing.Size(45, 19);
             this.labelStatisticsSummary.TabIndex = 2;
@@ -885,7 +885,7 @@ namespace school
             this.dataGridViewPersonalStatistics.RowHeadersVisible = false;
             this.dataGridViewPersonalStatistics.RowTemplate.Height = 25;
             this.dataGridViewPersonalStatistics.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewPersonalStatistics.Size = new System.Drawing.Size(1144, 643);
+            this.dataGridViewPersonalStatistics.Size = new System.Drawing.Size(1144, 617);
             this.dataGridViewPersonalStatistics.TabIndex = 1;
             // 
             // tabPageClass
@@ -895,7 +895,7 @@ namespace school
             this.tabPageClass.Controls.Add(this.dataGridViewClassStatistics);
             this.tabPageClass.Location = new System.Drawing.Point(4, 26);
             this.tabPageClass.Name = "tabPageClass";
-            this.tabPageClass.Size = new System.Drawing.Size(1156, 695);
+            this.tabPageClass.Size = new System.Drawing.Size(1156, 721);
             this.tabPageClass.TabIndex = 2;
             this.tabPageClass.Text = "Класс";
             this.tabPageClass.UseVisualStyleBackColor = true;
@@ -907,7 +907,7 @@ namespace school
             this.dataGridViewStatisticsClass2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridViewStatisticsClass2.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dataGridViewStatisticsClass2.Location = new System.Drawing.Point(5, 399);
+            this.dataGridViewStatisticsClass2.Location = new System.Drawing.Point(5, 429);
             this.dataGridViewStatisticsClass2.Name = "dataGridViewStatisticsClass2";
             this.dataGridViewStatisticsClass2.ReadOnly = true;
             this.dataGridViewStatisticsClass2.RowHeadersVisible = false;
@@ -930,7 +930,7 @@ namespace school
             this.dataGridViewClassStatistics1.RowHeadersVisible = false;
             this.dataGridViewClassStatistics1.RowTemplate.Height = 25;
             this.dataGridViewClassStatistics1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewClassStatistics1.Size = new System.Drawing.Size(582, 388);
+            this.dataGridViewClassStatistics1.Size = new System.Drawing.Size(582, 418);
             this.dataGridViewClassStatistics1.TabIndex = 3;
             // 
             // dataGridViewClassStatistics
@@ -947,7 +947,7 @@ namespace school
             this.dataGridViewClassStatistics.RowHeadersVisible = false;
             this.dataGridViewClassStatistics.RowTemplate.Height = 25;
             this.dataGridViewClassStatistics.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewClassStatistics.Size = new System.Drawing.Size(562, 388);
+            this.dataGridViewClassStatistics.Size = new System.Drawing.Size(562, 418);
             this.dataGridViewClassStatistics.TabIndex = 2;
             // 
             // tabPageEvents
@@ -1022,10 +1022,10 @@ namespace school
             // tabPageTeachers
             // 
             this.tabPageTeachers.Controls.Add(this.dataGridViewTeachers);
-            this.tabPageTeachers.Location = new System.Drawing.Point(4, 30);
+            this.tabPageTeachers.Location = new System.Drawing.Point(4, 56);
             this.tabPageTeachers.Name = "tabPageTeachers";
             this.tabPageTeachers.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageTeachers.Size = new System.Drawing.Size(1197, 775);
+            this.tabPageTeachers.Size = new System.Drawing.Size(1197, 749);
             this.tabPageTeachers.TabIndex = 6;
             this.tabPageTeachers.Text = "Сотрудники";
             this.tabPageTeachers.UseVisualStyleBackColor = true;
@@ -1050,10 +1050,10 @@ namespace school
             // tabPageStudents
             // 
             this.tabPageStudents.Controls.Add(this.tabControl3);
-            this.tabPageStudents.Location = new System.Drawing.Point(4, 30);
+            this.tabPageStudents.Location = new System.Drawing.Point(4, 56);
             this.tabPageStudents.Name = "tabPageStudents";
             this.tabPageStudents.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageStudents.Size = new System.Drawing.Size(1197, 775);
+            this.tabPageStudents.Size = new System.Drawing.Size(1197, 749);
             this.tabPageStudents.TabIndex = 7;
             this.tabPageStudents.Text = "Ученики";
             this.tabPageStudents.UseVisualStyleBackColor = true;
@@ -1101,9 +1101,9 @@ namespace school
             // tabPageAttendance
             // 
             this.tabPageAttendance.Controls.Add(this.tabControlAttendance);
-            this.tabPageAttendance.Location = new System.Drawing.Point(4, 30);
+            this.tabPageAttendance.Location = new System.Drawing.Point(4, 56);
             this.tabPageAttendance.Name = "tabPageAttendance";
-            this.tabPageAttendance.Size = new System.Drawing.Size(1197, 775);
+            this.tabPageAttendance.Size = new System.Drawing.Size(1197, 749);
             this.tabPageAttendance.TabIndex = 8;
             this.tabPageAttendance.Text = "Посещаемость";
             this.tabPageAttendance.UseVisualStyleBackColor = true;
@@ -1151,7 +1151,7 @@ namespace school
             this.tabPage7.Controls.Add(this.dataGridViewClassAtterdance);
             this.tabPage7.Location = new System.Drawing.Point(4, 26);
             this.tabPage7.Name = "tabPage7";
-            this.tabPage7.Size = new System.Drawing.Size(1183, 758);
+            this.tabPage7.Size = new System.Drawing.Size(1183, 784);
             this.tabPage7.TabIndex = 2;
             this.tabPage7.Text = "Класс";
             this.tabPage7.UseVisualStyleBackColor = true;
@@ -1193,15 +1193,15 @@ namespace school
             this.dataGridViewClassAtterdance.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewClassAtterdance.Location = new System.Drawing.Point(6, 34);
             this.dataGridViewClassAtterdance.Name = "dataGridViewClassAtterdance";
-            this.dataGridViewClassAtterdance.Size = new System.Drawing.Size(1171, 782);
+            this.dataGridViewClassAtterdance.Size = new System.Drawing.Size(1171, 812);
             this.dataGridViewClassAtterdance.TabIndex = 1;
             // 
             // tabPageClasses
             // 
             this.tabPageClasses.Controls.Add(this.dataGridViewClasses);
-            this.tabPageClasses.Location = new System.Drawing.Point(4, 30);
+            this.tabPageClasses.Location = new System.Drawing.Point(4, 56);
             this.tabPageClasses.Name = "tabPageClasses";
-            this.tabPageClasses.Size = new System.Drawing.Size(1197, 775);
+            this.tabPageClasses.Size = new System.Drawing.Size(1197, 749);
             this.tabPageClasses.TabIndex = 10;
             this.tabPageClasses.Text = "Классы";
             this.tabPageClasses.UseVisualStyleBackColor = true;
@@ -1230,9 +1230,9 @@ namespace school
             this.tabPageReports.Controls.Add(this.dateTimePickerGradesReports2);
             this.tabPageReports.Controls.Add(this.buttonExcelReport);
             this.tabPageReports.Controls.Add(this.tabControlReports);
-            this.tabPageReports.Location = new System.Drawing.Point(4, 30);
+            this.tabPageReports.Location = new System.Drawing.Point(4, 56);
             this.tabPageReports.Name = "tabPageReports";
-            this.tabPageReports.Size = new System.Drawing.Size(1197, 775);
+            this.tabPageReports.Size = new System.Drawing.Size(1197, 749);
             this.tabPageReports.TabIndex = 11;
             this.tabPageReports.Text = "Отчетность";
             this.tabPageReports.UseVisualStyleBackColor = true;
@@ -1307,7 +1307,7 @@ namespace school
             this.dataGridViewGradesReports.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewGradesReports.Location = new System.Drawing.Point(6, 9);
             this.dataGridViewGradesReports.Name = "dataGridViewGradesReports";
-            this.dataGridViewGradesReports.Size = new System.Drawing.Size(1161, 681);
+            this.dataGridViewGradesReports.Size = new System.Drawing.Size(1161, 589);
             this.dataGridViewGradesReports.TabIndex = 2;
             // 
             // tabPageAtterdanceReports
@@ -1315,7 +1315,7 @@ namespace school
             this.tabPageAtterdanceReports.Controls.Add(this.dataGridViewAtterdanceReports);
             this.tabPageAtterdanceReports.Location = new System.Drawing.Point(4, 26);
             this.tabPageAtterdanceReports.Name = "tabPageAtterdanceReports";
-            this.tabPageAtterdanceReports.Size = new System.Drawing.Size(1173, 673);
+            this.tabPageAtterdanceReports.Size = new System.Drawing.Size(1173, 699);
             this.tabPageAtterdanceReports.TabIndex = 1;
             this.tabPageAtterdanceReports.Text = "Посещаемость";
             this.tabPageAtterdanceReports.UseVisualStyleBackColor = true;
@@ -1324,7 +1324,7 @@ namespace school
             // 
             this.dataGridViewAtterdanceReports.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.dataGridViewAtterdanceReports.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridViewAtterdanceReports.Location = new System.Drawing.Point(6, 15);
+            this.dataGridViewAtterdanceReports.Location = new System.Drawing.Point(6, 30);
             this.dataGridViewAtterdanceReports.Name = "dataGridViewAtterdanceReports";
             this.dataGridViewAtterdanceReports.Size = new System.Drawing.Size(1161, 667);
             this.dataGridViewAtterdanceReports.TabIndex = 3;

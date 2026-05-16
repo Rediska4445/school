@@ -61,6 +61,10 @@ namespace school
             this.cmbPermission = new System.Windows.Forms.ComboBox();
             this.cmbClass = new System.Windows.Forms.ComboBox();
             this.btnRegister = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
+            this.textBoxAge = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.textBoxTelephone = new System.Windows.Forms.TextBox();
             this.tabControl1.SuspendLayout();
             this.tabPageLogin.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -74,7 +78,7 @@ namespace school
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(280, 280);
+            this.tabControl1.Size = new System.Drawing.Size(280, 341);
             this.tabControl1.TabIndex = 0;
             // 
             // tabPageLogin
@@ -169,6 +173,11 @@ namespace school
             // 
             // tabPageRegister
             // 
+            this.tabPageRegister.AutoScroll = true;
+            this.tabPageRegister.Controls.Add(this.textBoxTelephone);
+            this.tabPageRegister.Controls.Add(this.label2);
+            this.tabPageRegister.Controls.Add(this.textBoxAge);
+            this.tabPageRegister.Controls.Add(this.label1);
             this.tabPageRegister.Controls.Add(this.lblRegisterTitle);
             this.tabPageRegister.Controls.Add(this.lblFullName);
             this.tabPageRegister.Controls.Add(this.lblRegPassword);
@@ -182,7 +191,7 @@ namespace school
             this.tabPageRegister.Location = new System.Drawing.Point(4, 22);
             this.tabPageRegister.Name = "tabPageRegister";
             this.tabPageRegister.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageRegister.Size = new System.Drawing.Size(272, 254);
+            this.tabPageRegister.Size = new System.Drawing.Size(272, 315);
             this.tabPageRegister.TabIndex = 1;
             this.tabPageRegister.Text = "Регистрация";
             this.tabPageRegister.UseVisualStyleBackColor = true;
@@ -274,13 +283,47 @@ namespace school
             // 
             // btnRegister
             // 
-            this.btnRegister.Location = new System.Drawing.Point(100, 190);
+            this.btnRegister.Location = new System.Drawing.Point(6, 273);
             this.btnRegister.Name = "btnRegister";
-            this.btnRegister.Size = new System.Drawing.Size(160, 27);
+            this.btnRegister.Size = new System.Drawing.Size(254, 27);
             this.btnRegister.TabIndex = 9;
             this.btnRegister.Text = "Зарегистрировать";
             this.btnRegister.UseVisualStyleBackColor = true;
             this.btnRegister.Click += new System.EventHandler(this.btnRegister_Click);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(6, 193);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(52, 13);
+            this.label1.TabIndex = 11;
+            this.label1.Text = "Возраст:";
+            this.label1.Visible = false;
+            // 
+            // textBoxAge
+            // 
+            this.textBoxAge.Location = new System.Drawing.Point(100, 190);
+            this.textBoxAge.Name = "textBoxAge";
+            this.textBoxAge.Size = new System.Drawing.Size(160, 20);
+            this.textBoxAge.TabIndex = 12;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(6, 231);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(55, 13);
+            this.label2.TabIndex = 13;
+            this.label2.Text = "Телефон:";
+            this.label2.Visible = false;
+            // 
+            // textBoxTelephone
+            // 
+            this.textBoxTelephone.Location = new System.Drawing.Point(100, 228);
+            this.textBoxTelephone.Name = "textBoxTelephone";
+            this.textBoxTelephone.Size = new System.Drawing.Size(160, 20);
+            this.textBoxTelephone.TabIndex = 14;
             // 
             // LoginForm
             // 
@@ -288,7 +331,7 @@ namespace school
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(305, 321);
+            this.ClientSize = new System.Drawing.Size(305, 367);
             this.Controls.Add(this.tabControl1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -305,5 +348,10 @@ namespace school
             this.ResumeLayout(false);
 
         }
+
+        private TextBox textBoxTelephone;
+        private Label label2;
+        private TextBox textBoxAge;
+        private Label label1;
     }
 }

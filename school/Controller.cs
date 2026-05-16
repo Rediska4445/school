@@ -209,20 +209,23 @@ namespace school
                               INDEX IX_SubjectLessonCount_Subject (SubjectID),
                               CONSTRAINT FK_SubjectLessonCount_Subjects FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID)
                           );",
-                         @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'SubjectClassHours' AND xtype = 'U')
-                          CREATE TABLE SubjectClassHours (
-                            SubjectClassHoursID INT IDENTITY(1,1) PRIMARY KEY,
-                            ClassID INT NOT NULL,
-                            SubjectID INT NOT NULL,
-                            Hours INT NOT NULL DEFAULT 0,
-
-                            CONSTRAINT FK_SubjectClassHours_Classes
-                                FOREIGN KEY (ClassID) REFERENCES Classes(ClassID),
-                            CONSTRAINT FK_SubjectClassHours_Subjects
-                                FOREIGN KEY (SubjectID) REFERENCES Subjects(SubjectID),
-
-                            UNIQUE (ClassID, SubjectID),
-                            INDEX IX_SubjectClassHours_ClassSubject (ClassID, SubjectID)
+                        @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'RegistrationApplications' AND xtype = 'U')
+                          CREATE TABLE RegistrationApplications (
+                              ApplicationID INT IDENTITY(1,1) PRIMARY KEY,
+                              FullName NVARCHAR(100) COLLATE Cyrillic_General_CI_AS NOT NULL,
+                              PasswordHash NVARCHAR(255) COLLATE Cyrillic_General_CI_AS NOT NULL,
+                              PermissionID INT NOT NULL, 
+                              ClassID INT NULL,
+                              Age TINYINT NULL CHECK (Age BETWEEN 5 AND 100),
+                              Telephone NVARCHAR(20) COLLATE Cyrillic_General_CI_AS NULL,
+                              ApplicationDate DATETIME2 NOT NULL DEFAULT GETDATE(),
+                              IsApproved BIT NOT NULL DEFAULT 0,
+      
+                              FOREIGN KEY (PermissionID) REFERENCES Permissions(PermissionID),
+      
+                              INDEX IX_RegistrationApplications_Permission (PermissionID),
+                              INDEX IX_RegistrationApplications_ClassID (ClassID),
+                              INDEX IX_RegistrationApplications_IsApproved (IsApproved)
                           );",
                 };
             }
@@ -311,46 +314,82 @@ namespace school
                 {
                     $"USE [{dbName}];",
 
-                    @"DECLARE @TeacherID INT = (SELECT UserID FROM Users WHERE FullName = N'Иванов Иван Иванович');
+                    // ========================= 1А: Математика =============================
+                    @"DECLARE @TeacherMathID INT = (SELECT UserID FROM Users WHERE FullName = N'Иванов Иван Иванович');
                     DECLARE @MathSubjectID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Математика');
                     DECLARE @Class1A INT = (SELECT ClassID FROM Classes WHERE ClassName = N'1А');
 
-                    IF @TeacherID > 0 AND @MathSubjectID > 0
+                    IF @TeacherMathID > 0 AND @MathSubjectID > 0 AND @Class1A > 0
                     BEGIN
-                        IF NOT EXISTS (SELECT * FROM Grades WHERE GradeID = 1)
-                        INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID) VALUES
-                        ('2025-12-01', (SELECT UserID FROM Users WHERE FullName = N'Алексеев Андрей'), @MathSubjectID, 5, @TeacherID),
-                        ('2025-12-02', (SELECT UserID FROM Users WHERE FullName = N'Борисова Дарья'), @MathSubjectID, 4, @TeacherID),
-                        ('2025-12-03', (SELECT UserID FROM Users WHERE FullName = N'Васильев Кирилл'), @MathSubjectID, 3, @TeacherID),
-                        ('2025-12-04', (SELECT UserID FROM Users WHERE FullName = N'Григорьева София'), @MathSubjectID, 5, @TeacherID),
-                        ('2025-12-05', (SELECT UserID FROM Users WHERE FullName = N'Алексеев Андрей'), @MathSubjectID, 4, @TeacherID),
-                        ('2025-12-06', (SELECT UserID FROM Users WHERE FullName = N'Борисова Дарья'), @MathSubjectID, 5, @TeacherID),
-                        ('2025-12-07', (SELECT UserID FROM Users WHERE FullName = N'Васильев Кирилл'), @MathSubjectID, 2, @TeacherID),
-                        ('2025-12-08', (SELECT UserID FROM Users WHERE FullName = N'Григорьева София'), @MathSubjectID, 4, @TeacherID),
-                        ('2025-12-09', (SELECT UserID FROM Users WHERE FullName = N'Алексеев Андрей'), @MathSubjectID, 5, @TeacherID),
-                        ('2025-12-10', (SELECT UserID FROM Users WHERE FullName = N'Борисова Дарья'), @MathSubjectID, 3, @TeacherID);
-                        PRINT '✅ Добавлено 10 оценок по математике (1А)';
+                        -- Вставляем оценки по математике каждому ученику 1А
+                        -- за период 2025-09-01 ... 2026-05-30
+
+                        DECLARE @Date DATE = '2025-09-01';
+                        DECLARE @EndDate DATE = '2026-05-30';
+
+                        WHILE @Date <= @EndDate
+                        BEGIN
+                            IF DATEPART(WEEKDAY, @Date) IN (2,3,4,5,6) -- Пн-Пт
+                            BEGIN
+                                -- Математика
+                                INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID)
+                                SELECT @Date, u.UserID, @MathSubjectID, 
+                                       CASE 1 + ABS(CHECKSUM(NEWID())) % 5
+                                           WHEN 1 THEN 1
+                                           WHEN 2 THEN 2
+                                           WHEN 3 THEN 3
+                                           WHEN 4 THEN 4
+                                           ELSE 5
+                                       END,
+                                       @TeacherMathID
+                                FROM Users u
+                                WHERE u.ClassID = @Class1A
+                                  AND u.PermissionID = 1; -- ученик
+                            END
+
+                            SET @Date = DATEADD(DAY, 1, @Date);
+                        END
+
+                        PRINT 'Добавлены многочисленные оценки по математике (1А, 2025-09-01 … 2026-05-30)';
                     END;",
 
-                    // Оценки для русского языка (Петрова) - 10 оценок по 1Б
-                    @"DECLARE @Teacher2ID INT = (SELECT UserID FROM Users WHERE FullName = N'Петрова Анна Сергеевна');
+                    // ========================= 1А: Русский язык ===========================
+                    @"DECLARE @TeacherRussianID INT = (SELECT UserID FROM Users WHERE FullName = N'Петрова Анна Сергеевна');
                     DECLARE @RussianSubjectID INT = (SELECT SubjectID FROM Subjects WHERE SubjectName = N'Русский язык');
-                    DECLARE @Class1B INT = (SELECT ClassID FROM Classes WHERE ClassName = N'1Б');
+                    DECLARE @Class1A_R INT = (SELECT ClassID FROM Classes WHERE ClassName = N'1А');
 
-                    IF @Teacher2ID > 0 AND @RussianSubjectID > 0
+                    IF @TeacherRussianID > 0 AND @RussianSubjectID > 0 AND @Class1A_R > 0
                     BEGIN
-                        INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID) VALUES
-                        ('2025-12-01', (SELECT UserID FROM Users WHERE FullName = N'Голубев Артем'), @RussianSubjectID, 4, @Teacher2ID),
-                        ('2025-12-02', (SELECT UserID FROM Users WHERE FullName = N'Дмитриева Елена'), @RussianSubjectID, 5, @Teacher2ID),
-                        ('2025-12-03', (SELECT UserID FROM Users WHERE FullName = N'Ефимов Стас'), @RussianSubjectID, 3, @Teacher2ID),
-                        ('2025-12-04', (SELECT UserID FROM Users WHERE FullName = N'Жданова Катя'), @RussianSubjectID, 5, @Teacher2ID),
-                        ('2025-12-05', (SELECT UserID FROM Users WHERE FullName = N'Голубев Артем'), @RussianSubjectID, 4, @Teacher2ID),
-                        ('2025-12-06', (SELECT UserID FROM Users WHERE FullName = N'Дмитриева Елена'), @RussianSubjectID, 5, @Teacher2ID),
-                        ('2025-12-07', (SELECT UserID FROM Users WHERE FullName = N'Ефимов Стас'), @RussianSubjectID, 2, @Teacher2ID),
-                        ('2025-12-08', (SELECT UserID FROM Users WHERE FullName = N'Жданова Катя'), @RussianSubjectID, 4, @Teacher2ID),
-                        ('2025-12-09', (SELECT UserID FROM Users WHERE FullName = N'Голубев Артем'), @RussianSubjectID, 5, @Teacher2ID),
-                        ('2025-12-10', (SELECT UserID FROM Users WHERE FullName = N'Дмитриева Елена'), @RussianSubjectID, 3, @Teacher2ID);
-                        PRINT '✅ Добавлено 10 оценок по русскому (1Б)';
+                        -- Вставляем оценки по русскому языку каждому ученику 1А
+                        -- за период 2025-09-01 ... 2026-05-30
+
+                        DECLARE @DateR DATE = '2025-09-01';
+                        DECLARE @EndDateR DATE = '2026-05-30';
+
+                        WHILE @DateR <= @EndDateR
+                        BEGIN
+                            IF DATEPART(WEEKDAY, @DateR) IN (2,3,4,5,6) -- Пн-Пт
+                            BEGIN
+                                -- Русский язык
+                                INSERT INTO Grades (GradeDate, StudentID, SubjectID, GradeValue, TeacherID)
+                                SELECT @DateR, u.UserID, @RussianSubjectID, 
+                                       CASE 1 + ABS(CHECKSUM(NEWID())) % 5
+                                           WHEN 1 THEN 1
+                                           WHEN 2 THEN 2
+                                           WHEN 3 THEN 3
+                                           WHEN 4 THEN 4
+                                           ELSE 5
+                                       END,
+                                       @TeacherRussianID
+                                FROM Users u
+                                WHERE u.ClassID = @Class1A_R
+                                  AND u.PermissionID = 1; -- ученик
+                            END
+
+                            SET @DateR = DATEADD(DAY, 1, @DateR);
+                        END
+
+                        PRINT 'Добавлены многочисленные оценки по русскому языку (1А, 2025-09-01 … 2026-05-30)';
                     END;"
                 };
             }
