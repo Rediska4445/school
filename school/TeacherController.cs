@@ -1,8 +1,8 @@
-﻿using Microsoft.Data.SqlClient;
-using school.Controllers;
+﻿using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +18,80 @@ namespace school
         public TeacherController(string connectionString)
         {
             _connectionString = connectionString;
+        }
+
+        public void UpsertTeacherSubject(int teacherId, int subjectId, int classId)
+        {
+            FileLogger.logger.Debug(
+                $"UpsertTeacherSubject: " +
+                $"teacherId={teacherId}, subjectId={subjectId}, classId={classId}");
+
+            if (teacherId <= 0 || subjectId <= 0 || classId <= 0)
+            {
+                FileLogger.logger.Debug("Один из параметров <= 0 → выход без SQL");
+                return;
+            }
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                FileLogger.logger.Debug("Соединение открыто");
+
+                using (var cmd = new SqlCommand(
+                    @"IF EXISTS (
+                  SELECT 1
+                  FROM TeacherSubjects
+                  WHERE TeacherID = @teacherId
+                    AND SubjectID = @subjectId
+                    AND ClassID = @classId
+              )
+              UPDATE TeacherSubjects
+              SET TeacherID = @teacherId,
+                  SubjectID = @subjectId,
+                  ClassID = @classId
+              WHERE TeacherID = @teacherId
+                AND SubjectID = @subjectId
+                AND ClassID = @classId
+              ELSE
+              INSERT INTO TeacherSubjects (TeacherID, SubjectID, ClassID)
+              VALUES (@teacherId, @subjectId, @classId)", conn))
+                {
+                    cmd.Parameters.AddWithValue("@teacherId", teacherId);
+                    cmd.Parameters.AddWithValue("@subjectId", subjectId);
+                    cmd.Parameters.AddWithValue("@classId", classId);
+
+                    FileLogger.logger.Debug(
+                        "Выполняем SQL: UpsertTeacherSubject");
+
+                    int rowsAffected = cmd.ExecuteNonQuery();
+
+                    FileLogger.logger.Info(
+                        $"UpsertTeacherSubject: " +
+                        $"updated/inserted {rowsAffected} row(s), " +
+                        $"teacherId={teacherId}, subjectId={subjectId}, classId={classId}");
+                }
+            }
+        }
+
+        public void DeleteTeacherSubjectByClassSubject(int classId, int subjectId)
+        {
+            if (classId <= 0 || subjectId <= 0)
+                return;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    @"DELETE FROM TeacherSubjects
+              WHERE ClassID = @classId AND SubjectID = @subjectId", conn))
+                {
+                    cmd.Parameters.AddWithValue("@classId", classId);
+                    cmd.Parameters.AddWithValue("@subjectId", subjectId);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
         }
 
         public List<User> GetStudentsByClass(Class classObj)
@@ -320,7 +394,6 @@ namespace school
             {
                 conn.Open();
 
-                // ✅ 1. ПРОВЕРКА ПРАВ учителя на предмет/класс
                 using (var checkCmd = new SqlCommand(@"
             SELECT COUNT(*) FROM TeacherSubjects ts
             WHERE ts.TeacherID = @TeacherID 
@@ -336,7 +409,6 @@ namespace school
                         throw new InvalidOperationException("Учитель не ведет этот предмет в указанном классе");
                 }
 
-                // ✅ 2. UPSERT: если существует - UPDATE, иначе INSERT
                 using (var upsertCmd = new SqlCommand(@"
             IF EXISTS (
                 SELECT 1 FROM Homework 
@@ -396,7 +468,6 @@ namespace school
                 connection = new SqlConnection(_connectionString);
                 connection.Open();
 
-                // ✅ ДИНАМИЧЕСКИ формируем условие IN (@id1, @id2, ...)
                 string permissionCondition = string.Join(",", permissionIds.Select((id, index) => $"@p{index}"));
                 string sql = $@"
             SELECT 

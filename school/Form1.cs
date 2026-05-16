@@ -48,6 +48,18 @@ namespace school
 
             // Подготовка всякой хуйни для ролевой системы
             PrepareRole();
+
+            dataGridViewSubjects.DataError += DataError;
+        }
+
+        private void DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            e.ThrowException = false;  
+
+            FileLogger.logger.Error(
+                $"DataGridViewSubjects DataError: " +
+                $"row={e.RowIndex}, col={e.ColumnIndex}, " +
+                $"exc: {e.Exception?.Message ?? "null"}");
         }
 
         // Подговтока ролевых ограничений
@@ -1520,6 +1532,20 @@ namespace school
             dataGridViewSubjects.Columns.Add("SubjectID", "ID");
             dataGridViewSubjects.Columns.Add("SubjectName", "Предмет");
             dataGridViewSubjects.Columns.Add("SubjectCount", "Количество уроков в неделю");
+
+            DataGridViewComboBoxColumn comboTeacherCol = new DataGridViewComboBoxColumn();
+            comboTeacherCol.Name = "colTeacher";
+            comboTeacherCol.HeaderText = "Учитель";
+            comboTeacherCol.DisplayMember = "FullName";
+            comboTeacherCol.ValueMember = "FullName";
+
+            foreach (User sub in UserController._userController.GetAllOfPredicate("u.PermissionID >= 2"))
+            {
+                comboTeacherCol.Items.Add(sub);
+            }
+
+            dataGridViewSubjects.Columns.Add(comboTeacherCol);
+
             FileLogger.logger.Info("Колонки добавлены");
 
             dataGridViewSubjects.ReadOnly = !isDirector;
@@ -1551,8 +1577,7 @@ namespace school
                 {
                     if (subjectId > 0)
                     {
-                        FileLogger.logger.Info($"ОТМЕЧАЕМ УДАЛЕНИЕ: ID={subjectId}");
-                        SubjectController._controller.AddSubjectChange("DELETE", new Subject { SubjectID = subjectId });
+                        FileLogger.logger.Info($"Удаление предмета: isTrue={SubjectController._controller.DeleteSubject(new Subject { SubjectID = subjectId })}");
                     }
                 }
             }
@@ -1575,6 +1600,7 @@ namespace school
                 return;
             }
 
+            // =========== 1. Часть, как у тебя ===========
             int subjectId = 0;
             var idValue = row.Cells["SubjectID"].Value;
             string nameValue = row.Cells["SubjectName"].Value?.ToString();
@@ -1599,25 +1625,83 @@ namespace school
             var subject = new Subject
             {
                 SubjectID = subjectId,
-                SubjectName = nameValue.Trim()
+                SubjectName = nameValue?.Trim()
             };
 
-            var subjectCountObj = row.Cells["SubjectCount"].Value;
-            if (subjectCountObj != null &&
-                int.TryParse(subjectCountObj.ToString(), out int subjectCount) &&
-                subjectCount > 0)
+            // =========== 2. ПРОВЕРКА ВСЕХ ПОЛЕЙ ===========
+
+            bool isNameValid = !string.IsNullOrWhiteSpace(subject.SubjectName);
+            int subjectCount = 0;
+            bool isCountValid = row.Cells["SubjectCount"].Value != null &&
+                                int.TryParse(row.Cells["SubjectCount"].Value.ToString(), out subjectCount) &&
+                                subjectCount > 0;
+            bool isTeacherValid = row.Cells["colTeacher"]?.Value != null &&
+                                  !string.IsNullOrWhiteSpace(row.Cells["colTeacher"].Value.ToString());
+
+            int subjectIdFinal = -1;
+
+            // ---------- ВАЖНО: SQL ТОЛЬКО КОГДА ВСЕ ПОЛЯ НЕ ПУСТЫЕ ----------
+            if (isNameValid && isCountValid && isTeacherValid)
             {
                 int classId = GetClassIdFromDirectorComboBox();
-                int resultId = SubjectController._controller.UpsertSubjectWithHours(
+
+                // 2.1. Сохраняем предмет с часами
+                subjectIdFinal = SubjectController._controller.UpsertSubjectWithHours(
                     subject,
                     classId,
-                    subjectCount 
+                    subjectCount
                 );
 
                 FileLogger.logger.Info(
                     $"Результат UpsertSubjectWithHours: " +
-                    $"ID={resultId}, Name='{subject.SubjectName}', " +
+                    $"ID={subjectIdFinal}, Name='{subject.SubjectName}', " +
                     $"class={classId}, hours={subjectCount}");
+            }
+
+            // =========== 3. Учитель (тоже только при валидной строке) ===========
+
+            DataGridViewCell teacherCell = row.Cells["colTeacher"];
+            if (teacherCell == null || teacherCell.Value == null || teacherCell.Value == DBNull.Value)
+                return;
+
+            string teacherFullName = teacherCell.Value.ToString();
+            int classId2 = GetClassIdFromDirectorComboBox();
+
+            User teacher = TeacherController._controller.GetTeacherByName(teacherFullName);
+
+            FileLogger.logger.Debug(
+                $"Проверка строки: " +
+                $"NameValid={isNameValid} (" + (string.IsNullOrWhiteSpace(subject.SubjectName) ? "пустое" : "не пустое") + "), " +
+                $"CountValid={isCountValid} (count={subjectCount}), " +
+                $"TeacherValid={isTeacherValid} (teacher={row.Cells["colTeacher"]?.Value?.ToString() ?? "null"})"
+            );
+
+            // Условия, при которых считаем строку "полноценной" для учителя
+            // (можно ту же логику, что и выше)
+            if (isNameValid && isCountValid && isTeacherValid)
+            {
+                if (teacher != null)
+                {
+                    TeacherController._controller.UpsertTeacherSubject(
+                        teacher.UserID,
+                        subjectIdFinal,
+                        classId2
+                    );
+
+                    FileLogger.logger.Info(
+                        $"UpsertTeacherSubject: " +
+                        $"teacher='{teacher.FullName}', " +
+                        $"subjectId={subjectIdFinal}, ");
+                }
+                else
+                {
+                    TeacherController._controller.DeleteTeacherSubjectByClassSubject(
+                        classId2, subjectIdFinal);
+
+                    FileLogger.logger.Info(
+                        $"DeleteTeacherSubject: нет учителя с именем '{teacherFullName}', " +
+                        $"subjectId={subjectIdFinal}, ");
+                }
             }
         }
 
@@ -1630,33 +1714,43 @@ namespace school
 
             if (dataGridViewSubjects.Columns.Count == 0)
             {
-                FileLogger.logger.Info("Колонки отсутствуют - вызываем SetupSubject");
                 SetupSubject();
-            }
-            else
-            {
-                FileLogger.logger.Info("Колонки уже есть");
             }
 
             dataGridViewSubjects.Rows.Clear();
             FileLogger.logger.Info("Строки очищены");
 
-            var subjects = SubjectController._controller.GetAllSubjectsForClass(GetClassIdFromDirectorComboBox());
+            int classId = GetClassIdFromDirectorComboBox();
+
+            var subjects = SubjectController._controller.GetAllSubjectsForClass(classId);
             FileLogger.logger.Info($"Загружено предметов: {subjects.Count}");
 
             foreach (Subject subject in subjects)
             {
-                int lessonCount = SubjectController._controller.GetHoursByClassSubject(
-                    GetClassIdFromDirectorComboBox(), subject.SubjectID
-                );
+                int lessonCount = SubjectController._controller.GetHoursByClassSubject(classId, subject.SubjectID);
 
-                dataGridViewSubjects.Rows.Add(
+                User assignedTeacher = UserController._userController
+                .GetTeacherBySubjectIdAndClassId(subject.SubjectID, classId);
+
+                int rowIndex = dataGridViewSubjects.Rows.Add(
                     subject.SubjectID,
                     subject.SubjectName,
                     lessonCount
                 );
-                FileLogger.logger.Debug($"Добавлена строка: {subject.SubjectID} - {subject.SubjectName}");
+
+                if (assignedTeacher != null)
+                {
+                    dataGridViewSubjects.Rows[rowIndex].Cells["colTeacher"].Value =
+                        assignedTeacher.FullName;
+                }
             }
+
+            dataGridViewSubjects.DataError += (sender, e) =>
+            {
+                e.ThrowException = false;
+
+                FileLogger.logger.Error($"DataError: row={e.RowIndex}, col={e.ColumnIndex}, exception={e.Exception.Message}");
+            };
 
             FileLogger.logger.Info("=== LoadSubjects КОНЕЦ ===");
         }
@@ -1773,7 +1867,6 @@ namespace school
             }
         }
 
-        // Загрузка расписания конкретного класса.
         private void LoadScheduleGrid(int classId)
         {
             try
@@ -1878,7 +1971,9 @@ namespace school
                 sheduleGridView.Columns.Add(comboTeacherCol);
             }
 
-            sheduleGridView.ReadOnly = isStudent;  // Только просмотр для ученика
+            sheduleGridView.DataError += DataError;
+
+            sheduleGridView.ReadOnly = isStudent;
             sheduleGridView.AllowUserToAddRows = !isStudent;
             sheduleGridView.AllowUserToDeleteRows = !isStudent;
             sheduleGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -3298,7 +3393,7 @@ namespace school
         {
             var averages = new Dictionary<string, double>();
 
-            FileLogger.logger.Debug("🔢 Начало подсчета средних по предметам");
+            FileLogger.logger.Debug("Начало подсчета средних по предметам");
 
             for (int col = 1; col < dataGridViewGradesReports.Columns.Count; col++)
             {

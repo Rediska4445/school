@@ -161,9 +161,6 @@ namespace school
             return subjects;
         }
 
-        /// <summary>
-        /// [translate:Удаление предмета (проверяет FK зависимости)]
-        /// </summary>
         public bool DeleteSubject(Subject sub)
         {
             if (sub == null || sub.SubjectID <= 0)
@@ -173,7 +170,7 @@ namespace school
             {
                 conn.Open();
 
-                // ✅ ПРОВЕРКА FK ДО удаления
+                // ROUND 1: проверяем, есть ли ДЗ/оценки
                 int homeworkCount = 0, gradesCount = 0;
                 using (var checkCmd = new SqlCommand(@"
             SELECT COUNT(*) FROM Homework WHERE SubjectID = @SubjectID", conn))
@@ -191,12 +188,41 @@ namespace school
 
                 if (homeworkCount > 0 || gradesCount > 0)
                     throw new InvalidOperationException(
-                        $"[translate:Нельзя удалить предмет {sub.SubjectName}. Есть ДЗ ({homeworkCount}) и оценки ({gradesCount})]");
+                        $"Нельзя удалить предмет {sub.SubjectName}. Есть ДЗ ({homeworkCount}) и оценки ({gradesCount})");
 
-                // ✅ Теперь безопасно удаляем
-                using (var cmd = new SqlCommand("DELETE FROM Subjects WHERE SubjectID = @SubjectID", conn))
+                // ROUND 2: удаляем все связанные с предметом записи
+
+                // Удаляем предметы в расписании
+                using (var cmd = new SqlCommand(@"
+            DELETE FROM Schedule
+            WHERE SubjectID = @subjectId", conn))
                 {
-                    cmd.Parameters.AddWithValue("@SubjectID", sub.SubjectID);
+                    cmd.Parameters.AddWithValue("@subjectId", sub.SubjectID);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Удаляем часы по классам
+                using (var cmd = new SqlCommand(@"
+            DELETE FROM SubjectClassHours
+            WHERE SubjectID = @subjectId", conn))
+                {
+                    cmd.Parameters.AddWithValue("@subjectId", sub.SubjectID);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Удаляем связи Учитель-Предмет (TeacherSubjects)
+                using (var cmd = new SqlCommand(@"
+            DELETE FROM TeacherSubjects
+            WHERE SubjectID = @subjectId", conn))
+                {
+                    cmd.Parameters.AddWithValue("@subjectId", sub.SubjectID);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Удаляем сам предмет
+                using (var cmd = new SqlCommand("DELETE FROM Subjects WHERE SubjectID = @subjectId", conn))
+                {
+                    cmd.Parameters.AddWithValue("@subjectId", sub.SubjectID);
                     int rowsAffected = cmd.ExecuteNonQuery();
                     return rowsAffected > 0;
                 }
@@ -366,11 +392,11 @@ namespace school
         }
 
         private void UpsertClassSubjectHoursInConnection(
-    SqlConnection conn,
-    SqlCommand cmd,
-    int classId,
-    int subjectId,
-    int hours)
+            SqlConnection conn,
+            SqlCommand cmd,
+            int classId,
+            int subjectId,
+            int hours)
         {
             FileLogger.logger.Info(
                 $"UpsertClassSubjectHoursInConnection: " +

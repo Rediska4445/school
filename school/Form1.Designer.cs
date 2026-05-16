@@ -953,10 +953,10 @@ namespace school
             // tabPageEvents
             // 
             this.tabPageEvents.Controls.Add(this.dataGridViewEvents);
-            this.tabPageEvents.Location = new System.Drawing.Point(4, 30);
+            this.tabPageEvents.Location = new System.Drawing.Point(4, 56);
             this.tabPageEvents.Name = "tabPageEvents";
             this.tabPageEvents.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageEvents.Size = new System.Drawing.Size(1197, 775);
+            this.tabPageEvents.Size = new System.Drawing.Size(1197, 749);
             this.tabPageEvents.TabIndex = 4;
             this.tabPageEvents.Text = "Мероприятия";
             this.tabPageEvents.UseVisualStyleBackColor = true;
@@ -975,7 +975,7 @@ namespace school
             this.dataGridViewEvents.RowHeadersVisible = false;
             this.dataGridViewEvents.RowTemplate.Height = 25;
             this.dataGridViewEvents.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridViewEvents.Size = new System.Drawing.Size(1165, 812);
+            this.dataGridViewEvents.Size = new System.Drawing.Size(1165, 786);
             this.dataGridViewEvents.TabIndex = 2;
             // 
             // tabPageSubjects

@@ -444,6 +444,12 @@ namespace school.Controllers
             }
         }
 
+        public List<User> GetAllTeachers()
+        {
+            string condition = "u.PermissionID = 2";
+            return GetAllOfPredicate(condition);
+        }
+
         /// <summary>
         /// Вставка нового пользователя или обновление существующего (PermissionID)
         /// </summary>

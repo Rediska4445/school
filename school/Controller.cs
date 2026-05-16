@@ -384,13 +384,11 @@ namespace school
 
                     PRINT '✅ Добавлены 6 учителей (3 с классами, 3 без)';",
 
-                    // Директор (всего 1)
                     @"IF NOT EXISTS (SELECT * FROM Users WHERE FullName = N'Директор')
                     INSERT INTO Users (FullName, PasswordHash, PermissionID) VALUES
                     (N'Директор', 'director1', 3);
                     PRINT '✅ Добавлен директор';",
 
-                    // Ученики по классам (всего 40)
                     @"DECLARE @ClassID INT;
                     DECLARE @StudentCount INT = 0;
 
