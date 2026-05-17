@@ -24,6 +24,8 @@ namespace school
 
             txtLogin.Text = "Директор";
             txtPassword.Text = "director1";
+
+            cmbPermission.SelectedIndex = 0; 
         }
 
         private void btnLogin_Click_1(object sender, EventArgs e)
@@ -78,34 +80,82 @@ namespace school
 
         private void btnRegister_Click(object sender, EventArgs e)
         {
-            string fullName = txtFullName.Text.Trim();
-            string password = txtRegPassword.Text;
-
-            if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(password))
+            if (string.IsNullOrWhiteSpace(txtFullName.Text))
             {
-                MessageBox.Show("Заполните ФИО и пароль!", "Ошибка",
-                               MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Введите ФИО", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtFullName.Focus();
                 return;
             }
 
-            if (cmbPermission.SelectedIndex < 0)
+            if (string.IsNullOrWhiteSpace(txtRegPassword.Text))
             {
-                MessageBox.Show("Выберите роль!", "Ошибка",
-                               MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Введите пароль", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtRegPassword.Focus();
                 return;
+            }
+
+            byte? age = null;
+            if (label1.Visible)
+            {
+                if (string.IsNullOrWhiteSpace(textBoxAge.Text))
+                {
+                    MessageBox.Show("Введите возраст", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    textBoxAge.Focus();
+                    return;
+                }
+
+                if (byte.TryParse(textBoxAge.Text, out byte ageValue) && ageValue >= 5 && ageValue <= 100)
+                {
+                    age = ageValue;
+                }
+                else
+                {
+                    MessageBox.Show("Возраст должен быть от 5 до 100", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    textBoxAge.Focus();
+                    return;
+                }
+            }
+
+            string telephone = null;
+            if (label2.Visible)
+            {
+                if (!string.IsNullOrWhiteSpace(textBoxTelephone.Text))
+                {
+                    telephone = textBoxTelephone.Text;
+                }
             }
 
             int permissionID = cmbPermission.SelectedIndex + 1;
-            int? classID = cmbClass.SelectedIndex >= 0 ? cmbClass.SelectedIndex + 1 : (int?)null;
 
-            bool success = UserController._userController.RegisterUserWithMessage(fullName, password, permissionID, classID);
-
-            if (success)
+            int? classID = null;
+            if (cmbClass.Visible && cmbClass.SelectedIndex >= 0)
             {
+                classID = Convert.ToInt32(cmbClass.SelectedValue);
+            }
+
+            var application = RegistrationApplicationController._controller.Create(
+                txtFullName.Text.Trim(),
+                txtRegPassword.Text,
+                permissionID,
+                classID,
+                age,
+                telephone
+            );
+
+            if (application != null)
+            {
+                MessageBox.Show("Заявление на регистрацию успешно отправлено! Ожидайте одобрения от директора.", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                 txtFullName.Clear();
                 txtRegPassword.Clear();
+                textBoxAge.Clear();
+                textBoxTelephone.Clear();
                 cmbPermission.SelectedIndex = -1;
                 cmbClass.SelectedIndex = -1;
+            }
+            else
+            {
+                MessageBox.Show("Ошибка при создании заявления", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

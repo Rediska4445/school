@@ -51,6 +51,10 @@ namespace school
             this.btnLogin = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.tabPageRegister = new System.Windows.Forms.TabPage();
+            this.textBoxTelephone = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.textBoxAge = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.lblRegisterTitle = new System.Windows.Forms.Label();
             this.lblFullName = new System.Windows.Forms.Label();
             this.lblRegPassword = new System.Windows.Forms.Label();
@@ -61,10 +65,6 @@ namespace school
             this.cmbPermission = new System.Windows.Forms.ComboBox();
             this.cmbClass = new System.Windows.Forms.ComboBox();
             this.btnRegister = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
-            this.textBoxAge = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.textBoxTelephone = new System.Windows.Forms.TextBox();
             this.tabControl1.SuspendLayout();
             this.tabPageLogin.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -88,7 +88,7 @@ namespace school
             this.tabPageLogin.Location = new System.Drawing.Point(4, 22);
             this.tabPageLogin.Name = "tabPageLogin";
             this.tabPageLogin.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageLogin.Size = new System.Drawing.Size(272, 254);
+            this.tabPageLogin.Size = new System.Drawing.Size(272, 315);
             this.tabPageLogin.TabIndex = 0;
             this.tabPageLogin.Text = "Вход";
             this.tabPageLogin.UseVisualStyleBackColor = true;
@@ -196,11 +196,45 @@ namespace school
             this.tabPageRegister.Text = "Регистрация";
             this.tabPageRegister.UseVisualStyleBackColor = true;
             // 
+            // textBoxTelephone
+            // 
+            this.textBoxTelephone.Location = new System.Drawing.Point(100, 228);
+            this.textBoxTelephone.Name = "textBoxTelephone";
+            this.textBoxTelephone.Size = new System.Drawing.Size(160, 20);
+            this.textBoxTelephone.TabIndex = 14;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(6, 231);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(55, 13);
+            this.label2.TabIndex = 13;
+            this.label2.Text = "Телефон:";
+            this.label2.Visible = true;
+            // 
+            // textBoxAge
+            // 
+            this.textBoxAge.Location = new System.Drawing.Point(100, 190);
+            this.textBoxAge.Name = "textBoxAge";
+            this.textBoxAge.Size = new System.Drawing.Size(160, 20);
+            this.textBoxAge.TabIndex = 12;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(6, 193);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(52, 13);
+            this.label1.TabIndex = 11;
+            this.label1.Text = "Возраст:";
+            this.label1.Visible = true;
+            // 
             // lblRegisterTitle
             // 
             this.lblRegisterTitle.AutoSize = true;
             this.lblRegisterTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
-            this.lblRegisterTitle.Location = new System.Drawing.Point(6, 16);
+            this.lblRegisterTitle.Location = new System.Drawing.Point(6, 17);
             this.lblRegisterTitle.Name = "lblRegisterTitle";
             this.lblRegisterTitle.Size = new System.Drawing.Size(176, 17);
             this.lblRegisterTitle.TabIndex = 0;
@@ -232,7 +266,7 @@ namespace school
             this.lblPermission.Size = new System.Drawing.Size(35, 13);
             this.lblPermission.TabIndex = 3;
             this.lblPermission.Text = "Роль:";
-            this.lblPermission.Visible = false;
+            this.lblPermission.Visible = true;
             // 
             // lblClass
             // 
@@ -242,7 +276,7 @@ namespace school
             this.lblClass.Size = new System.Drawing.Size(41, 13);
             this.lblClass.TabIndex = 4;
             this.lblClass.Text = "Класс:";
-            this.lblClass.Visible = false;
+            this.lblClass.Visible = true;
             // 
             // txtFullName
             // 
@@ -270,7 +304,7 @@ namespace school
             this.cmbPermission.Name = "cmbPermission";
             this.cmbPermission.Size = new System.Drawing.Size(160, 21);
             this.cmbPermission.TabIndex = 7;
-            this.cmbPermission.Visible = false;
+            this.cmbPermission.Visible = true;
             // 
             // cmbClass
             // 
@@ -279,7 +313,7 @@ namespace school
             this.cmbClass.Name = "cmbClass";
             this.cmbClass.Size = new System.Drawing.Size(160, 21);
             this.cmbClass.TabIndex = 8;
-            this.cmbClass.Visible = false;
+            this.cmbClass.Visible = true;
             // 
             // btnRegister
             // 
@@ -290,40 +324,6 @@ namespace school
             this.btnRegister.Text = "Зарегистрировать";
             this.btnRegister.UseVisualStyleBackColor = true;
             this.btnRegister.Click += new System.EventHandler(this.btnRegister_Click);
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 193);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(52, 13);
-            this.label1.TabIndex = 11;
-            this.label1.Text = "Возраст:";
-            this.label1.Visible = false;
-            // 
-            // textBoxAge
-            // 
-            this.textBoxAge.Location = new System.Drawing.Point(100, 190);
-            this.textBoxAge.Name = "textBoxAge";
-            this.textBoxAge.Size = new System.Drawing.Size(160, 20);
-            this.textBoxAge.TabIndex = 12;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(6, 231);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(55, 13);
-            this.label2.TabIndex = 13;
-            this.label2.Text = "Телефон:";
-            this.label2.Visible = false;
-            // 
-            // textBoxTelephone
-            // 
-            this.textBoxTelephone.Location = new System.Drawing.Point(100, 228);
-            this.textBoxTelephone.Name = "textBoxTelephone";
-            this.textBoxTelephone.Size = new System.Drawing.Size(160, 20);
-            this.textBoxTelephone.TabIndex = 14;
             // 
             // LoginForm
             // 

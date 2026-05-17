@@ -6,17 +6,11 @@ using school.Controllers;
 using school.Models;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Linq;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using static school.Controllers.HomeworkController;
-using static school.StatisticsController;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Color = System.Drawing.Color;
 using Control = System.Windows.Forms.Control;
 using User = school.Models.User;
@@ -110,7 +104,7 @@ namespace school
                 if (UserController.CurrentUser.PermissionID >= 3)
                 {
                     // Слушатели на мероприятия
-                    // Только у директора - но это с-с-порно!
+                    // Только у директора
                     dataGridViewEvents.CellEndEdit += DataGridViewEvents_CellEndEdit;
                     dataGridViewEvents.UserDeletingRow += DataGridViewEvents_UserDeletingRow;
                 }
@@ -145,8 +139,13 @@ namespace school
                 CreateSheduleAllTable();
             }
 
+            if(UserController.CurrentUser.PermissionID < 3) 
+            {
+                tabControl.TabPages.RemoveByKey("tabPageRegisters");
+                tabControl.TabPages.Remove(tabPageStudents);
+            }
+
             tabControl.TabPages.Remove(tabPageTeachers);
-            tabControl.TabPages.Remove(tabPageStudents);
         }
 
         private void CreateSheduleAllTable()
@@ -954,7 +953,7 @@ namespace school
             {
                 int saved = SheduleController._controller.CommitScheduleChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Выполнено {saved} изменений расписания!");
+                    MessageBox.Show($"Выполнено {saved} изменений расписания!");
             }
 
             // Сохранение домашки (tabHomework)
@@ -962,7 +961,7 @@ namespace school
             {
                 int saved = _homeworkController.CommitHomeworkChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} ДЗ!");
+                    MessageBox.Show($"Сохранено {saved} ДЗ!");
             }
 
             // Сохранение оценок (tabGrades)
@@ -970,7 +969,7 @@ namespace school
             {
                 int saved = GradesController._controller.CommitGradeChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} оценок!");
+                    MessageBox.Show($"Сохранено {saved} оценок!");
             }
 
             // Сохранение предметов (tabPageSubjects)
@@ -978,7 +977,7 @@ namespace school
             {
                 int saved = SubjectController._controller.CommitSubjectChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} предметов!");
+                    MessageBox.Show($"Сохранено {saved} предметов!");
             }
 
             // Сохранение посещаемость (tabPageAttendance)
@@ -986,7 +985,7 @@ namespace school
             {
                 int saved = AtterdanceController.Instance.CommitAttendanceChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} посещаемости!");
+                    MessageBox.Show($"Сохранено {saved} посещаемости!");
             }
 
             // Сохранение классов
@@ -994,7 +993,7 @@ namespace school
             {
                 int saved = ClassController._controller.CommitClassChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} классов!");
+                    MessageBox.Show($"Сохранено {saved} классов!");
             }
 
             // Создание учеников
@@ -1002,7 +1001,7 @@ namespace school
             {
                 int saved = UserController._userController.CommitUserChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} учеников!");
+                    MessageBox.Show($"Сохранено {saved} учеников!");
             }
 
             // Создание сотрудников
@@ -1010,7 +1009,7 @@ namespace school
             {
                 int saved = UserController._userController.CommitUserChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} сотрудников!");
+                    MessageBox.Show($"Сохранено {saved} сотрудников!");
             }
 
             // Сохранение классов
@@ -1018,7 +1017,7 @@ namespace school
             {
                 int saved = EventsController._controller.CommitEventChanges();
                 if (saved > 0)
-                    MessageBox.Show($"✅ Сохранено {saved} мероприятий!");
+                    MessageBox.Show($"Сохранено {saved} мероприятий!");
             }
         }
 
@@ -1039,6 +1038,8 @@ namespace school
             {
                 // Домашка
                 case "tabHomework": LoadHomeworkGrid(); break;
+
+                case "tabPageRegisters": LoadRegistrations(); break;
 
                 // Оценки
                 case "tabGrades": LoadGradesGrid(); break;
@@ -1081,6 +1082,28 @@ namespace school
                     }
                 }
                 break;
+            }
+        }
+
+        private void LoadRegistrations()
+        {
+            var applications = RegistrationApplicationController._controller.GetAll();
+
+            dataGridViewRegisters.Rows.Clear();
+
+            foreach (var app in applications)
+            {
+                int rowIndex = dataGridViewRegisters.Rows.Add();
+                var row = dataGridViewRegisters.Rows[rowIndex];
+
+                row.Cells["dataGridViewTextBoxColumnApplicationID"].Value = app.ApplicationID;
+                row.Cells["dataGridViewTextBoxColumnFullName"].Value = app.FullName;
+                row.Cells["dataGridViewTextBoxColumnPermissionID"].Value = app.PermissionID;
+                row.Cells["dataGridViewTextBoxColumnClassID"].Value = app.ClassID;
+                row.Cells["dataGridViewTextBoxColumnAge"].Value = app.Age;
+                row.Cells["dataGridViewTextBoxColumnTelephone"].Value = app.Telephone;
+                row.Cells["dataGridViewTextBoxColumnApplicationDate"].Value = app.ApplicationDate;
+                row.Cells["dataGridViewTextBoxColumnIsApproved"].Value = app.IsApproved;
             }
         }
 
@@ -4173,6 +4196,109 @@ namespace school
 
             FileLogger.logger.Info($"Расписание сгенерировано: {totalLessons} уроков");
             LoadScheduleGrid(classId);
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            ProcessAndShowStudents();
+        }
+
+        /// <summary>
+        /// Обработка заявлений и показ формы со списком учеников
+        /// </summary>
+        private void ProcessAndShowStudents()
+        {
+            int approvedCount = 0;
+            int rejectedCount = 0;
+
+            var pendingApplications = RegistrationApplicationController._controller.GetAll()
+                .Where(a => !a.IsApproved && a.PermissionID == 1)
+                .ToList();
+
+            if (pendingApplications.Count == 0)
+            {
+                MessageBox.Show("Нет новых заявлений на распределение", "Информация",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var classStats = GetClassAverageStats();
+            double avgStudents = classStats.Average;
+            int maxAllowedPerClass = (int)(avgStudents + 8);
+
+            foreach (var app in pendingApplications)
+            {
+                if (app.Age == null || app.Age < 7 || app.Age > 16)
+                {
+                    rejectedCount++;
+                    continue;
+                }
+
+                int targetClassID = (app.Age.Value - 6) * 2;
+
+                int studentsInClass = GetStudentCountByClassID(targetClassID);
+
+                if (studentsInClass >= maxAllowedPerClass)
+                {
+                    rejectedCount++;
+                    RegistrationApplicationController._controller.Delete(app.ApplicationID);
+                    continue;
+                }
+
+                int newUserID = ApprovalApplication(app, targetClassID);
+
+                if (newUserID > 0)
+                {
+                    approvedCount++;
+                }
+                else
+                {
+                    rejectedCount++;
+                }
+
+                RegistrationApplicationController._controller.Delete(app.ApplicationID);
+            }
+
+            MessageBox.Show(
+                $"Распределено учеников: {approvedCount}\n" +
+                $"Отклонено: {rejectedCount}\n\n" +
+                $"Среднее по классам: {avgStudents:F1} ученика\n" +
+                $"Максимум на класс: {maxAllowedPerClass} учеников",
+                "Результаты распределения",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
+            LoadRegistrations();
+        }
+
+        /// <summary>
+        /// Получает статистику по классам (среднее количество учеников)
+        /// </summary>
+        private (double Average, int TotalClasses, int TotalStudents) GetClassAverageStats()
+        {
+            var result = ClassController._controller.GetClassStats();
+            return (result.Average, result.TotalClasses, result.TotalStudents);
+        }
+
+        /// <summary>
+        /// Получает количество учеников в классе
+        /// </summary>
+        private int GetStudentCountByClassID(int classID)
+        {
+            return ClassController._controller.GetStudentCountByClass(classID);
+        }
+
+        /// <summary>
+        /// Одобрение заявления и создание пользователя
+        /// </summary>
+        private int ApprovalApplication(RegistrationApplication app, int classID)
+        {
+            return UserController._userController.RegisterUser(
+                app.FullName,
+                app.PasswordHash,
+                app.PermissionID,
+                classID
+            );
         }
     }
 }

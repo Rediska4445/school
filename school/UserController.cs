@@ -501,6 +501,22 @@ namespace school.Controllers
         }
 
         /// <summary>
+        /// Получает количество учеников в классе
+        /// </summary>
+        private int GetStudentCountByClassID(int classID)
+        {
+            string query = "SELECT COUNT(*) FROM Users WHERE PermissionID = 1 AND ClassID = @ClassID";
+
+            using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@ClassID", classID);
+                connection.Open();
+                return (int)command.ExecuteScalar();
+            }
+        }
+
+        /// <summary>
         /// Регистрирует нового пользователя через хранимую процедуру
         /// </summary>
         /// <param name="fullName">ФИО пользователя</param>

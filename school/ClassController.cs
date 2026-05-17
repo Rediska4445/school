@@ -192,6 +192,50 @@ namespace school.Controllers
             }
             return null;
         }
+        public (double Average, int TotalClasses, int TotalStudents) GetClassStats()
+        {
+            string query = @"
+                SELECT ClassID, COUNT(*) as StudentCount 
+                FROM Users 
+                WHERE PermissionID = 1 AND ClassID IS NOT NULL 
+                GROUP BY ClassID";
+
+            int totalStudents = 0;
+            int totalClasses = 0;
+
+            using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                var command = new SqlCommand(query, connection);
+                connection.Open();
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        totalStudents += reader.GetInt32(1);
+                        totalClasses++;
+                    }
+                }
+            }
+
+            double average = totalClasses > 0 ? (double)totalStudents / totalClasses : 0;
+            return (average, totalClasses, totalStudents);
+        }
+
+        /// <summary>
+        /// Получает количество учеников в классе
+        /// </summary>
+        public int GetStudentCountByClass(int classID)
+        {
+            string query = "SELECT COUNT(*) FROM Users WHERE PermissionID = 1 AND ClassID = @ClassID";
+
+            using (var connection = new SqlConnection(Form1.CONNECTION_STRING))
+            {
+                var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@ClassID", classID);
+                connection.Open();
+                return (int)command.ExecuteScalar();
+            }
+        }
 
         public void UpsertClassSubjectHours(int classId, int subjectId, int hoursPerWeek)
         {

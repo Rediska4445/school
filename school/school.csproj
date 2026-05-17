@@ -302,6 +302,8 @@
     <Compile Include="QuarterGrade.cs" />
     <Compile Include="QuarterGradeRow.cs" />
     <Compile Include="QuarterGradesController.cs" />
+    <Compile Include="RegistrationApplication.cs" />
+    <Compile Include="RegistrationApplicationController.cs" />
     <Compile Include="Shedule.cs" />
     <Compile Include="SqlServerTypes\Loader.cs" />
     <Compile Include="StatisticsController.cs" />
